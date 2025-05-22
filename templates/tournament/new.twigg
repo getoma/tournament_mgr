@@ -1,0 +1,12 @@
+{% extends 'base/layout.twigg' %}
+{% import 'base/form.twigg' as form %}
+
+{% block content %}
+<form action="{{base_path}}/tournament/create" method="post">
+   {{ form.input('text', 'name', 'Name', prev.tournament.name ?? tournament.name, errors.tournament['name'], {'maxlength':100},
+   required=true) }}
+   {{ form.input('date', 'date', 'Datum', prev.tournament.date ?? tournament.date, errors.tournament['date'], required=true) }}
+   {{ form.textarea('notes', 'Notizen', prev.tournament.notes ?? tournament.notes, errors.tournament['notes']) }}
+   {{ form.submit('Anlegen') }}
+</form>
+{% endblock %}

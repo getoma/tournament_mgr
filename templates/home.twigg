@@ -1,0 +1,13 @@
+{% extends 'base/layout.twigg' %}
+
+{% block content %}
+<h1>Turniermanagement</h1>
+<ul>
+   {% for tournament in tournaments %}
+   <li>
+      <a href="{{base_path}}/tournament/{{ tournament.id }}">{{ tournament.name }} - {{ tournament.date }}</a>
+   </li>
+   {% endfor %}
+   <li><a href="{{base_path}}/tournament/create">Neues Turnier anlegen</a></li>
+</ul>
+{% endblock %}

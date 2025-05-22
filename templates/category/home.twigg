@@ -1,0 +1,44 @@
+{% extends 'base/layout.twigg' %}
+{% import 'base/form.twigg' as form %}
+{% import 'category/partials.twigg' as part %}
+
+{% set base_category_url = base_path ~ "/tournament/" ~ tournament.id ~ "/category/" ~ category.id %}
+
+{% block content %}
+<nav>
+  <ul>
+    <li><a href="{{base_category_url}}/configure">Kategorie
+        konfigurieren</a></li>
+  </ul>
+</nav>
+
+<section>
+<h2>{{ category.name }} </h2>
+{% if pools is not empty %}
+<section>
+<h3>Pools</h3>
+{{ part.printPools(pools, base_category_url) }}
+</section>
+{% endif %}
+
+{% if ko is defined %}
+<section>
+<h3>KO-Runde</h3>
+{{ part.printKo(ko, chunks, base_category_url) }}
+</section>
+{% endif %}
+
+{% if unmapped_participants is not empty %}
+<section>
+  <h3>Nicht zugewiesen</h3>
+  <ul>
+    {% for p in unmapped_participants %}
+    <li>{{p.lastname}}, {{p.firstname}}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+</section>
+{% endblock %}
+

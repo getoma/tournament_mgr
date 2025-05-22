@@ -1,0 +1,114 @@
+{% extends 'base/layout.twigg' %}
+{% import 'base/form.twigg' as form %}
+
+{% block content %}
+
+<section>
+<h2>Details</h2>
+<form action="{{base_path}}/tournament/{{tournament.id}}/configure" method="post">
+  {{ form.input('text', 'name', 'Name', prev.tournament.name ?? tournament.name, errors.tournament['name'],
+  {'maxlength':100}, required=true) }}
+  {{ form.input('date', 'date', 'Datum', prev.tournament.date ?? tournament.date, errors.tournament['date'],
+  required=true) }}
+  {{ form.textarea('notes', 'Notizen', prev.tournament.notes ?? tournament.notes, errors.tournament['notes'],
+  {'rows':4}) }}
+  {{ form.submit('Aktualisieren') }}
+</form>
+</section>
+
+<section>
+<h2>Kampfflächen</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Aktionen</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for area in areas %}
+    <tr>
+      <td>{{ form.input_plain('text', 'name', prev.areas[area.id].name ?? area.name,
+        errors.areas[area.id]['name'],
+        {'maxlength':100, 'form': 'area_update_' ~ area.id}, required=true) }}</td>
+      <td>
+        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/area/{{ area.id }}/update" id="area_update_{{ area.id }}">
+          {{ form.submit('Speichern') }}
+        </form>
+        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/area/{{ area.id }}/delete">
+          {{ form.submit('Löschen') }}
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td>{{ form.input_plain('text', 'name', prev.areas.new.name??'', errors.areas.new['name'],
+        {'placeholder': 'Neue Kampffläche', 'maxlength':100, 'form':'area_new'}, required=true) }}</td>
+      <td>
+        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/area/create" id="area_new">
+          {{ form.submit('Hinzufügen') }}
+        </form>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<section>
+<h2>Kategorien</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Modus</th>
+      <th>Aktionen</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for category in categories %}
+    <tr>
+      <td>
+        {{ form.input_plain('text', 'name', prev.categories[category.id].name ?? category.name,
+           errors.categories[category.id]['name'], {'maxlength':100, 'form': 'category_update_' ~ category.id},
+        required=true) }}
+      </td>
+      <td>
+        {{ form.select_plain('mode', category_modes, prev.categories[category.id].mode ?? category.mode,
+           errors.categories[category.id]['mode'], {'form': 'category_update_' ~ category.id}, required=true) }}
+      </td>
+      <td>
+        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/category/{{ category.id }}/update" id="category_update_{{ category.id }}">
+          {{ form.submit('Speichern') }}
+        </form>
+        <form method="GET" action="{{base_path}}/tournament/{{ tournament.id }}/category/{{ category.id }}/configure">
+          <input type="hidden" name="return_to" value="/tournament/{{ tournament.id }}/configure">
+          {{ form.submit('Details bearbeiten') }}
+        </form>
+        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/category/{{ category.id }}/delete">
+          {{ form.submit('Löschen') }}
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td>
+        {{ form.input_plain('text', 'name', prev.categories.new.name??'', errors.categories.new['name'],
+                            {'placeholder':'Neue Kategorie', 'maxlength':100, 'form':'category_new'}, required=true) }}
+      </td>
+      <td>
+        {{ form.select_plain('mode', category_modes, prev.categories.new.mode??'', errors.categories.new['mode'],
+                             {'form':'category_new'}, required=true) }}
+      </td>
+      <td>
+        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/category/create" id="category_new">
+          {{ form.submit('Hinzufügen') }}
+        </form>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+{% endblock %}

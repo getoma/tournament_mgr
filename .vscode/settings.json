@@ -1,0 +1,13 @@
+{
+   "editor.tabSize": 3,
+   "editor.formatOnPaste": true,
+   "editor.detectIndentation": false,
+   "php.format.codeStyle": "Allman",
+   "files.associations": {
+      "*.twigg": "html"
+   },
+   "[html]": {
+      "editor.tabSize": 2,
+      "editor.insertSpaces": true
+   }
+}

@@ -1,0 +1,11 @@
+{% extends 'base/layout.twigg' %}
+
+{% block content %}
+<ul>
+{% for category in categories %}
+   <li><a href="{{base_path}}/tournament/{{tournament.id}}/category/{{category.id}}">{{category.name}}</a></li>
+{% endfor %}
+   <li><a href="{{base_path}}/tournament/{{tournament.id}}/control">Turnierleitung</a></li>
+</ul>
+{% endblock %}
+

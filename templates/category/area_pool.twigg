@@ -1,0 +1,9 @@
+{% extends 'base/layout.twigg' %}
+{% import 'category/partials.twigg' as part %}
+
+{% block content %}
+<section>
+  <h2>Pools {{area.name}}</h2>
+  {{ part.printPools(pools) }}
+</section>
+{% endblock %}

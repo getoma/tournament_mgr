@@ -1,0 +1,11 @@
+{% extends 'base/layout.twigg' %}
+{% import 'category/partials.twigg' as part %}
+
+{% set base_category_url = base_path ~ "/tournament/" ~ tournament.id ~ "/category/" ~ category.id %}
+
+{% block content %}
+<section>
+  <h2>{{chunk.name}}</h2>
+  {{ part.printKo(ko, null, base_category_url) }}
+</section>
+{% endblock %}

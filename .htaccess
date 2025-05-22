@@ -1,0 +1,3 @@
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !^/tournament_slim/public/
+RewriteRule ^(.*)$ /tournament_slim/public/$1 [L]

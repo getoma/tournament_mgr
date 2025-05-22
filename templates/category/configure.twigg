@@ -1,0 +1,21 @@
+{% extends 'base/layout.twigg' %}
+{% import 'base/form.twigg' as form %}
+
+{% block content %}
+
+<section>
+<h2>{{category.name}} - Konfiguration</h2>
+<form action="{{base_path}}/tournament/{{tournament.id}}/category/{{category.id}}/configure" method="post">
+  {{ form.select('mode', 'Modus', category_modes, prev.mode ?? category.mode, errors['mode'], required=true) }}
+  {{ form.input('number', 'num_rounds', 'Anzahl KO-Runden', prev.num_rounds ?? config.num_rounds,
+                errors['num_rounds'], {'min':2, 'max': 10}) }}
+  {{ form.input('number', 'pool_winners', 'Anzahl Pool-Sieger', prev.pool_winners ?? config.pool_winners,
+                errors['pool_winners'], {'max': 3, 'min': 1}) }}
+  {{ form.input('number', 'area_cluster', 'Kampfflächen-Cluster', prev.area_cluster ?? config.area_cluster,
+                errors['area_cluster'], {'min': 1})}}
+  <input type="hidden" name="return_to" value="{{return_to}}">
+  {{ form.submit('Speichern und neu generieren') }}
+</form>
+</section>
+
+{% endblock %}
