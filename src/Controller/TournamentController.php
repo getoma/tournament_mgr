@@ -13,7 +13,7 @@ use App\Repository\CategoryRepository;
 use App\Model\Data\Area;
 use App\Model\Data\Category;
 use App\Model\Data\Tournament;
-use App\Util\Validator;
+use App\Service\Validator;
 
 
 class TournamentController
@@ -31,7 +31,7 @@ class TournamentController
     */
    public function showFormNewTournament(Request $request, Response $response, array $args): Response
    {
-      return $this->view->render($response, 'tournament/new.twigg');
+      return $this->view->render($response, 'tournament/new.twig');
    }
 
    /**
@@ -45,7 +45,7 @@ class TournamentController
       // return form if there are errors
       if (count($errors) > 0)
       {
-         return $this->view->render($response, 'tournament/new.twigg', [
+         return $this->view->render($response, 'tournament/new.twig', [
             'errors' => ['tournament' => $errors ],
             'prev'   => ['tournament' => $data]
          ]);
@@ -71,7 +71,7 @@ class TournamentController
       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
       $areas = $this->areaRepo->getAreasByTournamentId($args['id']);
 
-      return $this->view->render($response, 'tournament/configure.twigg', [
+      return $this->view->render($response, 'tournament/configure.twig', [
          'tournament' => $tournament,
          'areas' => $areas,
          'categories' => $categories,

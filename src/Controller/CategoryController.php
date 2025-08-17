@@ -15,7 +15,7 @@ use App\Repository\ParticipantRepository;
 use App\Repository\AreaRepository;
 
 use App\Model\TournamentStructure\TournamentStructure;
-use App\Util\Validator;
+use App\Service\Validator;
 use Respect\Validation\Validator as v;
 
 class CategoryController
@@ -69,7 +69,7 @@ class CategoryController
          $ko = $structure->ko->getRounds(-($structure->finale_rounds_cnt??0));
       }
 
-      return $this->view->render($response, 'category/home.twigg', [
+      return $this->view->render($response, 'category/home.twig', [
          'tournament' => $tournament,
          'category'   => $category,
          'pools'      => $structure->pools,
@@ -104,7 +104,7 @@ class CategoryController
          return $response->withStatus(404)->write('area not found');
       }
 
-      return $this->view->render($response, 'category/area_ko.twigg', [
+      return $this->view->render($response, 'category/area_ko.twig', [
          'tournament' => $tournament,
          'category'   => $category,
          'ko'         => $chunk->root->getRounds(),
@@ -140,7 +140,7 @@ class CategoryController
       $structure = new TournamentStructure($category, $areas, $participants);
       $area_pools = $structure->getPoolsByArea($area);
 
-      return $this->view->render($response, 'category/area_pool.twigg', [
+      return $this->view->render($response, 'category/area_pool.twig', [
          'tournament' => $tournament,
          'category'   => $category,
          'pools'      => $area_pools,
@@ -181,7 +181,7 @@ class CategoryController
          $return_to = $data['return_to'] ?? '';
       }
 
-      return $this->view->render($response, 'category/configure.twigg', [
+      return $this->view->render($response, 'category/configure.twig', [
          'tournament' => $tournament,
          'category' => $category,
          'config' => $category->config,

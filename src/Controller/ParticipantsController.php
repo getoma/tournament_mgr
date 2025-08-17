@@ -13,7 +13,7 @@ use App\Repository\ParticipantRepository;
 
 use App\Model\Data\Participant;
 
-use App\Util\Validator;
+use App\Service\Validator;
 use Respect\Validation\Validator as v;
 
 class ParticipantsController
@@ -40,7 +40,7 @@ class ParticipantsController
       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
       $participants = $this->repo->getParticipantsByTournamentId($args['id'], true);
 
-      return $this->view->render($response, 'participants/home.twigg', [
+      return $this->view->render($response, 'participants/home.twig', [
          'tournament' => $tournament,
          'categories' => $categories,
          'participants' => $participants,
@@ -214,7 +214,7 @@ class ParticipantsController
       return $response->withStatus(400)->write('Failed to delete participant');
    }
 
-   /**    
+   /**
     * Show the details of a participant in a tournament
     * This includes the participant's name and the categories they are registered in
     */
@@ -234,7 +234,7 @@ class ParticipantsController
 
       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
 
-      return $this->view->render($response, 'participants/details.twigg', [
+      return $this->view->render($response, 'participants/details.twig', [
          'tournament' => $tournament,
          'categories' => $categories,
          'participant' => $participant,
@@ -267,7 +267,7 @@ class ParticipantsController
       // return form if there are errors
       if (count($errors) > 0)
       {
-         return $this->view->render($response, 'participants/details.twigg', [
+         return $this->view->render($response, 'participants/details.twig', [
             'tournament' => $tournament,
             'categories' => $this->categoryRepo->getCategoriesByTournamentId($args['id']),
             'participant' => $participant,

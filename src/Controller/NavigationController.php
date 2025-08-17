@@ -23,7 +23,7 @@ class NavigationController
     */
    public function index(Request $request, Response $response, array $args): Response
    {
-      return $this->view->render($response, 'home.twigg', [
+      return $this->view->render($response, 'home.twig', [
          'tournaments' => $this->repo->getAllTournaments()
       ]);
    }
@@ -41,7 +41,7 @@ class NavigationController
 
       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
 
-      return $this->view->render($response, 'tournament/home.twigg', [
+      return $this->view->render($response, 'tournament/home.twig', [
          'tournament' => $tournament,
          'categories' => $categories,
       ]);
@@ -57,10 +57,10 @@ class NavigationController
        {
           return $response->withStatus(404)->write('Tournament not found');
        }
- 
+
        $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
- 
-       return $this->view->render($response, 'tournament/controlpanel.twigg', [
+
+       return $this->view->render($response, 'tournament/controlpanel.twig', [
           'tournament' => $tournament,
           'categories' => $categories,
        ]);

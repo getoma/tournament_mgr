@@ -4,7 +4,7 @@
    "editor.detectIndentation": false,
    "php.format.codeStyle": "Allman",
    "files.associations": {
-      "*.twigg": "html"
+      "*.twig": "html"
    },
    "[html]": {
       "editor.tabSize": 2,

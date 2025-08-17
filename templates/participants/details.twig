@@ -1,5 +1,5 @@
-{% extends 'base/layout.twigg' %}
-{% import 'base/form.twigg' as form %}
+{% extends 'base/layout.twig' %}
+{% import 'base/form.twig' as form %}
 
 {% block content %}
 <h2>Teilnehmer bearbeiten</h2>
@@ -7,8 +7,8 @@
    {{ form.input('text', 'lastname', 'Nachname', prev.lastname ?? participant.lastname, errors.lastname, {'maxlength':100}, required=true) }}
    {{ form.input('text', 'firstname', 'Vorname', prev.firstname ?? participant.firstname, errors.firstname, {'maxlength':100}, required=true) }}
    {% for category in categories %}
-   {{ form.checkbox('categories[]', category.name, 
-      (prev.categories is defined)?prev.categories[category]??false:participant.categories[category.id] ?? false, 
+   {{ form.checkbox('categories[]', category.name,
+      (prev.categories is defined)?prev.categories[category]??false:participant.categories[category.id] ?? false,
       errors.categories[category.id] ?? '',
    attributes={'value': category.id}) }}
    {% endfor %}
