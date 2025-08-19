@@ -4,9 +4,20 @@ use App\Controller\ParticipantsController;
 use App\Controller\TournamentController;
 use App\Controller\NavigationController;
 use App\Controller\CategoryController;
+use App\Controller\AuthController;
+use App\Controller\UserController;
 
 return [
    'home'               => ['GET', '/', [NavigationController::class, 'index'] ],
+
+   /* login/logout/pw reset */
+   'login'              => ['GET',  '/login',  [AuthController::class, 'showLogin']],
+   'login_post'         => ['POST', '/login',  [AuthController::class, 'login']],
+   'logout'             => ['GET',  '/logout', [AuthController::class, 'logout']],
+   'pw_forgot'          => ['GET',  '/forgot', [AuthController::class, 'showForgotPassword']],
+   'pw_forgot_post'     => ['POST', '/forgot', [AuthController::class, 'requestPasswordReset']],
+   'pw_reset'           => ['GET',  '/reset',  [AuthController::class, 'showResetPassword']],
+   'pw_reset_post'      => ['POST', '/reset',  [AuthController::class, 'resetPassword']],
 
    /* create tournament */
    'new_tournament_form' => [ 'GET',  '/tournament/create', [TournamentController::class, 'showFormNewTournament'] ],
@@ -40,4 +51,7 @@ return [
    'update_category_cfg'       => ['POST', '/tournament/{id:\d+}/category/{categoryId:\d+}/configure',    [CategoryController::class, 'updateCategoryConfiguration'] ],
    'show_ko_area'              => ['GET',  '/tournament/{id:\d+}/category/{categoryId:\d+}/area/ko/{chunk}',    [CategoryController::class, 'showKoArea']],
    'show_pool_area'            => ['GET',  '/tournament/{id:\d+}/category/{categoryId:\d+}/area/pool/{areaid:\d+}', [CategoryController::class, 'showPoolArea']],
+
+   'user_account'              => ['GET',  '/user/account', [UserController::class, 'showAccount']],
+   'user_account_post'         => ['POST', '/user/account', [UserController::class, 'updateAccount']],
 ];

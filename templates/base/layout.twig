@@ -6,16 +6,33 @@
   <link rel="stylesheet" href="{{base_path}}/css/tree.css">
 </head>
 <body>
-  {% if tournament is defined -%}
   <header>
-    <h1>{{tournament.name}}</h1>
-    <nav>{% if return_to is defined %}<a href="{{base_path}}{{return_to}}">&lt;&lt;Zurück</a>{%endif%}
-      <a href="{{base_path}}/tournament/{{tournament.id}}">Hauptseite</a>
+    <nav class="global">
+      <div id="account_actions">
+        {% if current_user %}
+        <a href="{{url_for('logout')}}">Logout</a>
+        <a href="{{url_for('user_account')}}">Account</a>
+        {%else%}
+        <a href="{{url_for('login')}}">Login</a>
+        {%endif%}
+
+      </div>
     </nav>
+    <h1>{% block heading %}{{tournament? tournament.name : "Turniere - Übersicht"}}{% endblock %}</h1>
   </header>
-  {%- endif %}
+
   <main>
-    {% block content %}{% endblock %}
+    <aside>
+      <nav class="tournament">
+        {% if return_to is defined %}<a href="{{base_path}}{{return_to}}">&lt;&lt;Zurück</a>{%endif%}
+        {% if tournament is defined %}<a href="{{base_path}}/tournament/{{tournament.id}}">Hauptseite</a>{%endif%}
+        <a href="{{base_path}}/">Turniere Übersicht</a>
+      </nav>
+    </aside>
+
+    <section id="content">
+      {% block content %}{% endblock %}
+    </section>
   </main>
 </body>
 
