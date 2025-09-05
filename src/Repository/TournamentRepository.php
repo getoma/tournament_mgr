@@ -29,7 +29,7 @@ class TournamentRepository
       $stmt->execute(['id' => $id]);
       $data = $stmt->fetch(PDO::FETCH_ASSOC);
       if( $data )
-      {         
+      {
          return new Tournament(...$data);
       }
       return null;
@@ -47,10 +47,10 @@ class TournamentRepository
       return null;
    }
 
-   public function createTournament(string $name, string $date): int
+   public function createTournament(string $name, string $date, string $notes): int
    {
-      $stmt = $this->pdo->prepare("INSERT INTO tournaments (name, date, status, notes) VALUES (:name, :date, :status, :notes)");
-      $stmt->execute(['name' => $name, 'date' => $date]);
+      $stmt = $this->pdo->prepare("INSERT INTO tournaments (name, date, notes) VALUES (:name, :date, :notes)");
+      $stmt->execute(['name' => $name, 'date' => $date, 'notes' => $notes]);
       return $this->pdo->lastInsertId();
    }
 
