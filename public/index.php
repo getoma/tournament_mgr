@@ -14,7 +14,10 @@ AppFactory::setContainer($container);
 $app = AppFactory::create();
 
 // set the base path for the application
-$app->setBasePath('/tournament_slim');
+if( !empty(config::$BASE_PATH) )
+{
+   $app->setBasePath(config::$BASE_PATH);
+}
 
 // configure database connection
 $container->set(PDO::class, function ()
