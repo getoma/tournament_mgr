@@ -1,17 +1,12 @@
 <?php
 
-require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/../config.php';
-
-use DI\Container;
-use Slim\Factory\AppFactory;
-use Slim\Views\Twig;
-use Slim\Views\TwigMiddleware;
+require_once '../vendor/autoload.php';
+require_once '../config.php';
 
 // create the app
-$container = new Container();
-AppFactory::setContainer($container);
-$app = AppFactory::create();
+$container = new DI\Container();
+Slim\Factory\AppFactory::setContainer($container);
+$app = Slim\Factory\AppFactory::create();
 
 // set the base path for the application
 if( !empty(config::$BASE_PATH) )
@@ -19,67 +14,14 @@ if( !empty(config::$BASE_PATH) )
    $app->setBasePath(config::$BASE_PATH);
 }
 
-// configure database connection
-$container->set(PDO::class, function () {
-   return new PDO(
-      sprintf('mysql:dbname=%s;host=%s;charset=utf8', config::$DB_CONNECTION['db'], config::$DB_CONNECTION['server']),
-      config::$DB_CONNECTION['user'],
-      config::$DB_CONNECTION['pw'],
-      [
-         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-         PDO::ATTR_EMULATE_PREPARES => false,
-      ]
-   );
-});
-
-// configure Twig
-$container->set(Twig::class, function () use ($app)
-{
-   $twig = Twig::create(__DIR__ . '/../templates', [
-      'cache' => false,
-      'debug' => config::$debug,
-   ]);
-   if (config::$debug)
-   {
-      $twig->addExtension(new \Twig\Extension\DebugExtension());
-   }
-
-   $twig->getEnvironment()->addGlobal('base_path', $app->getBasePath());
-
-   return $twig;
-});
-
-// configure MailService
-$container->set(App\Service\MailService::class, function () {
-   return new App\Service\MailService(
-      fromAddress: config::$MAIL_FROM_ADDRESS,
-      fromName: config::$MAIL_FROM_NAME,
-      smtpSettings: config::$SMTP_SETTINGS
-   );
-});
-
-// configure SessionHandler
-$container->set(SessionHandlerInterface::class, function () use ($container) {
-   return new App\Service\PdoSessionHandler($container->get(PDO::class));
-});
-
-// configure SessionService
-$container->set(App\Service\SessionService::class, function () use ($container) {
-   return new App\Service\SessionService($container->get(SessionHandlerInterface::class));
-});
-
-// twig middleware to support various extensions in templates
-$app->add(TwigMiddleware::create($app, $container->get(Twig::class)));
-
-// initialize AuthService
-$authService = $container->get(App\Service\AuthService::class);
+// load DI container definitions
+require_once '../src/dependencies.php';
 
 // Add CurrentUserMiddleware
-$app->add(new App\Middleware\CurrentUserMiddleware($authService, $container->get(Twig::class)));
+$app->add(new Base\Middleware\CurrentUserMiddleware($authService, $container->get(Slim\Views\Twig::class)));
 
 // Add AuthMiddleware
-$app->add(new App\Middleware\AuthMiddleware($authService, $container->get(App\Service\SessionService::class), 'login',
+$app->add(new Base\Middleware\AuthMiddleware($authService, $container->get(Base\Service\SessionService::class), 'login',
                                             ['home', 'login', 'login_post', 'pw_forgot', 'pw_forgot_post', 'pw_reset', 'pw_reset_post']));
 
 $app->addRoutingMiddleware();
@@ -88,7 +30,7 @@ $app->addRoutingMiddleware();
 $app->addErrorMiddleware(true, false, false);
 
 // load routes
-foreach ((require '../routes.php') as $name => $route)
+foreach ((require '../src/routes.php') as $name => $route)
 {
    $app->map([$route[0]], $route[1], $route[2])->setName($name);
 }
