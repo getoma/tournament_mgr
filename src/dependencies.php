@@ -1,67 +1,59 @@
 <?php
 
-/** @var Container $container */
-/** @var Slim\App $app */
-
 use Slim\Views\Twig;
-use Slim\Views\TwigMiddleware;
 
-// configure database connection
-$container->set(PDO::class, function ()
+return function (DI\Container $container)
 {
-   return new PDO(
-      sprintf('mysql:dbname=%s;host=%s;charset=utf8', config::$DB_CONNECTION['db'], config::$DB_CONNECTION['server']),
-      config::$DB_CONNECTION['user'],
-      config::$DB_CONNECTION['pw'],
-      [
-         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-         PDO::ATTR_EMULATE_PREPARES => false,
-      ]
-   );
-});
-
-// configure Twig
-$container->set(Twig::class, function () use ($app)
-{
-   $twig = Twig::create(__DIR__ . '/../templates', [
-      'cache' => false,
-      'debug' => config::$debug,
-   ]);
-   if (config::$debug)
+   // configure database connection
+   $container->set(PDO::class, function ()
    {
-      $twig->addExtension(new \Twig\Extension\DebugExtension());
-   }
+      return new PDO(
+         sprintf('mysql:dbname=%s;host=%s;charset=utf8', config::$DB_CONNECTION['db'], config::$DB_CONNECTION['server']),
+         config::$DB_CONNECTION['user'],
+         config::$DB_CONNECTION['pw'],
+         [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+         ]
+      );
+   });
 
-   $twig->getEnvironment()->addGlobal('base_path', $app->getBasePath());
+   // configure Twig
+   $container->set(Twig::class, function () use ($container)
+   {
+      $twig = Twig::create(__DIR__ . '/../templates', [
+         'cache' => false,
+         'debug' => config::$debug,
+      ]);
+      if (config::$debug)
+      {
+         $twig->addExtension(new \Twig\Extension\DebugExtension());
+      }
+      $twig->getEnvironment()->addGlobal('base_path', $container->get('base_path') ?? '');
 
-   return $twig;
-});
+      return $twig;
+   });
 
-// configure MailService
-$container->set(Base\Service\MailService::class, function ()
-{
-   return new Base\Service\MailService(
-      fromAddress: config::$MAIL_FROM_ADDRESS,
-      fromName: config::$MAIL_FROM_NAME,
-      smtpSettings: config::$SMTP_SETTINGS
-   );
-});
+   // configure MailService
+   $container->set(Base\Service\MailService::class, function ()
+   {
+      return new Base\Service\MailService(
+         fromAddress: config::$MAIL_FROM_ADDRESS,
+         fromName: config::$MAIL_FROM_NAME,
+         smtpSettings: config::$SMTP_SETTINGS
+      );
+   });
 
-// configure SessionHandler
-$container->set(SessionHandlerInterface::class, function () use ($container)
-{
-   return new Base\Service\PdoSessionHandler($container->get(PDO::class));
-});
+   // configure SessionHandler
+   $container->set(SessionHandlerInterface::class, function () use ($container)
+   {
+      return new Base\Service\PdoSessionHandler($container->get(PDO::class));
+   });
 
-// configure SessionService
-$container->set(Base\Service\SessionService::class, function () use ($container)
-{
-   return new Base\Service\SessionService($container->get(SessionHandlerInterface::class));
-});
-
-// twig middleware to support various extensions in templates
-$app->add(TwigMiddleware::create($app, $container->get(Twig::class)));
-
-// initialize AuthService
-$authService = $container->get(Base\Service\AuthService::class);
+   // configure SessionService
+   $container->set(Base\Service\SessionService::class, function () use ($container)
+   {
+      return new Base\Service\SessionService($container->get(SessionHandlerInterface::class));
+   });
+};
