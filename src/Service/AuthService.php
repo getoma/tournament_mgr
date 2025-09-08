@@ -9,7 +9,7 @@ use App\Model\User\User;
 /**
  * This class manages user authorization and the user session
  * - handles login/logout
- * - keeps track of the currently logged in user via $_SESSION
+ * - keeps track of the currently logged in user via the session
  */
 class AuthService
 {
@@ -21,7 +21,7 @@ class AuthService
     * @param UserRepository $repo
     * @param PasswordHasher $hasher
     */
-   public function __construct(private UserRepository $repo, private PasswordHasher $hasher)
+   public function __construct(private UserRepository $repo, private PasswordHasher $hasher, private SessionService $session)
    {
    }
 
@@ -38,7 +38,7 @@ class AuthService
       if ($user && !empty($user->password_hash) && $this->hasher->verify($password, $user->password_hash))
       {
          // login successful, store user in session
-         $this->repo->setSessionUserId($user->id, session_id());
+         $this->repo->setSessionUserId($user->id);
          $this->user = $user;
 
          // check for the need to rehash the password now that we have the unencrypted password
@@ -61,7 +61,7 @@ class AuthService
    public function logout(): void
    {
       // destroy current session
-      session_destroy();
+      $this->session->clear();
       // also destroy all other sessions for this user
       $this->repo->destroySessionsForUser($this->user->id);
       // clear buffer

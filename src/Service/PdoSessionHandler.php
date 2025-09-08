@@ -4,7 +4,7 @@ namespace App\Service;
 use PDO;
 use SessionHandlerInterface;
 
-class SessionHandler implements SessionHandlerInterface
+class PdoSessionHandler implements SessionHandlerInterface
 {
    public function __construct(private PDO $pdo)
    {}

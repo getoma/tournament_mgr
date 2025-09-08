@@ -7,6 +7,7 @@ use App\Service\PasswordResetService;
 use App\Service\MailService;
 
 use App\Repository\UserRepository;
+use App\Service\SessionService;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -21,7 +22,8 @@ class AuthController
       private AuthService $authService,
       private PasswordResetService $passwordResetService,
       private MailService $mailService,
-      private UserRepository $userRepository
+      private UserRepository $userRepository,
+      private SessionService $session
    )
    {
    }
@@ -43,8 +45,8 @@ class AuthController
          $this->passwordResetService->cleanupResetTokens();
 
          /* Redirect the user after a successful login */
-         $redirect = $_SESSION['redirect_after_login'] ?? RouteContext::fromRequest($request)->getRouteParser()->urlFor('home');
-         unset($_SESSION['redirect_after_login']);
+         $redirect = $this->session->get('redirect_after_login') ?? RouteContext::fromRequest($request)->getRouteParser()->urlFor('home');
+         $this->session->remove('redirect_after_login');
          return $response
             ->withHeader('Location', $redirect)
             ->withStatus(302);
@@ -127,9 +129,9 @@ class AuthController
       if( $user !== null )
       {
          // valid token, mark ongoing reset flow in the session
-         $_SESSION['password_reset_user'] = $user->id;
+         $this->session->set('password_reset_user', $user->id);
       }
-      else if( isset($_SESSION['password_reset_user']) )
+      else if( $this->session->has('password_reset_user') )
       {
          // user is already in the middle of a password reset flow, just continue
          // he/she probably clicked the reset link again
@@ -146,7 +148,7 @@ class AuthController
 
    public function resetPassword(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
    {
-      if( !isset($_SESSION['password_reset_user']) )
+      if( !$this->session->has('password_reset_user') )
       {
          return $this->twig->render($response, 'auth/login.twig', [
             'error' => 'Ungültige Session!'
@@ -167,10 +169,10 @@ class AuthController
       }
 
       // all fine, store the new password
-      if ($this->passwordResetService->storePassword($_SESSION['password_reset_user'], $password))
+      if ($this->passwordResetService->storePassword($this->session->get('password_reset_user'), $password))
       {
          // unset the session variable
-         unset($_SESSION['password_reset_user']);
+         $this->session->remove('password_reset_user');
          // show confirmation window
          return $this->twig->render($response, 'auth/password_reset_success.twig');
       }

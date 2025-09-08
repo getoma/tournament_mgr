@@ -3,6 +3,7 @@
 namespace App\Middleware;
 
 use App\Service\AuthService;
+use App\Service\SessionService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -16,7 +17,8 @@ use Slim\Exception\HttpNotFoundException;
  */
 class AuthMiddleware implements MiddlewareInterface
 {
-   public function __construct(private AuthService $authService, private string $loginRoute, private array $freeRoutes = [])
+   public function __construct(private AuthService $authService, private SessionService $session,
+                               private string $loginRoute, private array $freeRoutes = [])
    {
    }
 
@@ -35,7 +37,7 @@ class AuthMiddleware implements MiddlewareInterface
       if (!$this->authService->isAuthenticated() && ($route->getName() != $this->loginRoute) && !in_array($route->getName(), $this->freeRoutes))
       {
          // Save the requested path to redirect after login
-         $_SESSION['redirect_after_login'] = $request->getUri()->getPath();
+         $this->session->set('redirect_after_login', $request->getUri()->getPath());
 
          // Redirect to login
          $routeParser = $routeContext->getRouteParser();

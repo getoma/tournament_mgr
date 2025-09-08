@@ -3,7 +3,7 @@
 namespace App\Repository;
 
 use App\Model\User\User;
-
+use App\Service\SessionService;
 use PDO;
 
 class UserRepository
@@ -11,7 +11,7 @@ class UserRepository
    /* buffer of session user lookups to avoid multiple DB queries in one request */
    private $sessionUsers = [];
 
-   public function __construct(private \PDO $pdo)
+   public function __construct(private \PDO $pdo, private SessionService $session)
    {
    }
 
@@ -108,12 +108,12 @@ class UserRepository
    {
       if ($sessionId === null)
       {
-         $sessionId = session_id();
+         $sessionId = $this->session->id();
       }
-      $stmt = $this->pdo->prepare("UPDATE sessions SET user_id = :user_id WHERE id = :session_id");
+      $stmt = $this->pdo->prepare("UPDATE sessions SET user_id = :user_id WHERE id = :sid");
       return $stmt->execute([
          'user_id' => $userId,
-         'session_id' => $sessionId
+         'sid' => $sessionId
       ]);
    }
 
@@ -121,14 +121,14 @@ class UserRepository
    {
       if ($sessionId === null)
       {
-         $sessionId = session_id();
+         $sessionId = $this->session->id();
       }
       if (isset($this->sessionUsers[$sessionId]))
       {
          return $this->sessionUsers[$sessionId];
       }
-      $stmt = $this->pdo->prepare("SELECT u.* FROM users u JOIN sessions s ON u.id = s.user_id WHERE s.id = :session_id");
-      $stmt->execute(['session_id' => $sessionId]);
+      $stmt = $this->pdo->prepare("SELECT u.* FROM users u JOIN sessions s ON u.id = s.user_id WHERE s.id = :sid");
+      $stmt->execute(['sid' => $sessionId]);
       $data = $stmt->fetch();
       $user = $data ? new User(...$data) : null;
       $this->sessionUsers[$sessionId] = $user;
@@ -137,11 +137,11 @@ class UserRepository
 
    public function destroySessionsForUser(int $userId, bool $keepCurrent = false): bool
    {
-      $stmt = $this->pdo->prepare("DELETE FROM sessions WHERE user_id = :user_id" . ($keepCurrent ? " AND id != :current_session_id" : ""));
+      $stmt = $this->pdo->prepare("DELETE FROM sessions WHERE user_id = :user_id" . ($keepCurrent ? " AND id != :current_sid" : ""));
       $params = ['user_id' => $userId];
       if ($keepCurrent)
       {
-         $params['current_session_id'] = session_id();
+         $params['current_sid'] = $this->session->id();
       }
       return $stmt->execute($params);
    }

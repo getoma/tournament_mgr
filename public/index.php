@@ -8,20 +8,6 @@ use Slim\Factory\AppFactory;
 use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
 
-// initialize PDO, SessionHandler, and start the session
-$pdo = new PDO(
-   sprintf('mysql:dbname=%s;host=%s;charset=utf8', config::$DB_CONNECTION['db'], config::$DB_CONNECTION['server']),
-   config::$DB_CONNECTION['user'],
-   config::$DB_CONNECTION['pw'],
-   [
-      PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-      PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-      PDO::ATTR_EMULATE_PREPARES => false,
-   ]
-);
-session_set_save_handler(new App\Service\SessionHandler($pdo));
-session_start();
-
 // create the app
 $container = new Container();
 AppFactory::setContainer($container);
@@ -34,8 +20,17 @@ if( !empty(config::$BASE_PATH) )
 }
 
 // configure database connection
-$container->set(PDO::class, function () use ($pdo) {
-   return $pdo;
+$container->set(PDO::class, function () {
+   return new PDO(
+      sprintf('mysql:dbname=%s;host=%s;charset=utf8', config::$DB_CONNECTION['db'], config::$DB_CONNECTION['server']),
+      config::$DB_CONNECTION['user'],
+      config::$DB_CONNECTION['pw'],
+      [
+         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+         PDO::ATTR_EMULATE_PREPARES => false,
+      ]
+   );
 });
 
 // configure Twig
@@ -64,6 +59,16 @@ $container->set(App\Service\MailService::class, function () {
    );
 });
 
+// configure SessionHandler
+$container->set(SessionHandlerInterface::class, function () use ($container) {
+   return new App\Service\PdoSessionHandler($container->get(PDO::class));
+});
+
+// configure SessionService
+$container->set(App\Service\SessionService::class, function () use ($container) {
+   return new App\Service\SessionService($container->get(SessionHandlerInterface::class));
+});
+
 // twig middleware to support various extensions in templates
 $app->add(TwigMiddleware::create($app, $container->get(Twig::class)));
 
@@ -74,7 +79,8 @@ $authService = $container->get(App\Service\AuthService::class);
 $app->add(new App\Middleware\CurrentUserMiddleware($authService, $container->get(Twig::class)));
 
 // Add AuthMiddleware
-$app->add(new App\Middleware\AuthMiddleware($authService, 'login', ['home', 'login', 'login_post', 'pw_forgot', 'pw_forgot_post', 'pw_reset', 'pw_reset_post']));
+$app->add(new App\Middleware\AuthMiddleware($authService, $container->get(App\Service\SessionService::class), 'login',
+                                            ['home', 'login', 'login_post', 'pw_forgot', 'pw_forgot_post', 'pw_reset', 'pw_reset_post']));
 
 $app->addRoutingMiddleware();
 
