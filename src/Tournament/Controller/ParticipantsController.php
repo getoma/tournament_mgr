@@ -34,7 +34,8 @@ class ParticipantsController
       $tournament = $this->tournamentRepo->getTournamentById($args['id']);
       if (!$tournament)
       {
-         return $response->withStatus(404)->write('Tournament not found');
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
       }
 
       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
@@ -74,7 +75,8 @@ class ParticipantsController
       $tournament = $this->tournamentRepo->getTournamentById($args['id']);
       if (!$tournament)
       {
-         return $response->withStatus(404)->write('Tournament not found');
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
       }
 
       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
@@ -117,7 +119,8 @@ class ParticipantsController
       $tournament = $this->tournamentRepo->getTournamentById($args['id']);
       if (!$tournament)
       {
-         return $response->withStatus(404)->write('Tournament not found');
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
       }
 
       $data = $request->getParsedBody();
@@ -185,7 +188,8 @@ class ParticipantsController
          return $this->sendToParticipantList($request, $response, $args);
       }
 
-      return $response->withStatus(500)->write('Failed to import participants');
+      $response->getBody()->write('Failed to import participants');
+      return $response->withStatus(500);
    }
 
    /**
@@ -196,13 +200,15 @@ class ParticipantsController
       $tournament = $this->tournamentRepo->getTournamentById($args['id']);
       if (!$tournament)
       {
-         return $response->withStatus(404)->write('Tournament not found');
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
       }
 
       $participantId = $args['participantId'] ?? null;
       if (!$participantId || !$this->repo->getParticipantById($participantId))
       {
-         return $response->withStatus(404)->write('Participant not found');
+         $response->getBody()->write('Participant not found');
+         return $response->withStatus(404);
       }
 
       $deleted = $this->repo->deleteParticipant($participantId);
@@ -211,7 +217,8 @@ class ParticipantsController
          return $this->sendToParticipantList($request, $response, $args);
       }
 
-      return $response->withStatus(400)->write('Failed to delete participant');
+      $response->getBody()->write('Failed to delete participant');
+      return $response->withStatus(400);
    }
 
    /**
@@ -223,13 +230,15 @@ class ParticipantsController
       $tournament = $this->tournamentRepo->getTournamentById($args['id']);
       if (!$tournament)
       {
-         return $response->withStatus(404)->write('Tournament not found');
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
       }
 
       $participant = $this->repo->getParticipantById($args['participantId']);
       if (!$participant)
       {
-         return $response->withStatus(404)->write('Participant not found');
+         $response->getBody()->write('Participant not found');
+         return $response->withStatus(404);
       }
 
       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
@@ -250,13 +259,15 @@ class ParticipantsController
       $tournament = $this->tournamentRepo->getTournamentById($args['id']);
       if (!$tournament)
       {
-         return $response->withStatus(404)->write('Tournament not found');
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
       }
 
       $participant = $this->repo->getParticipantById($args['participantId']);
       if (!$participant)
       {
-         return $response->withStatus(404)->write('Participant not found');
+         $response->getBody()->write('Participant not found');
+         return $response->withStatus(404);
       }
 
       $data = $request->getParsedBody();
@@ -282,6 +293,7 @@ class ParticipantsController
          return $this->sendToParticipantList($request, $response, $args);
       }
 
-      return $response->withStatus(400)->write('Failed to update participant');
+      $response->getBody()->write('Failed to update participant');
+      return $response->withStatus(400);
    }
 }

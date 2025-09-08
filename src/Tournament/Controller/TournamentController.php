@@ -66,7 +66,8 @@ class TournamentController
       $tournament = $this->repo->getTournamentById($args['id']);
       if (!$tournament)
       {
-         return $response->withStatus(404)->write('Tournament not found');
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
       }
       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
       $areas = $this->areaRepo->getAreasByTournamentId($args['id']);
@@ -118,7 +119,8 @@ class TournamentController
       $tournament = $this->repo->getTournamentById($args['id']);
       if (!$tournament)
       {
-         return $response->withStatus(404)->write('Tournament not found');
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
       }
       $tournament->name = $data['name'];
       $tournament->date = $data['date'];

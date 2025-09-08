@@ -55,7 +55,8 @@ class CategoryController
       }
       catch (\Exception $e)
       {
-         return $response->withStatus(404)->write($e->getMessage());
+         $response->getBody()->write($e->getMessage());
+         return $response->withStatus(404);
       }
 
       // Load the tournament structure for this category
@@ -90,7 +91,8 @@ class CategoryController
       }
       catch (\Exception $e)
       {
-         return $response->withStatus(404)->write($e->getMessage());
+         $response->getBody()->write($e->getMessage());
+         return $response->withStatus(404);
       }
 
       // Load the tournament structure for this category and fetch the specific chunk
@@ -101,7 +103,8 @@ class CategoryController
 
       if (!isset($chunk))
       {
-         return $response->withStatus(404)->write('area not found');
+         $response->getBody()->write('area not found');
+         return $response->withStatus(404);
       }
 
       return $this->view->render($response, 'category/area_ko.twig', [
@@ -123,7 +126,8 @@ class CategoryController
       }
       catch (\Exception $e)
       {
-         return $response->withStatus(404)->write($e->getMessage());
+         $response->getBody()->write($e->getMessage());
+         return $response->withStatus(404);
       }
 
       $areas = $this->areaRepo->getAreasByTournamentId($args['id']);
@@ -131,7 +135,8 @@ class CategoryController
 
       if (!isset($area))
       {
-         return $response->withStatus(404)->write('area not found');
+         $response->getBody()->write('area not found');
+         return $response->withStatus(404);
       }
 
       // Load the tournament structure for this category
@@ -165,7 +170,8 @@ class CategoryController
       }
       catch (\Exception $e)
       {
-         return $response->withStatus(404)->write($e->getMessage());
+         $response->getBody()->write($e->getMessage());
+         return $response->withStatus(404);
       }
 
       $data = ($request->getMethod() === 'POST') ? $request->getParsedBody() : $request->getQueryParams();

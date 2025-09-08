@@ -36,7 +36,8 @@ class NavigationController
       $tournament = $this->repo->getTournamentById($args['id']);
       if (!$tournament)
       {
-         return $response->withStatus(404)->write('Tournament not found');
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
       }
 
       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
@@ -55,7 +56,8 @@ class NavigationController
        $tournament = $this->repo->getTournamentById($args['id']);
        if (!$tournament)
        {
-          return $response->withStatus(404)->write('Tournament not found');
+          $response->getBody()->write('Tournament not found');
+          return $response->withStatus(404);
        }
 
        $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
