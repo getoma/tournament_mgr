@@ -56,4 +56,10 @@ return function (DI\Container $container)
    {
       return new Base\Service\SessionService($container->get(SessionHandlerInterface::class));
    });
+
+   // override UserRepository with Tournament specific one
+   $container->set(Base\Repository\UserRepository::class, function () use ($container)
+   {
+      return $container->get(Tournament\Repository\UserRepository::class);
+   });
 };

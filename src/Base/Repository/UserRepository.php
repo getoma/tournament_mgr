@@ -11,59 +11,42 @@ class UserRepository
    /* buffer of session user lookups to avoid multiple DB queries in one request */
    private $sessionUsers = [];
 
-   public function __construct(private \PDO $pdo, private SessionService $session)
+   public function __construct(protected \PDO $pdo, private SessionService $session)
    {
    }
 
-   public function findById(int $id): ?User
+   /**
+    * centralized generation of User
+    * Enables injection of a specialized User class in derived classes.
+    */
+   protected function createUser(array $data): User
    {
-       $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = :id");
-       $stmt->execute(['id' => $id]);
-       $data = $stmt->fetch();
-       return $data ? new User(...$data) : null;
+      return new User(...$data);
    }
 
    public function findByEmail(string $email): ?User
    {
-       $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = :email");
-       $stmt->execute(['email' => $email]);
-       $data = $stmt->fetch();
-       return $data ? new User(...$data) : null;
+      $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = :email");
+      $stmt->execute(['email' => $email]);
+      $data = $stmt->fetch();
+      return $data ? $this->createUser($data) : null;
    }
 
-   public function updateUser(int $id, string $displayName, bool $admin): bool
+   public function findByUsername(string $username): ?User
    {
-       $stmt = $this->pdo->prepare("UPDATE users SET display_name = :displayName, admin = :admin WHERE id = :id");
-       return $stmt->execute([
-           'displayName' => $displayName,
-           'admin' => $admin,
-           'id' => $id
-       ]);
+      $stmt = $this->pdo->prepare("SELECT * FROM users WHERE username = :username");
+      $stmt->execute(['username' => $username]);
+      $data = $stmt->fetch();
+      return $data ? $this->createUser($data) : null;
    }
 
    public function updateUserPassword(int $id, string $hashedPassword): bool
    {
-       $stmt = $this->pdo->prepare("UPDATE users SET password_hash = :passwordHash WHERE id = :id");
-       return $stmt->execute([
-           'passwordHash' => $hashedPassword,
-           'id' => $id
-       ]);
-   }
-
-   public function deleteUser(int $id): bool
-   {
-       $stmt = $this->pdo->prepare("DELETE FROM users WHERE id = :id");
-       return $stmt->execute(['id' => $id]);
-   }
-
-   public function getAllUsers(): array
-   {
-       $users = [];
-       $stmt = $this->pdo->query("SELECT * FROM users");
-       foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
-           $users[] = new User(...$row);
-       }
-       return $users;
+      $stmt = $this->pdo->prepare("UPDATE users SET password_hash = :passwordHash WHERE id = :id");
+      return $stmt->execute([
+         'passwordHash' => $hashedPassword,
+         'id' => $id
+      ]);
    }
 
    public function storePasswordResetToken(int $userId, string $tokenHash, int $expiry_minutes): bool
@@ -130,7 +113,7 @@ class UserRepository
       $stmt = $this->pdo->prepare("SELECT u.* FROM users u JOIN sessions s ON u.id = s.user_id WHERE s.id = :sid");
       $stmt->execute(['sid' => $sessionId]);
       $data = $stmt->fetch();
-      $user = $data ? new User(...$data) : null;
+      $user = $data ? $this->createUser($data) : null;
       $this->sessionUsers[$sessionId] = $user;
       return $user;
    }
@@ -145,5 +128,4 @@ class UserRepository
       }
       return $stmt->execute($params);
    }
-
 }

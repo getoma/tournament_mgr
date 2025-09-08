@@ -4,8 +4,9 @@ namespace Tournament\Controller;
 
 use Base\Service\MailService;
 use Base\Service\PasswordHasher;
-use Base\Repository\UserRepository;
-use Base\Model\User;
+
+use Tournament\Repository\UserRepository;
+use Tournament\Model\User\User;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
