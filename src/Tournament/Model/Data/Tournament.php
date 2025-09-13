@@ -16,13 +16,17 @@ class Tournament
       CONSTRAINT UC_TOURNAMENT UNIQUE (name, date)
    ); */
 
+   public TournamentStatus $status;
+
    public function __construct(
-      public ?int $id = null,             // Unique identifier for the tournament
-      public string $name,                // Name of the tournament
-      public string $date,                // Date of the tournament
-      public string $status = 'planning', // Status of the tournament (e.g., scheduled, ongoing, completed)
-      public ?string $notes = null        // Additional notes about the tournament
-   ) {
+      public ?int $id = null,      // Unique identifier for the tournament
+      public string $name,         // Name of the tournament
+      public string $date,         // Date of the tournament
+      string $status = 'planning', // Status of the tournament (e.g., scheduled, ongoing, completed)
+      public ?string $notes = null // Additional notes about the tournament
+   )
+   {
+      $this->status = TournamentStatus::load($status);
    }
 
    /* get the validation rules for the tournament */

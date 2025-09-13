@@ -8,6 +8,8 @@ use PDO;
 
 class TournamentRepository
 {
+   private $buffer = []; // buffer loaded tournaments by id for consecutive calls
+
    public function __construct(private PDO $pdo)
    {
    }
@@ -18,21 +20,26 @@ class TournamentRepository
       $stmt = $this->pdo->query("SELECT * FROM tournaments order by date asc, name asc");
       foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
       {
-         $tournaments[] = new Tournament(...$row);
+         $t = new Tournament(...$row);
+         if( $this->buffer[$t->id] ?? false ) continue;
+         $this->buffer[$t->id] = $t;
       }
-      return $tournaments;
+      return array_values($this->buffer);
    }
 
    public function getTournamentById($id): ?Tournament
    {
-      $stmt = $this->pdo->prepare("SELECT * FROM tournaments WHERE id = :id");
-      $stmt->execute(['id' => $id]);
-      $data = $stmt->fetch(PDO::FETCH_ASSOC);
-      if( $data )
+      if( !isset($this->buffer[$id]) )
       {
-         return new Tournament(...$data);
+         $stmt = $this->pdo->prepare("SELECT * FROM tournaments WHERE id = :id");
+         $stmt->execute(['id' => $id]);
+         $data = $stmt->fetch(PDO::FETCH_ASSOC);
+         if( $data )
+         {
+            $this->buffer[$id] = new Tournament(...$data);
+         }
       }
-      return null;
+      return $this->buffer[$id] ?? null;
    }
 
    public function getTournamentByName($name): ?Tournament
@@ -57,18 +64,24 @@ class TournamentRepository
    public function deleteTournament(int $id): bool
    {
       $stmt = $this->pdo->prepare("DELETE FROM tournaments WHERE id = :id");
+      unset($this->buffer[$id]);
       return $stmt->execute(['id' => $id]);
    }
 
-   public function updateTournament(Tournament $t)
+   public function updateTournament(Tournament $t): bool
    {
       $stmt = $this->pdo->prepare("UPDATE tournaments SET name = :name, date = :date, status = :status, notes = :notes WHERE id = :id");
-      $stmt->execute([
+      $result = $stmt->execute([
          'name' => $t->name,
          'date' => $t->date,
          'status' => $t->status,
          'notes' => $t->notes,
          'id' => $t->id
       ]);
+      if ($result)
+      {
+         $this->buffer[$t->id] = $t;
+      }
+      return $result;
    }
 }
