@@ -1,22 +1,22 @@
 
-{% macro printSlot(slot, baseurl) %}
+{% macro printSlot(slot, route_param) %}
 {%-if slot.getParticipant()%}{{slot.getParticipant().lastname}}, {{slot.getParticipant().firstname}}
 {%-else%}{{slot.str()}}
 {%-endif%}
 {% endmacro %}
 
-{% macro printMatch(node, baseurl) %}
-<span class="fight_participant red">{{_self.printSlot(node.slotRed, baseurl)}}</span> vs. <span class="fight_participant white">{{_self.printSlot(node.slotWhite, baseurl)}}</span>
+{% macro printMatch(node, route_param) %}
+<span class="fight_participant red">{{_self.printSlot(node.slotRed, route_param)}}</span> vs. <span class="fight_participant white">{{_self.printSlot(node.slotWhite, baseurl)}}</span>
 {% endmacro %}
 
-{% macro printChunkWinner(chunk, baseurl) %}
+{% macro printChunkWinner(chunk, route_param) %}
 {%-if chunk.root.getRanked()%}{{chunk.root.getRanked().lastname}}, {{chunk.root.getRanked().firstname}}
 {%-elseif chunk.root.isBye()%}--
 {%-else%}Gewinner {{chunk.root.name}}
 {%-endif%}
 {% endmacro %}
 
-{% macro printPools(pools, baseurl) %}
+{% macro printPools(pools, route_param) %}
 <ul class="pool_list">
   {% for pool in pools %}
   <li>
@@ -29,7 +29,7 @@
     <p class="fight_list">Kämpfe:</p>
     <ul class="fight_list">
       {% for match in pool.getMatchList() %}
-      <li>{{ _self.printMatch(match, baseurl) }}</li>
+      <li>{{ _self.printMatch(match, route_param) }}</li>
       {% endfor %}
     </ul>
   </li>
@@ -37,14 +37,14 @@
 </ul>
 {% endmacro %}
 
-{% macro printKo(ko, chunks, baseurl) %}
+{% macro printKo(ko, chunks, route_param) %}
 <ul class="fight_tree">
   {%- if chunks is defined %}
   <li><span class="round_caption">Kampfflächen</span>
     <ul class="fight_round">
       {% for name, chunk in chunks %}
-      <li><span class="fight_name"><a href="{{baseurl}}/area/ko/{{name}}">Gewinner {{chunk.name}}</a></span>
-          <span>{{_self.printChunkWinner(chunk, baseurl)}}</span>
+      <li><span class="fight_name"><a href="{{ url_for('show_ko_area', route_param|merge({'chunk': name})) }}">Gewinner {{chunk.name}}</a></span>
+          <span>{{_self.printChunkWinner(chunk, route_param)}}</span>
       </li>
       {% endfor %}
     </ul>
@@ -55,7 +55,7 @@
     <ul class="fight_round">
       {% for node in round %}
       <li><span class="fight_name">Kampf {{node.name}}{% if node.area is defined %} ({{node.area.name}}){%endif%}</span>
-        {{ _self.printMatch(node, baseurl) }}
+        {{ _self.printMatch(node, route_param) }}
       </li>
       {% endfor %}
     </ul>

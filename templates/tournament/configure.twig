@@ -5,7 +5,7 @@
 
 <section>
 <h2>Details</h2>
-<form action="{{base_path}}/tournament/{{tournament.id}}/configure" method="post">
+<form action="{{url_for('update_tournament_config', {'tournamentId': tournament.id})}}" method="post">
   {{ form.input('text', 'name', 'Name', prev.tournament.name ?? tournament.name, errors.tournament['name'],
   {'maxlength':100}, required=true) }}
   {{ form.input('date', 'date', 'Datum', prev.tournament.date ?? tournament.date, errors.tournament['date'],
@@ -33,10 +33,10 @@
         errors.areas[area.id]['name'],
         {'maxlength':100, 'form': 'area_update_' ~ area.id}, required=true) }}</td>
       <td>
-        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/area/{{ area.id }}/update" id="area_update_{{ area.id }}">
+        <form method="POST" action="{{url_for('update_area', {'tournamentId': tournament.id, 'areaId': area.id})}}" id="area_update_{{ area.id }}">
           {{ form.submit('Speichern') }}
         </form>
-        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/area/{{ area.id }}/delete">
+        <form method="POST" action="{{url_for('delete_area', {'tournamentId': tournament.id, 'areaId': area.id})}}">
           {{ form.submit('Löschen') }}
         </form>
       </td>
@@ -46,7 +46,7 @@
       <td>{{ form.input_plain('text', 'name', prev.areas.new.name??'', errors.areas.new['name'],
         {'placeholder': 'Neue Kampffläche', 'maxlength':100, 'form':'area_new'}, required=true) }}</td>
       <td>
-        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/area/create" id="area_new">
+        <form method="POST" action="{{url_for('create_area', {'tournamentId': tournament.id})}}" id="area_new">
           {{ form.submit('Hinzufügen') }}
         </form>
       </td>
@@ -79,14 +79,14 @@
            errors.categories[category.id]['mode'], {'form': 'category_update_' ~ category.id}, required=true) }}
       </td>
       <td>
-        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/category/{{ category.id }}/update" id="category_update_{{ category.id }}">
+        <form method="POST" action="{{url_for('update_category', {'tournamentId': tournament.id, 'categoryId': category.id})}}" id="category_update_{{ category.id }}">
           {{ form.submit('Speichern') }}
         </form>
-        <form method="GET" action="{{base_path}}/tournament/{{ tournament.id }}/category/{{ category.id }}/configure">
-          <input type="hidden" name="return_to" value="/tournament/{{ tournament.id }}/configure">
+        <form method="GET" action="{{url_for('show_category_cfg', {'tournamentId': tournament.id, 'categoryId': category.id})}}">
+          <input type="hidden" name="return_to" value="{{url_for('show_tournament_config', {'tournamentId': tournament.id})}}">
           {{ form.submit('Details bearbeiten') }}
         </form>
-        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/category/{{ category.id }}/delete">
+        <form method="POST" action="{{url_for('delete_category', {'tournamentId': tournament.id, 'categoryId': category.id})}}">
           {{ form.submit('Löschen') }}
         </form>
       </td>
@@ -102,7 +102,7 @@
                              {'form':'category_new'}, required=true) }}
       </td>
       <td>
-        <form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/category/create" id="category_new">
+        <form method="POST" action="{{url_for('create_category', {'tournamentId': tournament.id})}}" id="category_new">
           {{ form.submit('Hinzufügen') }}
         </form>
       </td>

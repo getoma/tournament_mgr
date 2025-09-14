@@ -3,7 +3,7 @@
 
 {% block content %}
 <h2>Teilnehmer bearbeiten</h2>
-<form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/participants/{{participant.id}}">
+<form method="POST" action="{{ url_for('update_participant', { 'tournamentId': tournament.id, 'participantId': participant.id}) }}">
    {{ form.input('text', 'lastname', 'Nachname', prev.lastname ?? participant.lastname, errors.lastname, {'maxlength':100}, required=true) }}
    {{ form.input('text', 'firstname', 'Vorname', prev.firstname ?? participant.firstname, errors.firstname, {'maxlength':100}, required=true) }}
    {% for category in categories %}

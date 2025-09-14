@@ -3,8 +3,8 @@
 {% block content %}
 <nav>
    <ul>
-   <li><a href="{{base_path}}/tournament/{{tournament.id}}/participants">Anmeldungen</a></li>
-   <li><a href="{{base_path}}/tournament/{{tournament.id}}/configure">Turnier konfigurieren</a></li>
+   <li><a href="{{url_for('show_participant_list', {'tournamentId': tournament.id})}}">Anmeldungen</a></li>
+   <li><a href="{{url_for('show_tournament_config', {'tournamentId': tournament.id})}}">Turnier konfigurieren</a></li>
    </ul>
 </nav>
 {% endblock %}

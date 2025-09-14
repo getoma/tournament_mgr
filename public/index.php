@@ -12,7 +12,6 @@ $app = Slim\Factory\AppFactory::create();
 if (!empty(config::$BASE_PATH))
 {
    $app->setBasePath(config::$BASE_PATH);
-   $container->set('base_path', config::$BASE_PATH);
 }
 
 // populate DI container

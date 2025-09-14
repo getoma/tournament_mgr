@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>{% block title %}Tournament powered by Slim{% endblock %}</title>
-  <link rel="stylesheet" href="{{base_path}}/css/tree.css">
+  <link rel="stylesheet" href="{{url_for('home')}}css/tree.css">
 </head>
 <body>
   <header>
@@ -24,9 +24,9 @@
   <main>
     <aside>
       <nav class="tournament">
-        {% if return_to is defined %}<a href="{{base_path}}{{return_to}}">&lt;&lt;Zurück</a>{%endif%}
-        {% if tournament is defined %}<a href="{{base_path}}/tournament/{{tournament.id}}">Hauptseite</a>{%endif%}
-        <a href="{{base_path}}/">Turniere Übersicht</a>
+        {% if return_to is defined %}<a href="{{return_to}}">&lt;&lt;Zurück</a>{%endif%}
+        {% if tournament is defined %}<a href="{{ url_for('show_tournament', {'tournamentId': tournament.id}) }}">Turnier-Hauptseite</a>{%endif%}
+        <a href="{{url_for('home')}}">Turniere Übersicht</a>
       </nav>
     </aside>
 

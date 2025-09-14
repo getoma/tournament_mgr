@@ -17,8 +17,8 @@
       {% for participant in participants %}
       <tr>
          <td>
-            <a href="{{base_path}}/tournament/{{tournament.id}}/participants/{{ participant.id }}">Bearbeiten</a>
-            <form method="POST" action="{{base_path}}/tournament/{{tournament.id}}/participants/{{ participant.id }}/delete">
+            <a href="{{ url_for('show_participant', { 'tournamentId': tournament.id, 'participantId': participant.id }) }}">Bearbeiten</a>
+            <form method="POST" action="{{ url_for('delete_participant', { 'tournamentId': tournament.id, 'participantId': participant.id }) }}">
                <input type="submit" value="Löschen" onclick="return confirm('{{ participant.lastname }}, {{ participant.firstname }} wirklich löschen?');">
             </form>
          </td>
@@ -31,12 +31,12 @@
       {% endfor %}
    </tbody>
 </table>
-<form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/participants" id="participant_list_form">
+<form method="POST" action="{{ url_for('update_participant_list', { 'tournamentId': tournament.id }) }}" id="participant_list_form">
    {{ form.submit('Speichern') }}
 </form>
 
 <h2>Teilnehmer hinzufügen</h2>
-<form method="POST" action="{{base_path}}/tournament/{{ tournament.id }}/participants/import" id="participant_add_form">
+<form method="POST" action="{{ url_for('import_participants', { 'tournamentId': tournament.id }) }}" id="participant_add_form">
    {{ form.textarea('participants', 'Teilnehmerliste', prev.participants ?? '',  errors.participants, attributes={'rows':10, 'cols': 30}, required=true) }}
    {% for category in categories %}
    {{ form.checkbox('categories[]', category.name, category.id in prev.categories, '', attributes={'value': category.id}) }}

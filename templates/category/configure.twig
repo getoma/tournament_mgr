@@ -5,7 +5,7 @@
 
 <section>
 <h2>{{category.name}} - Konfiguration</h2>
-<form action="{{base_path}}/tournament/{{tournament.id}}/category/{{category.id}}/configure" method="post">
+<form action="{{url_for('update_category_cfg', {'tournamentId': tournament.id, 'categoryId': category.id})}}" method="post">
   {{ form.select('mode', 'Modus', category_modes, prev.mode ?? category.mode, errors['mode'], required=true) }}
   {{ form.input('number', 'num_rounds', 'Anzahl KO-Runden', prev.num_rounds ?? config.num_rounds,
                 errors['num_rounds'], {'min':2, 'max': 10}) }}

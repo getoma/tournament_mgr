@@ -180,7 +180,7 @@ class CategoryController
       if (!v::stringType()->regex('@/tournament/\d+/[a-zA-Z0-9_-]+$@')->isValid($data['return_to']))
       {
          $return_to = RouteContext::fromRequest($request)->getRouteParser()
-            ->relativeUrlFor('show_category', ['tournamentId' => $args['tournamentId'], 'categoryId' => $args['categoryId']]);
+            ->urlFor('show_category', ['tournamentId' => $args['tournamentId'], 'categoryId' => $args['categoryId']]);
       }
       else
       {

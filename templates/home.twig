@@ -4,9 +4,9 @@
 <ul>
    {% for tournament in tournaments %}
    <li>
-      <a href="{{base_path}}/tournament/{{ tournament.id }}">{{ tournament.name }} - {{ tournament.date }}</a>
+      <a href="{{ url_for('show_tournament', { tournamentId: tournament.id }) }}">{{ tournament.name }} - {{ tournament.date }}</a>
    </li>
    {% endfor %}
-   <li><a href="{{base_path}}/tournament/create">Neues Turnier anlegen</a></li>
+   <li><a href="{{ url_for('new_tournament_form') }}">Neues Turnier anlegen</a></li>
 </ul>
 {% endblock %}

@@ -30,7 +30,6 @@ return function (DI\Container $container)
       {
          $twig->addExtension(new \Twig\Extension\DebugExtension());
       }
-      $twig->getEnvironment()->addGlobal('base_path', $container->get('base_path') ?? '');
 
       return $twig;
    });
