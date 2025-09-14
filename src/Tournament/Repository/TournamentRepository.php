@@ -3,6 +3,7 @@
 namespace Tournament\Repository;
 
 use Tournament\Model\Data\Tournament;
+use Tournament\Model\Data\TournamentStatus;
 
 use PDO;
 
@@ -70,17 +71,30 @@ class TournamentRepository
 
    public function updateTournament(Tournament $t): bool
    {
-      $stmt = $this->pdo->prepare("UPDATE tournaments SET name = :name, date = :date, status = :status, notes = :notes WHERE id = :id");
+      $stmt = $this->pdo->prepare("UPDATE tournaments SET name = :name, date = :date, notes = :notes WHERE id = :id");
       $result = $stmt->execute([
          'name' => $t->name,
          'date' => $t->date,
-         'status' => $t->status,
          'notes' => $t->notes,
          'id' => $t->id
       ]);
       if ($result)
       {
          $this->buffer[$t->id] = $t;
+      }
+      return $result;
+   }
+
+   public function updateState(int $id, TournamentStatus $newStatus): bool
+   {
+      $stmt = $this->pdo->prepare("UPDATE tournaments SET status = :status WHERE id = :id");
+      $result = $stmt->execute([
+         'status' => $newStatus->value,
+         'id' => $id
+      ]);
+      if ($result && isset($this->buffer[$id]))
+      {
+         $this->buffer[$id]->status = $newStatus;
       }
       return $result;
    }

@@ -72,4 +72,20 @@ class TournamentStatusGuardMiddleware implements MiddlewareInterface
          return $mw->process($request->withAttribute('requiredAction', $action), $handler);
       };
    }
+
+   /**
+    * factory method to create the middleware with dependencies from the container
+    */
+   static public function create(
+      \Slim\App $app,
+      ?TournamentRepository $repo = null,
+      ?TournamentPolicy $policy = null
+   ): self
+   {
+      $container = $app->getContainer();
+      if( !isset($repo) )   $repo = $container->get(TournamentRepository::class);
+      if( !isset($policy) ) $policy = $container->get(TournamentPolicy::class);
+
+      return new self($repo, $policy);
+   }
 }

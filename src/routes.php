@@ -1,6 +1,5 @@
 <?php
 
-use Slim\Routing\RouteCollectorProxy;
 use Tournament\Controller\ParticipantsController;
 use Tournament\Controller\TournamentController;
 use Tournament\Controller\NavigationController;
@@ -10,23 +9,24 @@ use Tournament\Controller\UserController;
 
 use Tournament\Policy\TournamentAction;
 
-use Slim\Views\Twig;
-use Slim\Views\TwigMiddleware;
-use Tournament\Model\Data\Tournament;
+use Slim\Routing\RouteCollectorProxy;
 
 return function (\Slim\App $app)
 {
    $container = $app->getContainer();
 
    /**********************
-    * Global MiddleWare Setup
+    * Global MiddleWare Injection
     */
 
    // twig middleware to support various extensions in templates
-   $app->add(TwigMiddleware::create($app, $container->get(Twig::class)));
+   $app->add(Slim\Views\TwigMiddleware::create($app, $container->get(Slim\Views\Twig::class)));
 
    // Add CurrentUserMiddleware
    $app->add(new Base\Middleware\CurrentUserMiddleware($container->get(Base\Service\AuthService::class), $container->get(Slim\Views\Twig::class)));
+
+   // Add TournamentPolicyMiddleware
+   $app->add(\Tournament\Middleware\TournamentPolicyMiddleware::create($app));
 
    $app->addRoutingMiddleware();
 
@@ -36,6 +36,7 @@ return function (\Slim\App $app)
    /**********************
     * Local MiddleWare Initialization
     */
+
    // Add AuthMiddleware - enforce login
    $authMW = new Base\Middleware\AuthMiddleware(
       $container->get(Base\Service\AuthService::class),
@@ -43,10 +44,8 @@ return function (\Slim\App $app)
       'login'
    );
 
-   $statusGuardMW = new \Tournament\Middleware\TournamentStatusGuardMiddleware(
-      $container->get(\Tournament\Repository\TournamentRepository::class),
-      $container->get(\Tournament\Policy\TournamentPolicy::class)
-   );
+   // Add TournamentStatusGuardMiddleware - enforce tournament status based permissions
+   $statusGuardMW = \Tournament\Middleware\TournamentStatusGuardMiddleware::create($app);
 
    /**********************
     * Route setup
