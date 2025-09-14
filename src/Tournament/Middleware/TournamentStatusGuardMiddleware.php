@@ -34,7 +34,7 @@ class TournamentStatusGuardMiddleware implements MiddlewareInterface
          throw new \InvalidArgumentException("Route could not be determined from request. Is the RoutingMiddleware registered?");
       }
 
-      $tournamentId = (int)($route->getArgument('id') ?? 0);
+      $tournamentId = (int)($route->getArgument('tournamentId') ?? 0);
       if ($tournamentId <= 0)
       {
          throw new \InvalidArgumentException("Route is missing tournament ID argument or it is not valid.");
@@ -53,7 +53,7 @@ class TournamentStatusGuardMiddleware implements MiddlewareInterface
          return $handler->handle($request); // let later middleware handle the not found case
       }
 
-      if (!$this->policy->isActionAllowed($tournament->status, $requiredAction))
+      if (!$this->policy->isActionAllowed($tournamentId, $requiredAction))
       {
          throw new HttpForbiddenException($request, "Aktion {$requiredAction->name} ist im Status {$tournament->status->value} nicht erlaubt.");
       }

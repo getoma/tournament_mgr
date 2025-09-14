@@ -76,7 +76,7 @@ return function (\Slim\App $app)
       /**
        * Tournament routes
        */
-      $auth_grp->group('/tournament/{id:\d+}', function (RouteCollectorProxy $tgrp) use ($statusGuardMW)
+      $auth_grp->group('/tournament/{tournamentId:\d+}', function (RouteCollectorProxy $tgrp) use ($statusGuardMW)
       {
          /* tournament overview */
          $tgrp->get('[/]',      [NavigationController::class, 'showTournament'])->setName('show_tournament');

@@ -36,7 +36,7 @@ class CategoryController
     */
    private function readRoute(array $args): ?array
    {
-      $tournament = $this->tournamentRepo->getTournamentById($args['id']);
+      $tournament = $this->tournamentRepo->getTournamentById($args['tournamentId']);
       if (!$tournament) throw new \Exception('Tournament not found');
       $category = $this->repo->getCategoryById($args['categoryId']);
       if (!$category) throw new \Exception('Category not found');
@@ -61,7 +61,7 @@ class CategoryController
 
       // Load the tournament structure for this category
       $participants = $this->participantRepo->getParticipantsWithSlotByCategoryId($category->id);
-      $areas = $this->areaRepo->getAreasByTournamentId($args['id']);
+      $areas = $this->areaRepo->getAreasByTournamentId($args['tournamentId']);
       $structure = new TournamentStructure($category, $areas, $participants);
 
       /* filter pool/ko display if we have a very large structure */
@@ -97,7 +97,7 @@ class CategoryController
 
       // Load the tournament structure for this category and fetch the specific chunk
       $participants = $this->participantRepo->getParticipantsWithSlotByCategoryId($category->id);
-      $areas = $this->areaRepo->getAreasByTournamentId($args['id']);
+      $areas = $this->areaRepo->getAreasByTournamentId($args['tournamentId']);
       $structure = new TournamentStructure($category, $areas, $participants);
       $chunk = $structure->chunks[$args['chunk']];
 
@@ -130,7 +130,7 @@ class CategoryController
          return $response->withStatus(404);
       }
 
-      $areas = $this->areaRepo->getAreasByTournamentId($args['id']);
+      $areas = $this->areaRepo->getAreasByTournamentId($args['tournamentId']);
       $area = $areas[$args['areaid']] ?? null;
 
       if (!isset($area))
@@ -180,7 +180,7 @@ class CategoryController
       if (!v::stringType()->regex('@/tournament/\d+/[a-zA-Z0-9_-]+$@')->isValid($data['return_to']))
       {
          $return_to = RouteContext::fromRequest($request)->getRouteParser()
-            ->relativeUrlFor('show_category', ['id' => $args['id'], 'categoryId' => $args['categoryId']]);
+            ->relativeUrlFor('show_category', ['tournamentId' => $args['tournamentId'], 'categoryId' => $args['categoryId']]);
       }
       else
       {
@@ -229,8 +229,8 @@ class CategoryController
       ]);
 
       /* reshuffle the participants into the new configuration */
-      $category = new Category(id: $args['categoryId'], tournament_id: $args['id'], name: '', mode: $data['mode'], config: $config);
-      $areas = $this->areaRepo->getAreasByTournamentId($args['id']);
+      $category = new Category(id: $args['categoryId'], tournament_id: $args['tournamentId'], name: '', mode: $data['mode'], config: $config);
+      $areas = $this->areaRepo->getAreasByTournamentId($args['tournamentId']);
       $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
 
       $structure = new TournamentStructure($category, $areas);

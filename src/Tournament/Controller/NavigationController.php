@@ -33,14 +33,14 @@ class NavigationController
     */
    public function showTournament(Request $request, Response $response, array $args): Response
    {
-      $tournament = $this->repo->getTournamentById($args['id']);
+      $tournament = $this->repo->getTournamentById($args['tournamentId']);
       if (!$tournament)
       {
          $response->getBody()->write('Tournament not found');
          return $response->withStatus(404);
       }
 
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
 
       return $this->view->render($response, 'tournament/home.twig', [
          'tournament' => $tournament,
@@ -53,14 +53,14 @@ class NavigationController
     */
     public function showControlPanel(Request $request, Response $response, array $args): Response
     {
-       $tournament = $this->repo->getTournamentById($args['id']);
+       $tournament = $this->repo->getTournamentById($args['tournamentId']);
        if (!$tournament)
        {
           $response->getBody()->write('Tournament not found');
           return $response->withStatus(404);
        }
 
-       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
+       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
 
        return $this->view->render($response, 'tournament/controlpanel.twig', [
           'tournament' => $tournament,

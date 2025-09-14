@@ -55,7 +55,7 @@ class TournamentController
       $tournament_id = $this->repo->createTournament(...$data);
 
       return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-         ->urlFor('show_tournament_config', ['id' => $tournament_id]))->withStatus(302);
+         ->urlFor('show_tournament_config', ['tournamentId' => $tournament_id]))->withStatus(302);
    }
 
    /**
@@ -63,14 +63,14 @@ class TournamentController
     */
    private function renderTournamentConfiguration(Response $response, array $args, array $errors = [], array $prev = []): Response
    {
-      $tournament = $this->repo->getTournamentById($args['id']);
+      $tournament = $this->repo->getTournamentById($args['tournamentId']);
       if (!$tournament)
       {
          $response->getBody()->write('Tournament not found');
          return $response->withStatus(404);
       }
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['id']);
-      $areas = $this->areaRepo->getAreasByTournamentId($args['id']);
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
+      $areas = $this->areaRepo->getAreasByTournamentId($args['tournamentId']);
 
       return $this->view->render($response, 'tournament/configure.twig', [
          'tournament' => $tournament,
@@ -96,7 +96,7 @@ class TournamentController
    private function sendToTournamentConfiguration(Request $request, Response $response, array $args): Response
    {
       return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-         ->urlFor('show_tournament_config', ['id' => $args['id']]))->withStatus(302);
+         ->urlFor('show_tournament_config', ['tournamentId' => $args['tournamentId']]))->withStatus(302);
    }
 
    /**
@@ -116,7 +116,7 @@ class TournamentController
       }
 
       // everything is ok, update the tournament
-      $tournament = $this->repo->getTournamentById($args['id']);
+      $tournament = $this->repo->getTournamentById($args['tournamentId']);
       if (!$tournament)
       {
          $response->getBody()->write('Tournament not found');
@@ -145,7 +145,7 @@ class TournamentController
          return $this->renderTournamentConfiguration($response, $args, $err, $prev);
       }
 
-      $area = new Area(null, $args['id'], $data['name']);
+      $area = new Area(null, $args['tournamentId'], $data['name']);
       $this->areaRepo->createArea($area);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
@@ -166,7 +166,7 @@ class TournamentController
          return $this->renderTournamentConfiguration($response, $args, $err, $prev);
       }
 
-      $area = new Area($args['areaId'], $args['id'], $data['name']);
+      $area = new Area($args['areaId'], $args['tournamentId'], $data['name']);
       $this->areaRepo->updateArea($area);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
@@ -196,7 +196,7 @@ class TournamentController
          return $this->renderTournamentConfiguration($response, $args, $err, $prev);
       }
 
-      $this->categoryRepo->createCategory($args['id'], $data['name'], $data['mode']);
+      $this->categoryRepo->createCategory($args['tournamentId'], $data['name'], $data['mode']);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
