@@ -15,9 +15,5 @@
             "Base\\": "src/Base/",
             "Tournament\\": "src/Tournament/"
         }
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^12.2",
-        "symfony/var-dumper": "^7.3"
     }
 }
