@@ -6,6 +6,7 @@ use Base\Service\AuthService;
 use Base\Service\PasswordResetService;
 use Base\Service\MailService;
 use Base\Service\SessionService;
+use Base\Service\DbUpdateService;
 
 use Base\Repository\UserRepository;
 
@@ -23,7 +24,8 @@ class AuthController
       private PasswordResetService $passwordResetService,
       private MailService $mailService,
       private UserRepository $userRepository,
-      private SessionService $session
+      private SessionService $session,
+      private DbUpdateService $dbUpdService
    )
    {
    }
@@ -41,12 +43,30 @@ class AuthController
 
       if ($this->authService->login($email, $password))
       {
-         /* a successful login from anyone is a nice hook to clean up any expired reset tokens, so let's do it here */
-         $this->passwordResetService->cleanupResetTokens();
-
          /* Redirect the user after a successful login */
          $redirect = $this->session->get('redirect_after_login') ?? RouteContext::fromRequest($request)->getRouteParser()->urlFor('home');
          $this->session->remove('redirect_after_login');
+
+         /* a successful login from anyone is a nice hook to clean up any expired reset tokens, so let's do it here */
+         $this->passwordResetService->cleanupResetTokens();
+
+         /* a successful login of an admin is a nice hook to check for needed DB migration */
+         $user = $this->authService->getCurrentUser();
+         if( ($user instanceof \Tournament\Model\User\User) && $user->admin )
+         {
+            if( $this->dbUpdService->updateNeeded() )
+            {
+               /* perform the database update */
+               $db_update_output = $this->dbUpdService->update();
+
+               /* after migration happened, show the output as an intermediate step */
+               return $this->twig->render($response, 'info_pages/db_migration.twig', [
+                  'redirect' => $redirect,
+                  'message'  => $db_update_output
+               ]);
+            }
+         }
+
          return $response
             ->withHeader('Location', $redirect)
             ->withStatus(302);

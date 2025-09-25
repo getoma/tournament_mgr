@@ -59,6 +59,12 @@ return function (DI\Container $container)
    // override UserRepository with Tournament specific one
    $container->set(Base\Repository\UserRepository::class, function () use ($container)
    {
-      return $container->get(Tournament\Repository\UserRepository::class);
+      return $container->get(\Tournament\Repository\UserRepository::class);
+   });
+
+   // configure DbUpdateService
+   $container->set(\Base\Service\DbUpdateService::class, function ()
+   {
+      return new \Base\Service\DbUpdateService(config::$DB_CONNECTION, __DIR__ . '/../db');
    });
 };

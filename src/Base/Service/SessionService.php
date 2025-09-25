@@ -9,26 +9,38 @@ use SessionHandlerInterface;
  */
 class SessionService
 {
+   private bool $ok = false;
+
    public function __construct(?SessionHandlerInterface $handler = null)
    {
       if( session_status() === PHP_SESSION_NONE )
       {
-         if ($handler)
+         try
          {
-            session_set_save_handler($handler, true);
+            if ($handler)
+            {
+               session_set_save_handler($handler, true);
+            }
+            session_start();
          }
-         session_start();
+         catch( \Exception $e )
+         {
+            // session could not be started, log an error
+            error_log("Session could not be started: " . $e->getMessage());
+            return;
+         }
       }
+      $this->ok = true;
    }
 
    public function id(): string
    {
-      return session_id();
+      return $this->ok? session_id() : '';
    }
 
    public function clear(): void
    {
-      session_destroy();
+      if( $this->ok ) session_destroy();
    }
 
    public function get(string $key, mixed $default = null): mixed

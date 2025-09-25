@@ -85,7 +85,15 @@ class AuthService
    {
       if( $this->user === null )
       {
-         $this->user = $this->repo->getSessionUser();
+         try
+         {
+            $this->user = $this->repo->getSessionUser();
+         }
+         catch( \Exception $e )
+         {
+            // session user could not be retrieved, log an error
+            error_log("Session user could not be retrieved: " . $e->getMessage());
+         }
       }
       return $this->user;
    }

@@ -9,12 +9,15 @@ use Slim\Views\Twig;
 use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\CategoryRepository;
 
+use Base\Service\DbUpdateService;
+
 class NavigationController
 {
    public function __construct(
       private Twig $view,
       private TournamentRepository $repo,
       private CategoryRepository $categoryRepo,
+      private DbUpdateService $dbUpdateService
    ) {
    }
 
@@ -23,8 +26,23 @@ class NavigationController
     */
    public function index(Request $request, Response $response, array $args): Response
    {
+      try
+      {
+         $tournament_list = $this->repo->getAllTournaments();
+      }
+      catch( \PDOException $e )
+      {
+         // likely cause: database is not yet initialized.
+         // call the db update service to initialize the database
+         // and write the update output to the log
+         // any exception thrown here just let it fall through to the normal error handler
+         $out = $this->dbUpdateService->update();
+         error_log("Database initialization output:\n" . $out);
+         $tournament_list = [];
+      }
+
       return $this->view->render($response, 'home.twig', [
-         'tournaments' => $this->repo->getAllTournaments()
+         'tournaments' => $tournament_list
       ]);
    }
 
