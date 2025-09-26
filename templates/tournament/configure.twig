@@ -14,6 +14,14 @@
   {'rows':4}) }}
   {{ form.submit('Aktualisieren') }}
 </form>
+
+<form action="{{url_for('update_tournament_status', {'tournamentId': tournament.id})}}" method="post">
+<ul>
+{% for status in policy.getPossibleTransitions() %}
+<li>{{form.submit('Neuer Status: ' ~ status.value, 'status', status.value)}}</li>
+{% endfor %}
+</ul>
+</form>
 </section>
 
 <section>

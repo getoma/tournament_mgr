@@ -1,7 +1,7 @@
 {%- macro input(type, name, label, value, error='', attributes={}, required=false) -%}
 <p>
   <label><span>{{ label }}</span>
-    <input type="{{ type }}" name="{{ name }}" value="{{ value|e }}" 
+    <input type="{{ type }}" name="{{ name }}" value="{{ value|e }}"
       {%- for attr, val in attributes %} {{attr}}="{{ val }}" {% endfor %}
       {%- if required %} required{% endif %}>
   </label>
@@ -12,8 +12,8 @@
 {%- endmacro %}
 
 {%- macro input_plain(type, name, value, error='', attributes={}, required=false) -%}
-<input type="{{ type }}" name="{{ name }}" value="{{ value|e }}" 
-  {%- for attr, val in attributes %} {{attr}}="{{ val }}" {% endfor %} 
+<input type="{{ type }}" name="{{ name }}" value="{{ value|e }}"
+  {%- for attr, val in attributes %} {{attr}}="{{ val }}" {% endfor %}
   {%- if required %} required{% endif %}>
 {%- if error is not empty %}
 <span class="invalid-feedback">{{ error }}</span>
@@ -23,7 +23,7 @@
 {%- macro checkbox(name, label, checked=false, error='', attributes={}) -%}
 <p>
   <label>
-    <input type="checkbox" name="{{ name }}" {%- if checked %} checked{% endif %} 
+    <input type="checkbox" name="{{ name }}" {%- if checked %} checked{% endif %}
       {%- for attr, val in attributes %} {{attr }}="{{ val }}" {% endfor %}>
     <span>{{ label }}</span></label>
   {%- if error is not empty %}
@@ -35,8 +35,8 @@
 {%- macro file(name, label, error='', attributes={}, required=false) -%}
 <p>
   <label><span>{{ label }}</span>
-    <input type="file" name="{{ name }}" 
-      {%- for attr, val in attributes %} {{attr }}="{{ val }}" {% endfor -%} 
+    <input type="file" name="{{ name }}"
+      {%- for attr, val in attributes %} {{attr }}="{{ val }}" {% endfor -%}
       {%- if required %} required{% endif %}>
   </label>
   {%- if error is not empty %}
@@ -48,8 +48,8 @@
 {%- macro textarea(name, label, value, error='', attributes={}, required=false) -%}
 <p>
   <label><span>{{ label }}</span>
-    <textarea name="{{ name }}" 
-      {%- for attr, val in attributes %} {{ attr }}="{{ val }}" {% endfor -%} 
+    <textarea name="{{ name }}"
+      {%- for attr, val in attributes %} {{ attr }}="{{ val }}" {% endfor -%}
       {%- if required %} required{% endif-%}>{{ value|e }}</textarea>
   </label>
   {%- if error is not empty %}
@@ -61,8 +61,8 @@
 {%- macro select(name, label, options, selected=null, error='', attributes={}, required=false) -%}
 <p>
   <label><span>{{ label }}</span>
-    <select name="{{ name }}" 
-      {%- for attr, val in attributes %} {{ attr }}="{{ val }}" {% endfor -%} 
+    <select name="{{ name }}"
+      {%- for attr, val in attributes %} {{ attr }}="{{ val }}" {% endfor -%}
       {%- if required %} required{% endif %}>
       {% for key, text in options %}
       <option value="{{ key|e }}" {% if key==selected %}selected{% endif %}>{{ text|e }}</option>
@@ -76,8 +76,8 @@
 {%- endmacro %}
 
 {%- macro select_plain(name, options, selected=null, error='', attributes={}, required=false) -%}
-<select name="{{ name }}" 
-  {%- for attr, val in attributes %} {{ attr }}="{{ val }}" {% endfor -%} 
+<select name="{{ name }}"
+  {%- for attr, val in attributes %} {{ attr }}="{{ val }}" {% endfor -%}
   {%- if required %} required{% endif %}>
   {% for key, text in options %}
   <option value="{{ key|e }}" {% if key==selected %}selected{% endif %}>{{ text|e }}</option>
@@ -88,6 +88,6 @@
 {%- endif %}
 {%- endmacro %}
 
-{%- macro submit(label) -%}
-<p><button type="submit">{{ label }}</button></p>
+{%- macro submit(label, name=null, value=null) -%}
+<p><button type="submit" {%- if name is not empty %} name="{{name}}" value="{{value??label}}"{%endif%}>{{ label }}</button></p>
 {%- endmacro %}

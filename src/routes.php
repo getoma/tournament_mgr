@@ -81,6 +81,9 @@ return function (\Slim\App $app)
          $tgrp->get('[/]',      [NavigationController::class, 'showTournament'])->setName('show_tournament');
          $tgrp->get('/control', [NavigationController::class, 'showControlPanel'])->setName('tournament_control');
 
+         /* state transition */
+         $tgrp->post('/setstatus', [TournamentController::class, 'changeTournamentStatus'])->setName('update_tournament_status');
+
          /* tournament configuration pages */
          $tgrp->get( '/configure', [TournamentController::class, 'showTournamentConfiguration'])->setName('show_tournament_config');
          $tgrp->group('', function (RouteCollectorProxy $cgrp)

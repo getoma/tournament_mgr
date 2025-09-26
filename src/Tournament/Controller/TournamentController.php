@@ -7,13 +7,18 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
+use Base\Service\Validator;
+
 use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\AreaRepository;
 use Tournament\Repository\CategoryRepository;
+
 use Tournament\Model\Data\Area;
 use Tournament\Model\Data\Category;
 use Tournament\Model\Data\Tournament;
-use Base\Service\Validator;
+use Tournament\Model\Data\TournamentStatus;
+
+use Tournament\Policy\TournamentPolicy;
 
 
 class TournamentController
@@ -23,6 +28,7 @@ class TournamentController
       private TournamentRepository $repo,
       private AreaRepository $areaRepo,
       private CategoryRepository $categoryRepo,
+      private TournamentPolicy $policy,
    ) {
    }
 
@@ -126,6 +132,26 @@ class TournamentController
       $tournament->date = $data['date'];
       $tournament->notes = $data['notes'] ?? null;
       $this->repo->updateTournament($tournament);
+
+      return $this->sendToTournamentConfiguration($request, $response, $args);
+   }
+
+   public function changeTournamentStatus(Request $request, Response $response, array $args): Response
+   {
+      $tournament_id = (int)$args['tournamentId'];
+
+      $data = $request->getParsedBody();
+      $new_state = TournamentStatus::load($data['status']);
+
+      if( $this->policy->canTransition($tournament_id, $new_state) )
+      {
+         $this->repo->updateState($tournament_id, $new_state);
+      }
+      else
+      {
+         $err = ['status' => 'not allowed'];
+         return $this->renderTournamentConfiguration($response, $args, $err);
+      }
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }

@@ -13,22 +13,22 @@ use Tournament\Model\Data\TournamentStatus;
  */
 class CurrentTournamentPolicy
 {
-   public function __construct(private ?int $tournamentId, private TournamentPolicy $repo)
+   public function __construct(private ?int $tournamentId, private TournamentPolicy $policy)
    {
    }
 
    public function isActionAllowed(TournamentAction $action): bool
    {
-      return $this->tournamentId ? $this->repo->isActionAllowed($this->tournamentId, $action) : false;
+      return $this->tournamentId ? $this->policy->isActionAllowed($this->tournamentId, $action) : false;
    }
 
    public function getPossibleTransitions(): array
    {
-      return $this->tournamentId ? $this->repo->getPossibleTransitions($this->tournamentId) : [];
+      return $this->tournamentId ? $this->policy->getPossibleTransitions($this->tournamentId) : [];
    }
 
    public function canTransitionToStatus(TournamentStatus $newStatus): bool
    {
-      return $this->tournamentId ? $this->repo->canTransition($this->tournamentId, $newStatus) : false;
+      return $this->tournamentId ? $this->policy->canTransition($this->tournamentId, $newStatus) : false;
    }
 }
