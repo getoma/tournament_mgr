@@ -33,6 +33,26 @@ class TournamentController
    }
 
    /**
+    * Show a specific tournament
+    */
+   public function showTournament(Request $request, Response $response, array $args): Response
+   {
+      $tournament = $this->repo->getTournamentById($args['tournamentId']);
+      if (!$tournament)
+      {
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
+      }
+
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
+
+      return $this->view->render($response, 'tournament/home.twig', [
+         'tournament' => $tournament,
+         'categories' => $categories,
+      ]);
+   }
+
+   /**
     * Show the form to create a new tournament
     */
    public function showFormNewTournament(Request $request, Response $response, array $args): Response
@@ -65,6 +85,26 @@ class TournamentController
    }
 
    /**
+    * Show a tournament control panel
+    */
+   public function showControlPanel(Request $request, Response $response, array $args): Response
+   {
+      $tournament = $this->repo->getTournamentById($args['tournamentId']);
+      if (!$tournament)
+      {
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
+      }
+
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
+
+      return $this->view->render($response, 'tournament/controlpanel.twig', [
+         'tournament' => $tournament,
+         'categories' => $categories,
+      ]);
+   }
+
+   /**
     * Render the form to edit an existing tournament
     */
    private function renderTournamentConfiguration(Response $response, array $args, array $errors = [], array $prev = []): Response
@@ -89,7 +129,7 @@ class TournamentController
    }
 
    /**
-    * Show a tournament
+    * Show the configuration page of a tournament
     */
    public function showTournamentConfiguration(Request $request, Response $response, array $args): Response
    {

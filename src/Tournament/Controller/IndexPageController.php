@@ -7,18 +7,14 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 
 use Tournament\Repository\TournamentRepository;
-use Tournament\Repository\CategoryRepository;
-
 use Tournament\Model\Data\TournamentStatus;
-
 use Base\Service\DbUpdateService;
 
-class NavigationController
+class IndexPageController
 {
    public function __construct(
       private Twig $view,
       private TournamentRepository $repo,
-      private CategoryRepository $categoryRepo,
       private DbUpdateService $dbUpdateService
    ) {
    }
@@ -60,43 +56,5 @@ class NavigationController
       ]);
    }
 
-   /**
-    * Show a specific tournament
-    */
-   public function showTournament(Request $request, Response $response, array $args): Response
-   {
-      $tournament = $this->repo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
 
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
-
-      return $this->view->render($response, 'tournament/home.twig', [
-         'tournament' => $tournament,
-         'categories' => $categories,
-      ]);
-   }
-
-   /**
-    * Show a tournament control panel
-    */
-   public function showControlPanel(Request $request, Response $response, array $args): Response
-   {
-      $tournament = $this->repo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
-
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
-
-      return $this->view->render($response, 'tournament/controlpanel.twig', [
-         'tournament' => $tournament,
-         'categories' => $categories,
-      ]);
-   }
 }

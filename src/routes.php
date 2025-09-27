@@ -2,7 +2,7 @@
 
 use Tournament\Controller\ParticipantsController;
 use Tournament\Controller\TournamentController;
-use Tournament\Controller\NavigationController;
+use Tournament\Controller\IndexPageController;
 use Tournament\Controller\CategoryController;
 use Tournament\Controller\AuthController;
 use Tournament\Controller\UserController;
@@ -52,7 +52,7 @@ return function (\Slim\App $app)
     */
 
    /* navigation */
-   $app->get('/', [NavigationController::class, 'index'])->setName('home');
+   $app->get('/', [IndexPageController::class, 'index'])->setName('home');
 
    /* login/logout/pw reset */
    $app->get('/login',   [AuthController::class, 'showLogin'])->setName('login');
@@ -78,8 +78,8 @@ return function (\Slim\App $app)
       $auth_grp->group('/tournament/{tournamentId:\d+}', function (RouteCollectorProxy $tgrp) use ($statusGuardMW)
       {
          /* tournament overview */
-         $tgrp->get('[/]',      [NavigationController::class, 'showTournament'])->setName('show_tournament');
-         $tgrp->get('/control', [NavigationController::class, 'showControlPanel'])->setName('tournament_control');
+         $tgrp->get('[/]',      [TournamentController::class, 'showTournament'])->setName('show_tournament');
+         $tgrp->get('/control', [TournamentController::class, 'showControlPanel'])->setName('tournament_control');
 
          /* state transition */
          $tgrp->post('/setstatus', [TournamentController::class, 'changeTournamentStatus'])->setName('update_tournament_status');
