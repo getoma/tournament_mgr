@@ -9,6 +9,8 @@ use Slim\Views\Twig;
 use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\CategoryRepository;
 
+use Tournament\Model\Data\TournamentStatus;
+
 use Base\Service\DbUpdateService;
 
 class NavigationController
@@ -41,8 +43,20 @@ class NavigationController
          $tournament_list = [];
       }
 
+      /* provide a second list where tournaments are separated by their state */
+      $tournaments_by_state = [];
+      foreach ($tournament_list as $tournament)
+      {
+         $tournaments_by_state[$tournament->status->value] ??= [];
+         $tournaments_by_state[$tournament->status->value][] = $tournament;
+      }
+      /* sort the list in logical order of the states */
+      $order = array_flip( array_map( fn($c) => $c->value, TournamentStatus::cases() ) );
+      uksort($tournaments_by_state, fn($a,$b) => ($order[$a] <=> $order[$b]) );
+
       return $this->view->render($response, 'home.twig', [
-         'tournaments' => $tournament_list
+         'all_tournaments'      => $tournament_list,
+         'tournaments_by_state' => $tournaments_by_state
       ]);
    }
 
@@ -69,20 +83,20 @@ class NavigationController
    /**
     * Show a tournament control panel
     */
-    public function showControlPanel(Request $request, Response $response, array $args): Response
-    {
-       $tournament = $this->repo->getTournamentById($args['tournamentId']);
-       if (!$tournament)
-       {
-          $response->getBody()->write('Tournament not found');
-          return $response->withStatus(404);
-       }
+   public function showControlPanel(Request $request, Response $response, array $args): Response
+   {
+      $tournament = $this->repo->getTournamentById($args['tournamentId']);
+      if (!$tournament)
+      {
+         $response->getBody()->write('Tournament not found');
+         return $response->withStatus(404);
+      }
 
-       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
 
-       return $this->view->render($response, 'tournament/controlpanel.twig', [
-          'tournament' => $tournament,
-          'categories' => $categories,
-       ]);
-    }
+      return $this->view->render($response, 'tournament/controlpanel.twig', [
+         'tournament' => $tournament,
+         'categories' => $categories,
+      ]);
+   }
 }
