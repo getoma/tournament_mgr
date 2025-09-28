@@ -9,8 +9,38 @@ use PDO;
 
 class ParticipantRepository
 {
+   /* buffer all participant instances, to make sure that each participant is
+    * represented by a unique instance
+    */
+   private $participants = [];
+
    public function __construct(private PDO $pdo, private CategoryRepository $categoryRepo)
    {
+   }
+
+   /**
+    * create a participant instance from fetched data
+    */
+   private function getParticipantInstance(array $data): Participant
+   {
+      /* extract the link to the categories first */
+      $category_data = $data['category_ids'] ?? '';
+      unset($data['category_ids']);
+
+      /* create the participant instance, if not there yet */
+      $this->participants[$data['id']] ??= new Participant(...$data);
+      $participant = $this->participants[$data['id']];
+
+      /* transform the category mapping from sql string output to php data struct if needed and possible */
+      if( empty($participant->categories) && !empty($category_data) )
+      {
+         $categories = $this->categoryRepo->getCategoriesByTournamentId($participant->tournament_id);
+         $categoryIds = explode(',', $category_data);
+         $participant->categories = array_filter($categories, fn($id) => in_array($id, $categoryIds), ARRAY_FILTER_USE_KEY);
+      }
+
+      /* done */
+      return $participant;
    }
 
    /**
@@ -27,34 +57,16 @@ class ParticipantRepository
             . "ORDER BY p.lastname, p.firstname "
       );
       $stmt->execute(['tournament_id' => $tournamentId]);
-
-      $categories = [];
-      /* if detailled category information is requested, fetch categories */
-      foreach ($this->categoryRepo->getCategoriesByTournamentId($tournamentId) as $category)
-      {
-         $categories[$category->id] = $category;
-      }
-
-      /* create Participant objects from the fetched data */
-      $participants = [];
+      $result = [];
       foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
       {
-         if (!empty($row['category_ids']))
-         {
-            $categoryIds = explode(',', $row['category_ids'] ?? '');
-            $row['categories'] = array_combine(
-               $categoryIds,
-               array_map(fn($id): Category => $categories[$id], $categoryIds)
-            );
-         }
-         unset($row['category_ids']); // Remove the concatenated category_ids field
-         $participants[] = new Participant(...$row);
+         $result[$row['id']] = $this->getParticipantInstance($row);
       }
-      return $participants;
+      return $result;
    }
 
    /**
-    * get all participants for a specific category
+    * get all participants for a specific category - category data will not be set
     */
    public function getParticipantsByCategoryId(int $categoryId): array
    {
@@ -66,16 +78,17 @@ class ParticipantRepository
       );
       $stmt->execute(['category_id' => $categoryId]);
 
-      $participants = [];
-      foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
+      $result = [];
+      foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row )
       {
-         $participants[] = new Participant(...$row);
+         $result[$row['id']] = $this->getParticipantInstance($row);
       }
-      return $participants;
+      return $result;
    }
 
    /**
     * get all participants for a specific category, identified by their slot
+    * category data will not be set
     */
    public function getParticipantsWithSlotByCategoryId(int $categoryId): array
    {
@@ -92,7 +105,7 @@ class ParticipantRepository
       {
          $slot_name = $row['slot_name'];
          unset($row['slot_name']);
-         $participant = new Participant(...$row);
+         $participant = $this->getParticipantInstance($row);
          if( empty($slot_name) || array_key_exists($slot_name, $participants) )
          {
             $participants[null][] = $participant;
@@ -157,30 +170,19 @@ class ParticipantRepository
     */
    public function getParticipantById(int $id): ?Participant
    {
-      $stmt = $this->pdo->prepare(
-         "SELECT p.*, GROUP_CONCAT(pc.category_id) AS category_ids "
-            . "FROM participants p LEFT JOIN participants_categories pc ON p.id = pc.participant_id "
-            . "WHERE p.id = :id "
-            . "GROUP BY p.id "
-            . "LIMIT 1"
-      );
-      $stmt->execute(['id' => $id]);
-      $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-      if ($row && !empty($row['category_ids']))
+      $participant = $this->participants[$id] ?? null;
+      if( !$participant )
       {
-         $categoryIds = explode(',', $row['category_ids'] ?? '');
-         $categories = [];
-         foreach ($this->categoryRepo->getCategoriesByTournamentId($row['tournament_id']) as $category)
-         {
-            $categories[$category->id] = $category;
-         }
-         $row['categories'] = array_combine(
-            $categoryIds,
-            array_map(fn($cid) => $categories[$cid], $categoryIds)
+         $stmt = $this->pdo->prepare(
+            "SELECT p.*, GROUP_CONCAT(pc.category_id) AS category_ids "
+               . "FROM participants p LEFT JOIN participants_categories pc ON p.id = pc.participant_id "
+               . "WHERE p.id = :id "
          );
+         $stmt->execute(['id' => $id]);
+         $row = $stmt->fetch(PDO::FETCH_ASSOC);
+         $participant = $row? $this->getParticipantInstance($row) : null;
       }
-      unset($row['category_ids']); // Remove the concatenated category_ids field
-      return $row ? new Participant(...$row) : null;
+      return $participant;
    }
 
    public function addParticipant(int $tournament_id, string $lastname, string $firstname, array $categories = []): ?int

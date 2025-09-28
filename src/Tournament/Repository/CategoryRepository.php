@@ -3,12 +3,12 @@
 namespace Tournament\Repository;
 
 use Tournament\Model\Data\Category;
-use Tournament\Model\TournamentStructure\TournamentStructure;
 use PDO;
 
 class CategoryRepository
 {
-   private $categories = [];
+   private $categories_by_tournament = [];
+   private $categories_by_id = [];
 
    public function __construct(private PDO $pdo)
    {
@@ -26,23 +26,26 @@ class CategoryRepository
 
    public function getCategoriesByTournamentId(int $tournamentId): array
    {
-      if (!array_key_exists($tournamentId, $this->categories))
+      if (!array_key_exists($tournamentId, $this->categories_by_tournament))
       {
          $stmt = $this->pdo->prepare("SELECT id, name, mode, config_json FROM categories WHERE tournament_id = :tournament_id order by id");
          $stmt->execute(['tournament_id' => $tournamentId]);
-         $this->categories[$tournamentId] = [];
+         $this->categories_by_tournament[$tournamentId] = [];
          foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
          {
-            $this->categories[$tournamentId][$row['id']] = new Category(
+            $category =  $this->categories_by_id[$row['id']]
+                      ?? new Category(
                id: (int) $row['id'],
                tournament_id: $tournamentId,
                name: $row['name'],
                mode: $row['mode'],
                config: self::parseConfig($row['config_json'])
             );
+            $this->categories_by_tournament[$tournamentId][$category->id] = $category;
+            $this->categories_by_id[$category->id] = $category;
          }
       }
-      return $this->categories[$tournamentId];
+      return $this->categories_by_tournament[$tournamentId];
    }
 
    public function getCategoryById(int $id): ?Category
@@ -52,13 +55,16 @@ class CategoryRepository
       $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
       if (!$row) return null;
 
-      return new Category(
+      $category = new Category(
          id: (int) $row['id'],
          tournament_id: (int) $row['tournament_id'],
          name: $row['name'],
          mode: $row['mode'],
          config: self::parseConfig($row['config_json'])
       );
+      $this->categories_by_id[$category->id] = $category;
+
+      return $category;
    }
 
    public function createCategory(int $tournamentId, string $name, string $mode): int
