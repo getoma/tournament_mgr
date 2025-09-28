@@ -2,30 +2,11 @@
 
 namespace Tournament\Model\TournamentStructure;
 
-use Tournament\Model\TournamentStructure\MatchSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
-use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
-
 use Tournament\Model\Data\Participant;
-use Tournament\Model\Data\Area;
 
-class KoNode
+class KoNode extends MatchNode
 {
-
-   public function __construct(
-      public string $name,
-      public MatchSlot $slotRed,
-      public MatchSlot $slotWhite,
-      public ?Area $area = null,
-   )
-   {
-   }
-
-   public function isBye(): bool
-   {
-      return $this->slotRed->isBye() && $this->slotWhite->isBye();
-   }
-
    /**
     * Return the rounds of matches in this knockout (sub)structure.
     * Each round is an array of MatchNode objects.
@@ -94,16 +75,13 @@ class KoNode
    }
 
    /**
-    * get the current winner participant of this match, or null if not decided, yet
+    * get a participants of a specific rank (1=winner, 2=runner-up, 3=third place, ...)
+    * @return Participant[]
     */
-   public function getRanked($rank = 1): ?Participant
+   public function getRanked($rank = 1): array
    {
-      if ($this->slotRed->isBye())   return $this->slotWhite->getParticipant();
-      if ($this->slotWhite->isBye()) return $this->slotRed->getParticipant();
-
-      /* TODO: derive winner from Database */
-
-      return null;
+      /* TODO: derive from Database */
+      return [];
    }
 
    /**

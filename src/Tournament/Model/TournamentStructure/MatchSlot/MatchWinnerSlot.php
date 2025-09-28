@@ -24,6 +24,6 @@ class MatchWinnerSlot extends MatchSlot
 
    public function getParticipant(): ?Participant
    {
-      return $this->matchNode->getRanked();
+      return $this->matchNode->getWinner();
    }
 }

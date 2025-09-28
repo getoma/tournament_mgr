@@ -104,7 +104,7 @@ class Pool
                $red     = new ParticipantSlot($p_red);
                $white   = new ParticipantSlot($p_white);
                $matchId = count($this->matches);
-               $this->matches[] = new KoNode($this->name.".".$matchId, $red, $white, $this->area);
+               $this->matches[] = new MatchNode($this->name.".".$matchId, $red, $white, $this->area);
             }
          }
 

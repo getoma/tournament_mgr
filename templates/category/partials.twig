@@ -10,7 +10,7 @@
 {% endmacro %}
 
 {% macro printChunkWinner(chunk, route_param) %}
-{%-if chunk.root.getRanked()%}{{chunk.root.getRanked().lastname}}, {{chunk.root.getRanked().firstname}}
+{%-if chunk.root.getWinner()%}{{chunk.root.getWinner().lastname}}, {{chunk.root.getWinner().firstname}}
 {%-elseif chunk.root.isBye()%}--
 {%-else%}Gewinner {{chunk.root.name}}
 {%-endif%}
