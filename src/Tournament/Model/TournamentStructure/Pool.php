@@ -5,6 +5,7 @@ namespace Tournament\Model\TournamentStructure;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\Data\Participant;
 use Tournament\Model\Data\Area;
+use Tournament\Model\Data\MatchRecordCollection;
 
 class Pool
 {
@@ -114,6 +115,20 @@ class Pool
             [$players[$numPlayers-1]],    // move last participant to first position
             array_slice($players,  1, -1) // keep rest of the list
          );
+      }
+   }
+
+   /**
+    * Assign match records to the matches in this Pool structure.
+    */
+   public function setMatchRecords(MatchRecordCollection $matchRecords): void
+   {
+      foreach ($this->matches as $match)
+      {
+         if ($matchRecords->has($match->name))
+         {
+            $match->setMatchRecord($matchRecords[$match->name]);
+         }
       }
    }
 }

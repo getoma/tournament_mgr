@@ -11,14 +11,14 @@ use Tournament\Model\TournamentStructure\Pool;
 use Tournament\Model\TournamentStructure\KoNode;
 use Tournament\Model\Data\Category;
 use Tournament\Model\Data\Area;
-use Tournament\Model\Data\Participant;
+use Tournament\Model\Data\MatchRecordCollection;
 
 class TournamentStructure
 {
    /** @var Pool[] */
    public array $pools = [];
 
-   /** @var MatchNode */
+   /** @var KoNode */
    public ?KoNode $ko = null;
 
    /** @var KoChunk[] */
@@ -32,7 +32,7 @@ class TournamentStructure
     * @param ?array   areas the list of combat areas
     * @param ?array[int,Participant] the list of participants
     */
-   public function __construct(public Category $category, public array $areas, $participants = [])
+   public function __construct(public Category $category, public array $areas, $participants = [], ?MatchRecordCollection $matchRecords = null)
    {
       if ($this->category->mode === 'ko')
       {
@@ -60,6 +60,18 @@ class TournamentStructure
       else
       {
          throw new \InvalidArgumentException('Unknown tournament mode: ' . $this->category->mode);
+      }
+
+      if ($matchRecords !== null)
+      {
+         if( $this->ko )
+         {
+            $this->ko->setMatchRecords($matchRecords);
+         }
+         foreach ($this->pools as $pool)
+         {
+            $pool->setMatchRecords($matchRecords);
+         }
       }
    }
 

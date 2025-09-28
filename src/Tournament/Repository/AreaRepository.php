@@ -6,6 +6,8 @@ use Tournament\Model\Data\Area;
 
 class AreaRepository
 {
+   private $buffer = [];
+
    public function __construct(private \PDO $pdo)
    {
    }
@@ -17,17 +19,25 @@ class AreaRepository
       $stmt->execute(['tournamentId' => $tournamentId]);
       foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row)
       {
-         $areas[] = new Area(...$row);
+         $this->buffer[$row['id']] ??= new Area(...$row);
+         $areas[] = $this->buffer[$row['id']];
       }
       return $areas;
    }
 
    public function getAreaById($id): ?Area
    {
-      $stmt = $this->pdo->prepare("SELECT * FROM areas WHERE id = :id");
-      $stmt->execute(['id' => $id]);
-      $data = $stmt->fetch(\PDO::FETCH_ASSOC);
-      return $data ? new Area(...$data) : null;
+      if( !isset($this->buffer[$id]) )
+      {
+         $stmt = $this->pdo->prepare("SELECT * FROM areas WHERE id = :id");
+         $stmt->execute(['id' => $id]);
+         $data = $stmt->fetch(\PDO::FETCH_ASSOC);
+         if( $data )
+         {
+            $this->buffer[$id] = new Area(...$data);
+         }
+      }
+      return $this->buffer[$id] ?? null;
    }
 
    public function createArea(Area $area): Area

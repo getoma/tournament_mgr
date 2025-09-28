@@ -13,8 +13,10 @@ use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\CategoryRepository;
 use Tournament\Repository\ParticipantRepository;
 use Tournament\Repository\AreaRepository;
+use Tournament\Repository\MatchDataRepository;
 
 use Tournament\Model\TournamentStructure\TournamentStructure;
+use Tournament\Model\TournamentStructure\KoNode;
 use Base\Service\Validator;
 use Respect\Validation\Validator as v;
 
@@ -25,7 +27,8 @@ class CategoryController
       private CategoryRepository $repo,
       private TournamentRepository $tournamentRepo,
       private ParticipantRepository $participantRepo,
-      private AreaRepository $areaRepo
+      private AreaRepository $areaRepo,
+      private MatchDataRepository $matchDataRepo
    )
    {
    }
@@ -45,6 +48,18 @@ class CategoryController
    }
 
    /**
+    * load a tournament structure from the repository
+    */
+   private function loadStructure(Category $category): TournamentStructure
+   {
+      $areas = $this->areaRepo->getAreasByTournamentId($category->tournament_id);
+      $participants = $this->participantRepo->getParticipantsWithSlotByCategoryId($category->id);
+      $matchRecords = $this->matchDataRepo->getMatchRecordsByCategoryId($category->id);
+
+      return new TournamentStructure($category, $areas, $participants, $matchRecords);
+   }
+
+   /**
     * Show a specific category
     */
    public function showCategory(Request $request, Response $response, array $args): Response
@@ -60,9 +75,7 @@ class CategoryController
       }
 
       // Load the tournament structure for this category
-      $participants = $this->participantRepo->getParticipantsWithSlotByCategoryId($category->id);
-      $areas = $this->areaRepo->getAreasByTournamentId($args['tournamentId']);
-      $structure = new TournamentStructure($category, $areas, $participants);
+      $structure = $this->loadStructure($category);
 
       /* filter pool/ko display if we have a very large structure */
       if( $structure->ko )
@@ -96,9 +109,7 @@ class CategoryController
       }
 
       // Load the tournament structure for this category and fetch the specific chunk
-      $participants = $this->participantRepo->getParticipantsWithSlotByCategoryId($category->id);
-      $areas = $this->areaRepo->getAreasByTournamentId($args['tournamentId']);
-      $structure = new TournamentStructure($category, $areas, $participants);
+      $structure = $this->loadStructure($category);
       $chunk = $structure->chunks[$args['chunk']];
 
       if (!isset($chunk))
@@ -116,7 +127,7 @@ class CategoryController
    }
 
    /**
-    * Show the KO-tree assigned to a specific area and chunk for a specific category
+    * Show the pool view assigned to a specific area and chunk for a specific category
     */
    public function showPoolArea(Request $request, Response $response, array $args): Response
    {
@@ -130,20 +141,16 @@ class CategoryController
          return $response->withStatus(404);
       }
 
-      $areas = $this->areaRepo->getAreasByTournamentId($args['tournamentId']);
-      $area = $areas[$args['areaid']] ?? null;
-
-      if (!isset($area))
+      $area = $this->areaRepo->getAreaById($args['areaid']);
+      if (!$area)
       {
          $response->getBody()->write('area not found');
          return $response->withStatus(404);
       }
 
       // Load the tournament structure for this category
-      $participants = $this->participantRepo->getParticipantsWithSlotByCategoryId($category->id);
-
-      $structure = new TournamentStructure($category, $areas, $participants);
-      $area_pools = $structure->getPoolsByArea($area);
+      $structure = $this->loadStructure($category);
+      $area_pools = $structure->getPoolsByArea($area->id);
 
       return $this->view->render($response, 'category/area_pool.twig', [
          'tournament' => $tournament,

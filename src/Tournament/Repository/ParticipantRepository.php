@@ -35,8 +35,10 @@ class ParticipantRepository
       if( empty($participant->categories) && !empty($category_data) )
       {
          $categories = $this->categoryRepo->getCategoriesByTournamentId($participant->tournament_id);
-         $categoryIds = explode(',', $category_data);
-         $participant->categories = array_filter($categories, fn($id) => in_array($id, $categoryIds), ARRAY_FILTER_USE_KEY);
+         foreach(explode(',', $category_data) as $categoryId)
+         {
+            $participant->categories[$categoryId] = $categories[$categoryId];
+         }
       }
 
       /* done */

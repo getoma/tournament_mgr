@@ -1,12 +1,14 @@
 
-{% macro printSlot(slot, route_param) %}
+{% macro printSlot(slot, route_param, winner) %}
+{% if winner and slot.getParticipant() is same as(winner)%}<em>{%endif%}
 {%-if slot.getParticipant()%}{{slot.getParticipant().lastname}}, {{slot.getParticipant().firstname}}
 {%-else%}{{slot.str()}}
 {%-endif%}
+{% if slot.getParticipant() is same as(winner)%}</em>{%endif%}
 {% endmacro %}
 
 {% macro printMatch(node, route_param) %}
-<span class="fight_participant red">{{_self.printSlot(node.slotRed, route_param)}}</span> vs. <span class="fight_participant white">{{_self.printSlot(node.slotWhite, baseurl)}}</span>
+<span class="fight_participant red">{{_self.printSlot(node.slotRed, route_param, node.getWinner())}}</span> vs. <span class="fight_participant white">{{_self.printSlot(node.slotWhite, route_param, node.getWinner())}}</span>
 {% endmacro %}
 
 {% macro printChunkWinner(chunk, route_param) %}
@@ -44,7 +46,7 @@
     <ul class="fight_round">
       {% for name, chunk in chunks %}
       <li><span class="fight_name"><a href="{{ url_for('show_ko_area', route_param|merge({'chunk': name})) }}">Gewinner {{chunk.name}}</a></span>
-          <span>{{_self.printChunkWinner(chunk, route_param)}}</span>
+          <span class="fight_participant">{{_self.printChunkWinner(chunk, route_param)}}</span>
       </li>
       {% endfor %}
     </ul>

@@ -4,6 +4,7 @@ namespace Tournament\Model\TournamentStructure;
 
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\Data\Participant;
+use Tournament\Model\Data\MatchRecordCollection;
 
 class KoNode extends MatchNode
 {
@@ -80,8 +81,26 @@ class KoNode extends MatchNode
     */
    public function getRanked($rank = 1): array
    {
-      /* TODO: derive from Database */
-      return [];
+      if ($rank === 1)
+      {
+         $winner = $this->getWinner();
+         return $winner ? [$winner] : [];
+      }
+      if ($rank === 2)
+      {
+         $defeated = $this->getDefeated();
+         return $defeated ? [$defeated] : [];
+      }
+      /* from here, recursively collect the ranks from the red/white subtrees */
+      $ranks = [];
+      foreach ([$this->slotRed, $this->slotWhite] as $slot)
+      {
+         if ($slot instanceof MatchWinnerSlot)
+         {
+            $ranks = array_merge($ranks, $slot->matchNode->getRanked($rank - 1));
+         }
+      }
+      return $ranks;
    }
 
    /**
@@ -90,5 +109,19 @@ class KoNode extends MatchNode
    public function getMatchList(): array
    {
       return array_merge(...$this->getRounds());
+   }
+
+   /**
+    * Assign match records to the matches in this KO structure.
+    */
+   public function setMatchRecords(MatchRecordCollection $matchRecords): void
+   {
+      foreach ($this->getMatchList() as $match)
+      {
+         if ($matchRecords->has($match->name))
+         {
+            $match->setMatchRecord($matchRecords[$match->name]);
+         }
+      }
    }
 }

@@ -91,3 +91,9 @@ ul.fight_round li {
    padding: 0.5ex;
    border: 1px solid black;
 }
+
+.fight_participant em
+{
+   font-weight: bold;
+   font-style: normal;
+}

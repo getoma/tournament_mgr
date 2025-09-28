@@ -3,6 +3,8 @@
 
 {% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id } %}
 
+{% block nav_extension %}<a href="{{url_for('show_category', route_parameters)}}">Zurück...</a>{% endblock %}
+
 {% block content %}
 <section>
   <h2>{{chunk.name}}</h2>
