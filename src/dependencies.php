@@ -30,6 +30,8 @@ return function (DI\Container $container)
       {
          $twig->addExtension(new \Twig\Extension\DebugExtension());
       }
+      $twig->getEnvironment()->addGlobal('debug', config::$debug);
+      $twig->getEnvironment()->addGlobal('test_interfaces', config::$test_interfaces);
 
       return $twig;
    });

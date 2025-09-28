@@ -1,0 +1,15 @@
+{% extends 'base/layout.twig' %}
+{% import 'base/form.twig' as form %}
+
+{% block heading %}Datenbank-Version anpassen{% endblock %}
+
+{% block content %}
+{% if message is not empty %}
+<pre>{{message}}</pre>
+{% endif %}
+
+<form action="{{url_for('do_db_migrate')}}" method="post">
+  {{ form.select('version', 'DB-Version', versions, current, required=true) }}
+  {{ form.submit('Aktualisieren')}}
+</form>
+{% endblock %}

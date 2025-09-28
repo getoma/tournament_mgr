@@ -6,6 +6,7 @@ use Tournament\Controller\IndexPageController;
 use Tournament\Controller\CategoryController;
 use Tournament\Controller\AuthController;
 use Tournament\Controller\UserController;
+use Tournament\Controller\TestController;
 
 use Tournament\Policy\TournamentAction;
 
@@ -122,6 +123,13 @@ return function (\Slim\App $app)
 
       $auth_grp->get('/user/account', [UserController::class, 'showAccount'])->setName('user_account');
       $auth_grp->post('/user/account', [UserController::class, 'updateAccount'])->setName('user_account_post');
+
+      /* db migration during development, only */
+      if( config::$test_interfaces ?? false )
+      {
+         $auth_grp->get('/dbmigrate', [TestController::class, 'showDbMigrationList'])->setName('show_db_migrate');
+         $auth_grp->post('/dbmigrate', [TestController::class, 'setDbMigration'])->setName('do_db_migrate');
+      }
    })
    ->add($authMW);
 };

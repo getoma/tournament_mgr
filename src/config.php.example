@@ -10,7 +10,8 @@ class config
       'pw'     => ''
    ];
 
-   public static $debug = true;
+   public static $debug = false;
+   public static $test_interfaces = false;
 
    public static $BASE_PATH = null;
 

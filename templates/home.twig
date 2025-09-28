@@ -15,4 +15,10 @@
   {%endfor%}
   <li><a href="{{ url_for('new_tournament_form') }}">Neues Turnier anlegen</a></li>
 </ul>
+
+{%- if test_interfaces %}
+<p class="debug_stuff">
+  <a href="{{url_for('show_db_migrate')}}">DB-Migration</a>
+</p>
+{% endif -%}
 {% endblock %}

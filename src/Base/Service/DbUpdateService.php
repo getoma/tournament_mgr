@@ -57,4 +57,20 @@ class DbUpdateService
       $this->phinx->migrate(self::ENV);
       return $this->buf->fetch();
    }
+
+   public function migrateTo(int $version): string
+   {
+      $this->phinx->migrate(self::ENV, $version);
+      return $this->buf->fetch();
+   }
+
+   public function getCurrentVersion(): int
+   {
+      return $this->phinx->getEnvironment(self::ENV)->getCurrentVersion();
+   }
+
+   public function getMigrations(): array
+   {
+      return array_keys($this->phinx->getMigrations(self::ENV));
+   }
 }
