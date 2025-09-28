@@ -3,6 +3,7 @@
 namespace Tournament\Repository;
 
 use Tournament\Model\User\User;
+use Tournament\Model\User\UserCollection;
 
 class UserRepository extends \Base\Repository\UserRepository
 {
@@ -27,9 +28,9 @@ class UserRepository extends \Base\Repository\UserRepository
       return $stmt->execute(['id' => $id]);
    }
 
-   public function getAllUsers(): array
+   public function getAllUsers(): UserCollection
    {
-      $users = [];
+      $users = new UserCollection();
       $stmt = $this->pdo->query("SELECT * FROM users");
       foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row)
       {

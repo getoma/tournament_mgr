@@ -41,7 +41,7 @@ class MatchDataRepository
          $this->buffer_by_name[$record->category->id][$record->name] = $record;
       }
 
-      return $this->buffer_by_id[$record->id];
+      return $this->buffer_by_id[$data['id']];
    }
 
    public function getMatchRecordsByCategoryId(int $categoryId): MatchRecordCollection

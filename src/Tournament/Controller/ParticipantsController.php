@@ -39,7 +39,7 @@ class ParticipantsController
       }
 
       $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
-      $participants = $this->repo->getParticipantsByTournamentId($args['tournamentId'], true);
+      $participants = $this->repo->getParticipantsByTournamentId($args['tournamentId']);
 
       return $this->view->render($response, 'participants/home.twig', [
          'tournament' => $tournament,

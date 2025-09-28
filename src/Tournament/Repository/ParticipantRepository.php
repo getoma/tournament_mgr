@@ -3,9 +3,10 @@
 namespace Tournament\Repository;
 
 use Tournament\Model\Data\Participant;
-use Tournament\Model\Data\Category;
 use Tournament\Repository\CategoryRepository;
 use PDO;
+use Tournament\Model\Data\ParticipantCollection;
+use Tournament\Model\Data\SlottedParticipantCollection;
 
 class ParticipantRepository
 {
@@ -32,7 +33,7 @@ class ParticipantRepository
       $participant = $this->participants[$data['id']];
 
       /* transform the category mapping from sql string output to php data struct if needed and possible */
-      if( empty($participant->categories) && !empty($category_data) )
+      if( $participant->categories->empty() && !empty($category_data) )
       {
          $categories = $this->categoryRepo->getCategoriesByTournamentId($participant->tournament_id);
          foreach(explode(',', $category_data) as $categoryId)
@@ -48,7 +49,7 @@ class ParticipantRepository
    /**
     * Get all participants for a tournament, optionally with category information
     */
-   public function getParticipantsByTournamentId(int $tournamentId): array
+   public function getParticipantsByTournamentId(int $tournamentId): ParticipantCollection
    {
       /* fetch all participants for a tournament, with category ids */
       $stmt = $this->pdo->prepare(
@@ -59,7 +60,7 @@ class ParticipantRepository
             . "ORDER BY p.lastname, p.firstname "
       );
       $stmt->execute(['tournament_id' => $tournamentId]);
-      $result = [];
+      $result = new ParticipantCollection();
       foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
       {
          $result[$row['id']] = $this->getParticipantInstance($row);
@@ -70,7 +71,7 @@ class ParticipantRepository
    /**
     * get all participants for a specific category - category data will not be set
     */
-   public function getParticipantsByCategoryId(int $categoryId): array
+   public function getParticipantsByCategoryId(int $categoryId): ParticipantCollection
    {
       $stmt = $this->pdo->prepare(
          "SELECT p.* "
@@ -80,7 +81,7 @@ class ParticipantRepository
       );
       $stmt->execute(['category_id' => $categoryId]);
 
-      $result = [];
+      $result = new ParticipantCollection();
       foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row )
       {
          $result[$row['id']] = $this->getParticipantInstance($row);
@@ -92,7 +93,7 @@ class ParticipantRepository
     * get all participants for a specific category, identified by their slot
     * category data will not be set
     */
-   public function getParticipantsWithSlotByCategoryId(int $categoryId): array
+   public function getParticipantsWithSlotByCategoryId(int $categoryId): SlottedParticipantCollection
    {
       $stmt = $this->pdo->prepare(
          "SELECT p.*, pc.slot_name "
@@ -102,29 +103,30 @@ class ParticipantRepository
       );
       $stmt->execute(['category_id' => $categoryId]);
 
-      $participants = [ null => [] ]; // also collect all unslotted participants
+      $result = new SlottedParticipantCollection();
       foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row )
       {
          $slot_name = $row['slot_name'];
          unset($row['slot_name']);
+
          $participant = $this->getParticipantInstance($row);
-         if( empty($slot_name) || array_key_exists($slot_name, $participants) )
+         if( empty($slot_name) || $result->has($slot_name) )
          {
-            $participants[null][] = $participant;
+            $result->addUnslotted($participant);
          }
          else
          {
-            $participants[$slot_name] = $participant;
+            $result[$slot_name] = $participant;
          }
       }
 
-      return $participants;
+      return $result;
    }
 
    /**
     * update the slots for each participant
     */
-   public function updateAllParticipantSlots(int $categoryId, array $participants): bool
+   public function updateAllParticipantSlots(int $categoryId, SlottedParticipantCollection $participants): bool
    {
       $this->pdo->beginTransaction();
       $clear_stmt = $this->pdo->prepare(
@@ -138,15 +140,11 @@ class ParticipantRepository
 
       foreach( $participants as $slot_name => $p )
       {
-         if( $slot_name )
-         {
-            $pid = ($p instanceof Participant)? $p->id : $p;
-            $update_stmt->execute([
-               'slot_name' => $slot_name,
-               'category_id' => $categoryId,
-               'participant_id' => $pid
-            ]);
-         }
+         $update_stmt->execute([
+            'slot_name' => $slot_name,
+            'category_id' => $categoryId,
+            'participant_id' => $p->id
+         ]);
       }
       $this->pdo->commit();
       return true;

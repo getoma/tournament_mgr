@@ -28,7 +28,7 @@ class AuthMiddleware implements MiddlewareInterface
       $route = $routeContext->getRoute();
 
       // return NotFound for non-existent route
-      if (empty($route))
+      if (!$route)
       {
          throw new HttpNotFoundException($request);
       }

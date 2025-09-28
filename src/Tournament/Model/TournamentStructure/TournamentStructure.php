@@ -11,7 +11,10 @@ use Tournament\Model\TournamentStructure\Pool;
 use Tournament\Model\TournamentStructure\KoNode;
 use Tournament\Model\Data\Category;
 use Tournament\Model\Data\Area;
+use Tournament\Model\Data\AreaCollection;
 use Tournament\Model\Data\MatchRecordCollection;
+use Tournament\Model\Data\ParticipantCollection;
+use Tournament\Model\Data\SlottedParticipantCollection;
 
 class TournamentStructure
 {
@@ -27,13 +30,21 @@ class TournamentStructure
    /** @var ?int */
    public ?int $finale_rounds_cnt = null;
 
+   public ParticipantCollection $unmapped_participants;
+
    /**
     * @param Category the category this structure is for
     * @param ?array   areas the list of combat areas
     * @param ?array[int,Participant] the list of participants
     */
-   public function __construct(public Category $category, public array $areas, $participants = [], ?MatchRecordCollection $matchRecords = null)
+   public function __construct(public Category $category, public AreaCollection $areas,
+                               SlottedParticipantCollection $participants = new SlottedParticipantCollection(),
+                               MatchRecordCollection $matchRecords = new MatchRecordCollection())
    {
+      // for the calculations done in this structure, a plain flat array of areas is needed
+      // we also identify the areas by their order index (so 0, 1, 2...) - instead of the area->id
+      $areas = $areas->values();
+
       if ($this->category->mode === 'ko')
       {
          $firstRound = $this->createKoFirstRound();
@@ -61,6 +72,8 @@ class TournamentStructure
       {
          throw new \InvalidArgumentException('Unknown tournament mode: ' . $this->category->mode);
       }
+
+      $this->unmapped_participants = $participants->unslotted();
 
       if ($matchRecords !== null)
       {
@@ -243,7 +256,7 @@ class TournamentStructure
    /**
     * assign participants to each KO first round slot according the given mapping
     */
-   private function assignKoParticipants(array $participants, array $firstRound)
+   private function assignKoParticipants(SlottedParticipantCollection $participants, array $firstRound)
    {
       /* map nodes by their localid */
       $names = array_map(fn($n) => $n->name, $firstRound);
@@ -266,7 +279,7 @@ class TournamentStructure
    /**
     * assign participants into pools according the given mapping
     */
-   private function assignPoolParticipants(array $participants)
+   private function assignPoolParticipants(SlottedParticipantCollection $participants)
    {
       foreach ($participants as $slotId => $p)
       {
@@ -285,22 +298,32 @@ class TournamentStructure
    /**
     * shuffle in a new list of participants
     */
-   public function shuffleParticipants(array $participants): array
+   public function shuffleParticipants(ParticipantCollection $participants): SlottedParticipantCollection
    {
-      if (empty($this->pools))
-      {
-         return $this->shuffleKoParticipants($participants);
-      }
-      else
+      if (count($this->pools))
       {
          return $this->shufflePoolParticipants($participants);
       }
+      else
+      {
+         return $this->shuffleKoParticipants($participants);
+      }
+   }
+
+   /**
+    *
+    */
+   private function shuffleParticipantCollection(ParticipantCollection $p): array
+   {
+      $a = iterator_to_array($p);
+      shuffle($a);
+      return $a;
    }
 
    /**
     * shuffle in a new list of participants into a KO structure
     */
-   private function shuffleKoParticipants(array $participants): array
+   private function shuffleKoParticipants(ParticipantCollection $participants): SlottedParticipantCollection
    {
       /* algorithm for participant shuffling, that makes sure that BYEs are spread out evenly:
        * 1) create an array of ParticipantSlot objects for each participant, and shuffle it
@@ -319,7 +342,7 @@ class TournamentStructure
       // get references to all MatchNodes in the first round.
       $firstRound = $this->ko->getRounds()[0];
       // Initial shuffle to randomize assignment of participants to initial colors
-      shuffle($participants);
+      $participants = $this->shuffleParticipantCollection($participants);
       // Split into red and white slots
       $numNodes   = count($firstRound);
       $redSlots   = array_slice($participants, 0, $numNodes);
@@ -332,7 +355,7 @@ class TournamentStructure
       shuffle($whiteSlots);
 
       // now assign the slots to each match
-      $newMapping = [];
+      $newMapping = new SlottedParticipantCollection();
       for ($i = 0; $i < count($firstRound); $i++)
       {
          $firstRound[$i]->slotRed->participant = $redSlots[$i];
@@ -356,15 +379,15 @@ class TournamentStructure
    /**
     * shuffle in a new list of participants into the pools
     */
-   private function shufflePoolParticipants($participants): array
+   private function shufflePoolParticipants(ParticipantCollection $participants): SlottedParticipantCollection
    {
-      shuffle($participants);
       $numParticipants = count($participants);
       $poolCount = count($this->pools);
       $minCount = intdiv($numParticipants, $poolCount); // minimum number of participants per pool
       $extra = $numParticipants % $poolCount; // number of pools with one additional participant
 
-      $newMapping = [];
+      $newMapping = new SlottedParticipantCollection();
+      $participants = $this->shuffleParticipantCollection($participants);
       $offset = 0;
       for ($i = 0; $i < $poolCount; $i++)
       {
@@ -390,9 +413,9 @@ class TournamentStructure
     * (e.g. "Area-1-1", "Area-2-1", "Area-1-2", "Area-2-2", ...)
     * This way, the pools can be easily identified by their area assignment.
     */
-   private function assignPoolAreas($areas)
+   private function assignPoolAreas(array $areas)
    {
-      if (empty($areas)) return;
+      if (!count($areas)) return;
       $numAreas = count($areas);
       $numPools = count($this->pools);
       for ($i = 0; $i < $numPools; $i++)
@@ -409,9 +432,9 @@ class TournamentStructure
     * The tree is split into #numArea * #area_cluster clusters. This means
     * with 2 Areas and area_cluster=2 we have 8 clusters: Area-1-1, Area-2-1, Area-1-2, Area-2-2
     */
-   private function assignKoAreas($areas, $rounds)
+   private function assignKoAreas(array $areas, array $rounds)
    {
-      if (empty($areas)) return;
+      if (!count($areas)) return;
 
       $cluster           = $this->category->config->area_cluster;
       $numAreas          = count($areas);
@@ -477,7 +500,7 @@ class TournamentStructure
          {
             $area_idx = array_search($redArea, $available_areas);
          }
-         if (($area_idx === false) && ($whiteArea = $node->matchNode->area))
+         if (($area_idx === false) && ($whiteArea = $node->slotWhite->matchNode->area))
          {
             $area_idx = array_search($whiteArea, $available_areas);
          }

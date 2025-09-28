@@ -2,75 +2,25 @@
 
 namespace Tournament\Model\Data;
 
-class MatchRecordCollection implements \IteratorAggregate, \Countable, \ArrayAccess
+/**
+ * MatchRecord collection is organized by match name
+ */
+class MatchRecordCollection extends \Base\Model\ObjectCollection
 {
-   private array $records = [];
-
-   public function __construct(iterable $records = [])
+   protected static function elements_type(): string
    {
-      foreach($records as $record)
-      {
-         if( $record instanceof MatchRecord )
-         {
-            $this->records[$record->name] = $record;
-         }
-         else
-         {
-            throw new \InvalidArgumentException("invalid record: must be instance of MatchRecord");
-         }
-      }
-   }
-
-   public function has(string $name): bool
-   {
-      return isset($this->records[$name]);
-   }
-
-   public function getIterator(): \Traversable
-   {
-      return new \ArrayIterator($this->records);
-   }
-
-   public function count(): int
-   {
-      return count($this->records);
-   }
-
-   public function offsetExists($offset): bool
-   {
-      return isset($this->records[$offset]);
-   }
-
-   public function offsetGet($offset): ?MatchRecord
-   {
-      return $this->records[$offset] ?? null;
+      return MatchRecord::class;
    }
 
    public function offsetSet($offset, $value): void
    {
-      if ($value instanceof MatchRecord)
+      if ($offset === null || $offset === $value->name)
       {
-         if ($offset === null)
-         {
-            $this->records[$value->name] = $value;
-         }
-         else if ($offset === $value->name)
-         {
-            $this->records[$offset] = $value;
-         }
-         else
-         {
-            throw new \InvalidArgumentException("invalid offset: must be identical to match record name");
-         }
+         parent::offsetSet($value->name, $value);
       }
       else
       {
-         throw new \InvalidArgumentException("invalid record: must be instance of MatchRecord");
+         throw new \InvalidArgumentException("invalid offset, must use Match name " . $offset . " vs " . $value->name);
       }
-   }
-
-   public function offsetUnset($offset): void
-   {
-      unset($this->records[$offset]);
    }
 }

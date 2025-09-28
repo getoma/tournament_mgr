@@ -5,6 +5,7 @@ namespace Tournament\Model\TournamentStructure;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\Data\Participant;
 use Tournament\Model\Data\MatchRecordCollection;
+use Tournament\Model\Data\ParticipantCollection;
 
 class KoNode extends MatchNode
 {
@@ -79,28 +80,31 @@ class KoNode extends MatchNode
     * get a participants of a specific rank (1=winner, 2=runner-up, 3=third place, ...)
     * @return Participant[]
     */
-   public function getRanked($rank = 1): array
+   public function getRanked($rank = 1): ParticipantCollection
    {
+      $result = [];
       if ($rank === 1)
       {
          $winner = $this->getWinner();
-         return $winner ? [$winner] : [];
+         if( $winner ) $result[] = $winner;
       }
-      if ($rank === 2)
+      else if ($rank === 2)
       {
          $defeated = $this->getDefeated();
-         return $defeated ? [$defeated] : [];
+         if( $defeated ) $result[] = $defeated;
       }
-      /* from here, recursively collect the ranks from the red/white subtrees */
-      $ranks = [];
-      foreach ([$this->slotRed, $this->slotWhite] as $slot)
+      else
       {
-         if ($slot instanceof MatchWinnerSlot)
+         /* from here, recursively collect the ranks from the red/white subtrees */
+         foreach ([$this->slotRed, $this->slotWhite] as $slot)
          {
-            $ranks = array_merge($ranks, $slot->matchNode->getRanked($rank - 1));
+            if ($slot instanceof MatchWinnerSlot)
+            {
+               $result = array_merge($result, $slot->matchNode->getRanked($rank - 1));
+            }
          }
       }
-      return $ranks;
+      return new ParticipantCollection($result);
    }
 
    /**

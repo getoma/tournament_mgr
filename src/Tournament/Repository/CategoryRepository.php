@@ -4,6 +4,7 @@ namespace Tournament\Repository;
 
 use Tournament\Model\Data\Category;
 use PDO;
+use Tournament\Model\Data\CategoryCollection;
 
 class CategoryRepository
 {
@@ -24,9 +25,9 @@ class CategoryRepository
       return $config;
    }
 
-   public function getCategoriesByTournamentId(int $tournamentId): array
+   public function getCategoriesByTournamentId(int $tournamentId): CategoryCollection
    {
-      if (!array_key_exists($tournamentId, $this->categories_by_tournament))
+      if (!isset($this->categories_by_tournament[$tournamentId]))
       {
          $stmt = $this->pdo->prepare("SELECT id, name, mode, config_json FROM categories WHERE tournament_id = :tournament_id order by id");
          $stmt->execute(['tournament_id' => $tournamentId]);
@@ -41,11 +42,11 @@ class CategoryRepository
                mode: $row['mode'],
                config: self::parseConfig($row['config_json'])
             );
-            $this->categories_by_tournament[$tournamentId][$category->id] = $category;
+            $this->categories_by_tournament[$tournamentId][] = $category;
             $this->categories_by_id[$category->id] = $category;
          }
       }
-      return $this->categories_by_tournament[$tournamentId];
+      return new CategoryCollection($this->categories_by_tournament[$tournamentId]);
    }
 
    public function getCategoryById(int $id): ?Category
@@ -103,7 +104,7 @@ class CategoryRepository
    public function setCategoryParticipants(int $categoryId, array $participantIds): bool
    {
       // Remove old entries that are not in the new list
-      if (!empty($participantIds))
+      if (count($participantIds))
       {
          $placeholders = implode(',', array_fill(0, count($participantIds), '?'));
          $sql = "DELETE FROM participants_categories WHERE category_id = ? AND participant_id NOT IN ($placeholders)";
@@ -118,21 +119,19 @@ class CategoryRepository
       $stmt->execute($params);
 
       // Then add any new participants
-      if (empty($participantIds))
+      if (count($participantIds))
       {
-         return true;
+         $values = [];
+         $params = [];
+         foreach ($participantIds as $participantId)
+         {
+            $values[] = "(?, ?)";
+            $params[] = $participantId;
+            $params[] = $categoryId;
+         }
+         $sql = "INSERT IGNORE INTO participants_categories (participant_id, category_id) VALUES " . implode(',', $values);
+         $stmt = $this->pdo->prepare($sql);
+         return $stmt->execute($params);
       }
-
-      $values = [];
-      $params = [];
-      foreach ($participantIds as $participantId)
-      {
-         $values[] = "(?, ?)";
-         $params[] = $participantId;
-         $params[] = $categoryId;
-      }
-      $sql = "INSERT IGNORE INTO participants_categories (participant_id, category_id) VALUES " . implode(',', $values);
-      $stmt = $this->pdo->prepare($sql);
-      return $stmt->execute($params);
    }
 }

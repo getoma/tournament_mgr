@@ -4,6 +4,7 @@ namespace Tournament\Repository;
 
 use Tournament\Model\Data\Tournament;
 use Tournament\Model\Data\TournamentStatus;
+use Tournament\Model\Data\TournamentCollection;
 
 use PDO;
 
@@ -15,17 +16,16 @@ class TournamentRepository
    {
    }
 
-   public function getAllTournaments(): array
+   public function getAllTournaments(): TournamentCollection
    {
-      $tournaments = [];
+      $tournaments = new TournamentCollection();
       $stmt = $this->pdo->query("SELECT * FROM tournaments order by date asc, name asc");
       foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
       {
-         $t = new Tournament(...$row);
-         if( $this->buffer[$t->id] ?? false ) continue;
-         $this->buffer[$t->id] = $t;
+         $this->buffer[$row['id']] ??= new Tournament(...$row);
+         $tournaments[] = $this->buffer[$row['id']];
       }
-      return array_values($this->buffer);
+      return $tournaments;
    }
 
    public function getTournamentById($id): ?Tournament
@@ -41,18 +41,6 @@ class TournamentRepository
          }
       }
       return $this->buffer[$id] ?? null;
-   }
-
-   public function getTournamentByName($name): ?Tournament
-   {
-      $stmt = $this->pdo->prepare("SELECT * FROM tournaments WHERE name = :name AND status = 'active'");
-      $stmt->execute(['name' => $name]);
-      $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-      if (count($results) === 1)
-      {
-         return new Tournament(...$results[0]);
-      }
-      return null;
    }
 
    public function createTournament(string $name, string $date, string $notes): int

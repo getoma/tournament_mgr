@@ -21,7 +21,7 @@ class Participant
       public int $tournament_id, // Identifier for the tournament this participant belongs to
       public string $lastname,   // Last name of the participant
       public string $firstname,  // First name of the participant
-      public array $categories = [] // Categories the participant is registered in
+      public CategoryCollection $categories = new CategoryCollection() // Categories the participant is registered in
    ) {
    }
 

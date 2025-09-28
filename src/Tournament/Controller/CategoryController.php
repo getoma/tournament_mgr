@@ -89,7 +89,7 @@ class CategoryController
          'pools'      => $structure->pools,
          'ko'         => $ko,
          'chunks'     => $structure->chunks,
-         'unmapped_participants' => $participants[null] ?? [],
+         'unmapped_participants' => $structure->unmapped_participants,
       ]);
    }
 

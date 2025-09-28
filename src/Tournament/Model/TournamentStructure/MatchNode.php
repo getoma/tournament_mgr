@@ -9,14 +9,12 @@ use Tournament\Model\Data\MatchRecord;
 
 class MatchNode
 {
-   private ?MatchRecord $matchRecord = null;
-
    public function __construct(
       public string $name,
       public MatchSlot $slotRed,
       public MatchSlot $slotWhite,
       public ?Area $area = null,
-      ?MatchRecord $matchRecord = null
+      private ?MatchRecord $matchRecord = null
    )
    {
       if( $this->slotRed === $this->slotWhite )

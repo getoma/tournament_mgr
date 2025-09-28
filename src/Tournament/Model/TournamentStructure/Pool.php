@@ -6,6 +6,8 @@ use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\Data\Participant;
 use Tournament\Model\Data\Area;
 use Tournament\Model\Data\MatchRecordCollection;
+use Tournament\Model\Data\ParticipantCollection;
+use Tournament\Model\Data\SlottedParticipantCollection;
 
 class Pool
 {
@@ -13,7 +15,7 @@ class Pool
 
    public function __construct(
       private string $name,
-      public  array $participants = [],
+      public  SlottedParticipantCollection $participants = new SlottedParticipantCollection(),
       private ?Area $area = null
    )
    {
@@ -57,11 +59,11 @@ class Pool
 
    /**
     * recursively collect all participants in this match tree
-    * @return array of Participant objects
+    * @return ParticipantCollection of Participant objects
     */
-   public function getParticipantList(): array
+   public function getParticipantList(): ParticipantCollection
    {
-      return $this->participants;
+      return $this->participants->all();
    }
 
    public function getMatchList(): array
@@ -74,6 +76,7 @@ class Pool
     */
    public function getRanked($rank = 1): ?Participant
    {
+      /* TODO: derive ranked list from match results */
       return null;
    }
 
@@ -85,10 +88,8 @@ class Pool
       /* https://de.wikipedia.org/wiki/Jeder-gegen-jeden-Turnier#Rutschsystem */
       $this->matches = [];
 
-      $players = array_merge(
-         $this->participants,
-         count($this->participants) % 2 ? [null] : [] // fill up to an even number of participants
-      );
+      $players = $this->participants->values();
+      if( count($this->participants) % 2 ) $players[] = null; // fill up to an even number of participants
 
       $numPlayers = count($players);
       $rounds = $numPlayers - 1;

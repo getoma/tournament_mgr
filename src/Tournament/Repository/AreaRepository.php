@@ -3,17 +3,27 @@
 namespace Tournament\Repository;
 
 use Tournament\Model\Data\Area;
+use Tournament\Model\Data\AreaCollection;
 
 class AreaRepository
 {
+   /**@var Area[] */
    private $buffer = [];
+
+   /**@var AreaCollection[] */
+   private $buffer_by_tournament = [];
 
    public function __construct(private \PDO $pdo)
    {
    }
 
-   public function getAreasByTournamentId($tournamentId): array
+   public function getAreasByTournamentId($tournamentId): AreaCollection
    {
+      if( isset($this->buffer_by_tournament[$tournamentId]) )
+      {
+         return new AreaCollection($this->buffer_by_tournament[$tournamentId]);
+      }
+
       $areas = [];
       $stmt = $this->pdo->prepare("SELECT * FROM areas WHERE tournament_id = :tournamentId order by name");
       $stmt->execute(['tournamentId' => $tournamentId]);
@@ -22,7 +32,8 @@ class AreaRepository
          $this->buffer[$row['id']] ??= new Area(...$row);
          $areas[] = $this->buffer[$row['id']];
       }
-      return $areas;
+      $this->buffer_by_tournament[$tournamentId] = $areas;
+      return new AreaCollection($areas);
    }
 
    public function getAreaById($id): ?Area

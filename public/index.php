@@ -9,7 +9,7 @@ Slim\Factory\AppFactory::setContainer($container);
 $app = Slim\Factory\AppFactory::create();
 
 // set the base path for the application
-if (!empty(config::$BASE_PATH))
+if (config::$BASE_PATH)
 {
    $app->setBasePath(config::$BASE_PATH);
 }
