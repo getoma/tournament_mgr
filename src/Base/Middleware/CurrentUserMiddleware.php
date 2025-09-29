@@ -31,4 +31,16 @@ class CurrentUserMiddleware implements MiddlewareInterface
       }
       return $handler->handle($request);
    }
+
+   public static function create(
+      \Slim\App $app,
+      ?AuthService $authService = null,
+      ?Twig $twig = null
+   ): self
+   {
+      $container = $app->getContainer();
+      if (!isset($authService)) $authService = $container->get(AuthService::class);
+      if (!isset($twig)) $twig = $container->get(Twig::class);
+      return new self($authService, $twig);
+   }
 }

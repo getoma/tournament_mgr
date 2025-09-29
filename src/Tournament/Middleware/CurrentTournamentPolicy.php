@@ -2,6 +2,7 @@
 
 namespace Tournament\Middleware;
 
+use Tournament\Model\Data\Tournament;
 use Tournament\Policy\TournamentAction;
 use Tournament\Policy\TournamentPolicy;
 use Tournament\Model\Data\TournamentStatus;
@@ -13,22 +14,22 @@ use Tournament\Model\Data\TournamentStatus;
  */
 class CurrentTournamentPolicy
 {
-   public function __construct(private ?int $tournamentId, private TournamentPolicy $policy)
+   public function __construct(private ?Tournament $tournament, private TournamentPolicy $policy)
    {
    }
 
    public function isActionAllowed(TournamentAction $action): bool
    {
-      return $this->tournamentId ? $this->policy->isActionAllowed($this->tournamentId, $action) : false;
+      return $this->tournament ? $this->policy->isActionAllowed($this->tournament, $action) : false;
    }
 
    public function getPossibleTransitions(): array
    {
-      return $this->tournamentId ? $this->policy->getPossibleTransitions($this->tournamentId) : [];
+      return $this->tournament ? $this->policy->getPossibleTransitions($this->tournament) : [];
    }
 
    public function canTransitionToStatus(TournamentStatus $newStatus): bool
    {
-      return $this->tournamentId ? $this->policy->canTransition($this->tournamentId, $newStatus) : false;
+      return $this->tournament ? $this->policy->canTransition($this->tournament, $newStatus) : false;
    }
 }

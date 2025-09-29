@@ -2,6 +2,7 @@
 
 namespace Tournament\Policy;
 
+use Tournament\Model\Data\Tournament;
 use Tournament\Model\Data\TournamentStatus;
 use Tournament\Repository\TournamentRepository;
 
@@ -18,19 +19,12 @@ final class TournamentPolicy
 
    /**
     * Checks if a specific action is allowed in the current status of the tournament.
-    * @param int $tournamentId
+    * @param Tournament $tournamentId
     * @param TournamentAction $action
     * @return bool
     */
-   public function isActionAllowed(int $tournamentId, TournamentAction $action): bool
+   public function isActionAllowed(Tournament $tournament, TournamentAction $action): bool
    {
-      $tournament = $this->repo->getTournamentById($tournamentId);
-
-      if (!$tournament)
-      {
-         throw new \InvalidArgumentException("Tournament with ID $tournamentId does not exist.");
-      }
-
       return match ($tournament->status)
       {
          TournamentStatus::Planning => match ($action)
@@ -59,18 +53,11 @@ final class TournamentPolicy
 
    /**
     * Returns a list of possible status transitions for the given tournament.
-    * @param int $tournamentId
+    * @param Tournament $tournamentId
     * @return TournamentStatus[]
     */
-   public function getPossibleTransitions(int $tournamentId): array
+   public function getPossibleTransitions(Tournament $tournament): array
    {
-      $tournament = $this->repo->getTournamentById($tournamentId);
-
-      if (!$tournament)
-      {
-         throw new \InvalidArgumentException("Tournament with ID $tournamentId does not exist.");
-      }
-
       return match ($tournament->status)
       {
          TournamentStatus::Planning => [TournamentStatus::Planned],
@@ -82,19 +69,12 @@ final class TournamentPolicy
 
    /**
     * Checks if a transition to a new status is allowed for the given tournament.
-    * @param int $tournamentId
+    * @param Tournament $tournamentId
     * @param TournamentStatus $newStatus
     * @return bool
     */
-   public function canTransition(int $tournamentId, TournamentStatus $newStatus): bool
+   public function canTransition(Tournament $tournament, TournamentStatus $newStatus): bool
    {
-      $tournament = $this->repo->getTournamentById($tournamentId);
-
-      if (!$tournament)
-      {
-         throw new \InvalidArgumentException("Tournament with ID $tournamentId does not exist.");
-      }
-
       switch ($tournament->status)
       {
          case TournamentStatus::Planning:
@@ -145,7 +125,7 @@ final class TournamentPolicy
             return false;
 
          default:
-            throw new \InvalidArgumentException("Unhandled tournament status: " . var_export($tournament->status, true));
+            throw new \DomainException("Unhandled tournament status: " . var_export($tournament->status, true));
       }
    }
 }

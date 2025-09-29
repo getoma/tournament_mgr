@@ -7,7 +7,6 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
-use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\CategoryRepository;
 use Tournament\Repository\ParticipantRepository;
 
@@ -21,7 +20,6 @@ class ParticipantsController
    public function __construct(
       private Twig $view,
       private ParticipantRepository $repo,
-      private TournamentRepository $tournamentRepo,
       private CategoryRepository $categoryRepo,
    ) {
    }
@@ -31,15 +29,9 @@ class ParticipantsController
     */
    private function renderParticipantList(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
    {
-      $tournament = $this->tournamentRepo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
-
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
-      $participants = $this->repo->getParticipantsByTournamentId($args['tournamentId']);
+      $tournament = $request->getAttribute('tournament');
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($tournament->id);
+      $participants = $this->repo->getParticipantsByTournamentId($tournament->id);
 
       return $this->view->render($response, 'participants/home.twig', [
          'tournament' => $tournament,
@@ -56,7 +48,7 @@ class ParticipantsController
    private function sendToParticipantList(Request $request, Response $response, array $args): Response
    {
       return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-         ->urlFor('show_participant_list', ['tournamentId' => $args['tournamentId']]))->withStatus(302);
+         ->urlFor('show_participant_list', ['tournamentId' => $request->getAttribute('tournament')->id]))->withStatus(302);
    }
 
    /**
@@ -72,14 +64,8 @@ class ParticipantsController
     */
    public function updateParticipantList(Request $request, Response $response, array $args): Response
    {
-      $tournament = $this->tournamentRepo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
-
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
+      $tournament = $request->getAttribute('tournament');
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($tournament->id);
       $validation_rules = [];
       foreach ($categories as $category)
       {
@@ -116,13 +102,6 @@ class ParticipantsController
     */
    public function importParticipantList(Request $request, Response $response, array $args): Response
    {
-      $tournament = $this->tournamentRepo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
-
       $data = $request->getParsedBody();
       $rules = [
          'categories' => v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0)),
@@ -182,7 +161,7 @@ class ParticipantsController
       }
 
       // Process the uploaded file and import participants
-      $imported = $this->repo->importParticipants($tournament->id, $participants, $data['categories'] ?? []);
+      $imported = $this->repo->importParticipants($request->getAttribute('tournament')->id, $participants, $data['categories'] ?? []);
       if ($imported)
       {
          return $this->sendToParticipantList($request, $response, $args);
@@ -197,28 +176,15 @@ class ParticipantsController
     */
    public function deleteParticipant(Request $request, Response $response, array $args): Response
    {
-      $tournament = $this->tournamentRepo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
-
-      $participantId = $args['participantId'] ?? null;
-      if (!$participantId || !$this->repo->getParticipantById($participantId))
-      {
-         $response->getBody()->write('Participant not found');
-         return $response->withStatus(404);
-      }
-
-      $deleted = $this->repo->deleteParticipant($participantId);
-      if ($deleted)
+      if ($this->repo->deleteParticipant($request->getAttribute('participant')->id))
       {
          return $this->sendToParticipantList($request, $response, $args);
       }
-
-      $response->getBody()->write('Failed to delete participant');
-      return $response->withStatus(400);
+      else
+      {
+         $response->getBody()->write('Failed to delete participant');
+         return $response->withStatus(400);
+      }
    }
 
    /**
@@ -227,21 +193,9 @@ class ParticipantsController
     */
    public function showParticipant(Request $request, Response $response, array $args): Response
    {
-      $tournament = $this->tournamentRepo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
-
-      $participant = $this->repo->getParticipantById($args['participantId']);
-      if (!$participant)
-      {
-         $response->getBody()->write('Participant not found');
-         return $response->withStatus(404);
-      }
-
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
+      $tournament = $request->getAttribute('tournament');
+      $participant = $request->getAttribute('participant');
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($tournament->id);
 
       return $this->view->render($response, 'participants/details.twig', [
          'tournament' => $tournament,
@@ -256,19 +210,8 @@ class ParticipantsController
     */
    public function updateParticipant(Request $request, Response $response, array $args): Response
    {
-      $tournament = $this->tournamentRepo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
-
-      $participant = $this->repo->getParticipantById($args['participantId']);
-      if (!$participant)
-      {
-         $response->getBody()->write('Participant not found');
-         return $response->withStatus(404);
-      }
+      $tournament = $request->getAttribute('tournament');
+      $participant = $request->getAttribute('participant');
 
       $data = $request->getParsedBody();
       $participant_rules = Participant::getValidationRules('create');
@@ -280,7 +223,7 @@ class ParticipantsController
       {
          return $this->view->render($response, 'participants/details.twig', [
             'tournament' => $tournament,
-            'categories' => $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']),
+            'categories' => $this->categoryRepo->getCategoriesByTournamentId($tournament->id),
             'participant' => $participant,
             'errors' => $errors,
             'prev' => $data,

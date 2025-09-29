@@ -11,6 +11,8 @@ use Tournament\Controller\TestController;
 use Tournament\Policy\TournamentAction;
 
 use Slim\Routing\RouteCollectorProxy;
+use Tournament\Exception\EntityNotFoundException;
+use Tournament\Middleware\EntityNotFoundHandler;
 
 return function (\Slim\App $app)
 {
@@ -20,19 +22,25 @@ return function (\Slim\App $app)
     * Global MiddleWare Injection
     */
 
-   // twig middleware to support various extensions in templates
-   $app->add(Slim\Views\TwigMiddleware::create($app, $container->get(Slim\Views\Twig::class)));
-
    // Add CurrentUserMiddleware
-   $app->add(new Base\Middleware\CurrentUserMiddleware($container->get(Base\Service\AuthService::class), $container->get(Slim\Views\Twig::class)));
+   $app->add(Base\Middleware\CurrentUserMiddleware::create($app));
 
    // Add TournamentPolicyMiddleware
    $app->add(\Tournament\Middleware\TournamentPolicyMiddleware::create($app));
 
+   // Add RouteArgsResolverMiddleware
+   $app->add(\Tournament\Middleware\RouteArgsResolverMiddleware::create($app));
+
+   // Add Routing Middleware
    $app->addRoutingMiddleware();
 
+   // twig middleware to support various extensions in templates
+   $app->add(Slim\Views\TwigMiddleware::create($app, $container->get(Slim\Views\Twig::class)));
+
    // Add Error Handling Middleware
-   $app->addErrorMiddleware(true, false, false);
+   $errMW = $app->addErrorMiddleware(config::$debug, true, false);
+   // Add custom handler for EntityNotFoundException
+   $errMW->setErrorHandler(EntityNotFoundException::class, EntityNotFoundHandler::create($app));
 
    /**********************
     * Local MiddleWare Initialization

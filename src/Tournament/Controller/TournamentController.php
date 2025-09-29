@@ -8,7 +8,6 @@ use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
 use Base\Service\Validator;
-
 use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\AreaRepository;
 use Tournament\Repository\CategoryRepository;
@@ -19,7 +18,6 @@ use Tournament\Model\Data\Tournament;
 use Tournament\Model\Data\TournamentStatus;
 
 use Tournament\Policy\TournamentPolicy;
-
 
 class TournamentController
 {
@@ -37,17 +35,9 @@ class TournamentController
     */
    public function showTournament(Request $request, Response $response, array $args): Response
    {
-      $tournament = $this->repo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
-
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($request->getAttribute('tournament')->id);
 
       return $this->view->render($response, 'tournament/home.twig', [
-         'tournament' => $tournament,
          'categories' => $categories,
       ]);
    }
@@ -89,51 +79,29 @@ class TournamentController
     */
    public function showControlPanel(Request $request, Response $response, array $args): Response
    {
-      $tournament = $this->repo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
-
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($request->getAttribute('tournament')->id);
 
       return $this->view->render($response, 'tournament/controlpanel.twig', [
-         'tournament' => $tournament,
          'categories' => $categories,
-      ]);
-   }
-
-   /**
-    * Render the form to edit an existing tournament
-    */
-   private function renderTournamentConfiguration(Response $response, array $args, array $errors = [], array $prev = []): Response
-   {
-      $tournament = $this->repo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($args['tournamentId']);
-      $areas = $this->areaRepo->getAreasByTournamentId($args['tournamentId']);
-
-      return $this->view->render($response, 'tournament/configure.twig', [
-         'tournament' => $tournament,
-         'areas' => $areas,
-         'categories' => $categories,
-         'category_modes' => Category::get_modes(),
-         'errors' => $errors,
-         'prev' => $prev,
       ]);
    }
 
    /**
     * Show the configuration page of a tournament
     */
-   public function showTournamentConfiguration(Request $request, Response $response, array $args): Response
+   public function showTournamentConfiguration(Request $request, Response $response, array $errors = [], array $prev = []): Response
    {
-      return $this->renderTournamentConfiguration($response, $args);
+      $tournament = $request->getAttribute('tournament');
+      $categories = $this->categoryRepo->getCategoriesByTournamentId($tournament->id);
+      $areas = $this->areaRepo->getAreasByTournamentId($tournament->id);
+
+      return $this->view->render($response, 'tournament/configure.twig', [
+         'areas' => $areas,
+         'categories' => $categories,
+         'category_modes' => Category::get_modes(),
+         'errors' => $errors,
+         'prev' => $prev,
+      ]);
    }
 
    /**
@@ -158,16 +126,10 @@ class TournamentController
       {
          $prev = ['tournament' => $data];
          $err = ['tournament' => $errors];
-         return $this->renderTournamentConfiguration($response, $args, $err, $prev);
+         return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      // everything is ok, update the tournament
-      $tournament = $this->repo->getTournamentById($args['tournamentId']);
-      if (!$tournament)
-      {
-         $response->getBody()->write('Tournament not found');
-         return $response->withStatus(404);
-      }
+      $tournament = $request->getAttribute('tournament');
       $tournament->name = $data['name'];
       $tournament->date = $data['date'];
       $tournament->notes = $data['notes'] ?? null;
@@ -178,19 +140,19 @@ class TournamentController
 
    public function changeTournamentStatus(Request $request, Response $response, array $args): Response
    {
-      $tournament_id = (int)$args['tournamentId'];
-
       $data = $request->getParsedBody();
       $new_state = TournamentStatus::load($data['status']);
 
-      if( $this->policy->canTransition($tournament_id, $new_state) )
+      $tournament = $request->getAttribute('tournament');
+
+      if( $this->policy->canTransition($tournament, $new_state) )
       {
-         $this->repo->updateState($tournament_id, $new_state);
+         $this->repo->updateState($tournament->id, $new_state);
       }
       else
       {
          $err = ['status' => 'not allowed'];
-         return $this->renderTournamentConfiguration($response, $args, $err);
+         return $this->showTournamentConfiguration($request, $response, $args, $err);
       }
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
@@ -208,10 +170,10 @@ class TournamentController
       {
          $prev = ['areas' => ['new' => $data]];
          $err = ['areas' => ['new' => $errors]];
-         return $this->renderTournamentConfiguration($response, $args, $err, $prev);
+         return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      $area = new Area(null, $args['tournamentId'], $data['name']);
+      $area = new Area(null, $request->getAttribute('tournament')->id, $data['name']);
       $this->areaRepo->createArea($area);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
@@ -225,14 +187,16 @@ class TournamentController
       $data = $request->getParsedBody();
       $errors = Validator::validate($data, Area::getValidationRules());
 
+      $area = $request->getAttribute('area');
+
       if (count($errors) > 0)
       {
-         $prev = ['areas' => [$args['areaId'] => $data]];
-         $err = ['areas' => [$args['areaId'] => $errors]];
-         return $this->renderTournamentConfiguration($response, $args, $err, $prev);
+         $prev = ['areas' => [$area->id => $data]];
+         $err = ['areas' => [$area->id => $errors]];
+         return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      $area = new Area($args['areaId'], $args['tournamentId'], $data['name']);
+      $area->name = $data['name'];
       $this->areaRepo->updateArea($area);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
@@ -243,7 +207,7 @@ class TournamentController
     */
    public function deleteArea(Request $request, Response $response, array $args): Response
    {
-      $this->areaRepo->deleteArea($args['areaId']);
+      $this->areaRepo->deleteArea($request->getAttribute('area')->id);
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
 
@@ -259,10 +223,10 @@ class TournamentController
       {
          $prev = ['categories' => ['new' => $data]];
          $err = ['categories' => ['new' => $errors]];
-         return $this->renderTournamentConfiguration($response, $args, $err, $prev);
+         return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      $this->categoryRepo->createCategory($args['tournamentId'], $data['name'], $data['mode']);
+      $this->categoryRepo->createCategory($request->getAttribute('tournament')->id, $data['name'], $data['mode']);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
@@ -275,17 +239,19 @@ class TournamentController
       $data = $request->getParsedBody();
       $errors = Validator::validate($data, Category::getValidationRules());
 
+      $category = $request->getAttribute('category');
+
       if (count($errors) > 0)
       {
-         $prev = ['categories' => [$args['categoryId'] => $data]];
-         $err = ['categories' => [$args['categoryId'] => $errors]];
-         return $this->renderTournamentConfiguration($response, $args, $err, $prev);
+         $prev = ['categories' => [$category->id => $data]];
+         $err = ['categories' => [$category->id => $errors]];
+         return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      $data['id'] = $args['categoryId'];
+      $data['id'] = $category->id;
       if (!$this->categoryRepo->updateCategory($data))
       {
-         return $this->renderTournamentConfiguration($response, $args, ['category' => ['update' => 'Failed to update category']], $data);
+         return $this->showTournamentConfiguration($request, $response, $args, ['category' => ['update' => 'Failed to update category']], $data);
       }
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
@@ -296,7 +262,7 @@ class TournamentController
     */
    public function deleteCategory(Request $request, Response $response, array $args): Response
    {
-      $this->categoryRepo->deleteCategory($args['categoryId']);
+      $this->categoryRepo->deleteCategory($request->getAttribute('category')->id);
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
 }

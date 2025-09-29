@@ -9,7 +9,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 use Slim\Routing\RouteContext;
 use Slim\Exception\HttpForbiddenException;
-
+use Tournament\Exception\EntityNotFoundException;
 use Tournament\Repository\TournamentRepository;
 use Tournament\Policy\TournamentPolicy;
 use Tournament\Policy\TournamentAction;
@@ -31,29 +31,18 @@ class TournamentStatusGuardMiddleware implements MiddlewareInterface
       $route = RouteContext::fromRequest($request)->getRoute();
       if (!$route)
       {
-         throw new \InvalidArgumentException("Route could not be determined from request. Is the RoutingMiddleware registered?");
+         throw new \DomainException("Route could not be determined from request. Is the RoutingMiddleware registered?");
       }
 
-      $tournamentId = (int)($route->getArgument('tournamentId') ?? 0);
-      if ($tournamentId <= 0)
-      {
-         throw new \InvalidArgumentException("Route is missing tournament ID argument or it is not valid.");
-      }
-
-      /** @var TournamentAction|null $requiredAction */
+      /** @var TournamentAction $requiredAction */
       $requiredAction = $request->getAttribute('requiredAction');
-      if (!$requiredAction instanceof TournamentAction)
+      if (!($requiredAction instanceof TournamentAction) )
       {
-         throw new \InvalidArgumentException("Route is missing requiredAction argument or it is not of type TournamentAction");
+         throw new \DomainException("Route is missing requiredAction argument or it is not of type TournamentAction");
       }
 
-      $tournament = $this->repo->getTournamentById($tournamentId);
-      if (!$tournament)
-      {
-         return $handler->handle($request); // let later middleware handle the not found case
-      }
-
-      if (!$this->policy->isActionAllowed($tournamentId, $requiredAction))
+      $tournament = $request->getAttribute('tournament');
+      if (!$this->policy->isActionAllowed($tournament, $requiredAction))
       {
          throw new HttpForbiddenException($request, "Aktion {$requiredAction->name} ist im Status {$tournament->status->value} nicht erlaubt.");
       }
