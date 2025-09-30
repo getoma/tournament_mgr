@@ -11,10 +11,8 @@ use Tournament\Model\Data\Category;
 
 use Tournament\Repository\CategoryRepository;
 use Tournament\Repository\ParticipantRepository;
-use Tournament\Repository\AreaRepository;
-use Tournament\Repository\MatchDataRepository;
+use Tournament\Service\TournamentStructureService;
 
-use Tournament\Model\TournamentStructure\TournamentStructure;
 use Base\Service\Validator;
 use Respect\Validation\Validator as v;
 use Tournament\Exception\EntityNotFoundException;
@@ -26,23 +24,9 @@ class CategoryController
       private Twig $view,
       private CategoryRepository $repo,
       private ParticipantRepository $participantRepo,
-      private AreaRepository $areaRepo,
-      private MatchDataRepository $matchDataRepo
+      private TournamentStructureService $structureLoadService,
    )
    {
-   }
-
-
-   /**
-    * load a tournament structure from the repository
-    */
-   private function loadStructure(Category $category): TournamentStructure
-   {
-      $areas = $this->areaRepo->getAreasByTournamentId($category->tournament_id);
-      $participants = $this->participantRepo->getParticipantsWithSlotByCategoryId($category->id);
-      $matchRecords = $this->matchDataRepo->getMatchRecordsByCategoryId($category->id);
-
-      return new TournamentStructure($category, $areas, $participants, $matchRecords);
    }
 
    /**
@@ -51,7 +35,7 @@ class CategoryController
    public function showCategory(Request $request, Response $response, array $args): Response
    {
       // Load the tournament structure for this category
-      $structure = $this->loadStructure($request->getAttribute('category')->id);
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
 
       /* filter pool/ko display if we have a very large structure */
       if( $structure->ko )
@@ -73,7 +57,7 @@ class CategoryController
    public function showKoArea(Request $request, Response $response, array $args): Response
    {
       // Load the tournament structure for this category and fetch the specific chunk
-      $structure = $this->loadStructure($request->getAttribute('category')->id);
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
       $chunk = $structure->chunks[$args['chunk']] ?? throw new EntityNotFoundException('Chunk not found');
 
       return $this->view->render($response, 'category/area_ko.twig', [
@@ -88,10 +72,10 @@ class CategoryController
    public function showPoolArea(Request $request, Response $response, array $args): Response
    {
       // Load the tournament structure for this category
-      $structure = $this->loadStructure($request->getAttribute('category')->id);
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
       $area_pools = $structure->getPoolsByArea($request->getAttribute('area')->id);
       return $this->view->render($response, 'category/area_pool.twig', [
-         'pools'      => $area_pools
+         'pools' => $area_pools
       ]);
    }
 
@@ -149,13 +133,10 @@ class CategoryController
          return $this->showCategoryConfiguration($request, $response, $args, $err, $prev);
       }
 
-      /* preprocess config - remove unsupported values, remove null values */
-      $cfg_filtered = array_intersect_key($data, Category::getValidationRules('details_only'));
-      $config_data = array_filter($cfg_filtered, fn($v) => !empty($v));
-
+      // update the Category accordingly
       $category = $request->getAttribute('category');
       $category->mode = $data['mode'];
-      $category->config = CategoryConfiguration::fromArray($config_data);
+      $category->config = CategoryConfiguration::fromArray($data);
 
       /* store the new category configuration */
       $this->repo->updateCategoryDetails([
@@ -165,9 +146,8 @@ class CategoryController
       ]);
 
       /* reshuffle the participants into the new configuration */
+      $structure = $this->structureLoadService->initialize($category);
       $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
-      $areas = $this->areaRepo->getAreasByTournamentId($category->tournament_id);
-      $structure = new TournamentStructure($category, $areas);
       $slot_assignment = $structure->shuffleParticipants($participants);
       $this->participantRepo->updateAllParticipantSlots($category->id, $slot_assignment);
 
