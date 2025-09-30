@@ -70,7 +70,7 @@ class TournamentStructure
       }
       else
       {
-         throw new \InvalidArgumentException('Unknown tournament mode: ' . $this->category->mode);
+         throw new \DomainException('Unknown tournament mode: ' . $this->category->mode);
       }
 
       $this->unmapped_participants = $participants->unslotted();
@@ -214,7 +214,7 @@ class TournamentStructure
             else
             {
                // sanity check, impossible with the split algorithm above
-               throw new \InvalidArgumentException('Unexpected number of slots in chunk: ' . count($slots));
+               throw new \LogicException('Unexpected number of slots in chunk: ' . count($slots));
             }
          }
       }

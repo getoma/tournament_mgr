@@ -19,7 +19,7 @@ class MatchNode
    {
       if( $this->slotRed === $this->slotWhite )
       {
-         throw new \InvalidArgumentException("invalid match: red and white slot must be different");
+         throw new \DomainException("invalid match: red and white slot must be different");
       }
 
       $this->setMatchRecord($matchRecord);
@@ -40,22 +40,22 @@ class MatchNode
 
       if( $matchRecord->name !== $this->name )
       {
-         throw new \InvalidArgumentException("inconsistent match record: name does not match");
+         throw new \DomainException("inconsistent match record: name does not match");
       }
 
       $p_red   = $this->slotRed->getParticipant();
       $p_white = $this->slotWhite->getParticipant();
 
-      if( !isset($p_red))   throw new \LogicException("cannot assign match record: no valid red participant");
-      if( !isset($p_white)) throw new \LogicException("cannot assign match record: no valid white participant");
+      if( !isset($p_red))   throw new \DomainException("cannot assign match record: no valid red participant");
+      if( !isset($p_white)) throw new \DomainException("cannot assign match record: no valid white participant");
 
       if ($p_red->id !== $matchRecord->redParticipant->id)
       {
-         throw new \InvalidArgumentException("inconsistent match record: red participant does not match");
+         throw new \DomainException("inconsistent match record: red participant does not match");
       }
       if (($p_white->id !== $matchRecord->whiteParticipant->id))
       {
-         throw new \InvalidArgumentException("inconsistent match record: white participant does not match");
+         throw new \DomainException("inconsistent match record: white participant does not match");
       }
 
       $this->matchRecord = $matchRecord;

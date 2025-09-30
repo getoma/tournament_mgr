@@ -20,7 +20,7 @@ class MatchRecordCollection extends \Base\Model\ObjectCollection
       }
       else
       {
-         throw new \InvalidArgumentException("invalid offset, must use Match name " . $offset . " vs " . $value->name);
+         throw new \UnexpectedValueException("invalid offset, must use Match name " . $offset . " vs " . $value->name);
       }
    }
 }

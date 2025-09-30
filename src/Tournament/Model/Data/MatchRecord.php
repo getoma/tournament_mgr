@@ -2,9 +2,6 @@
 
 namespace Tournament\Model\Data;
 
-use DateTime;
-use InvalidArgumentException;
-
 class MatchRecord
 {
    public function __construct(
@@ -16,8 +13,8 @@ class MatchRecord
       public Participant $redParticipant,
       public ?Participant $winner,
       public bool $tie_break,
-      public DateTime $created_at,
-      public ?DateTime $finalized_at
+      public \DateTime $created_at,
+      public ?\DateTime $finalized_at
    )
    {
       if(  isset($this->winner)
@@ -25,12 +22,12 @@ class MatchRecord
         && $this->winner !== $this->redParticipant
         )
       {
-         throw new InvalidArgumentException("invalid winner: must be identical to either white or red");
+         throw new \UnexpectedValueException("invalid winner: must be identical to either white or red");
       }
 
       if( $this->whiteParticipant->id == $this->redParticipant->id )
       {
-         throw new InvalidArgumentException("invalid match: white and red participant must be different");
+         throw new \UnexpectedValueException("invalid match: white and red participant must be different");
       }
    }
 }

@@ -17,7 +17,7 @@ enum TournamentStatus: string
          'planned'   => self::Planned,
          'running'   => self::Running,
          'completed' => self::Completed,
-         default     => throw new \InvalidArgumentException("Invalid tournament status value: " . var_export($value, true))
+         default     => throw new \UnexpectedValueException("Invalid tournament status value: " . var_export($value, true))
       };
    }
 }

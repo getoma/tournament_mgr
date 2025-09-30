@@ -16,7 +16,7 @@ abstract class IdObjectCollection extends ObjectCollection
       }
       else
       {
-         throw new \InvalidArgumentException("invalid offset: must be identical to object id, got " . $offset . " vs " . $value->id);
+         throw new \OutOfBoundsException("invalid offset: must be identical to object id, got " . $offset . " vs " . $value->id);
       }
    }
 }

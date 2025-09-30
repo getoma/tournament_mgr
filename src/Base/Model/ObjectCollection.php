@@ -78,7 +78,7 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       }
       else
       {
-         throw new \InvalidArgumentException("invalid record: must be instance of " . $type . ", found " . get_class($value));
+         throw new \InvalidArgumentException("invalid value: must be instance of " . $type . ", found " . get_class($value));
       }
    }
 
