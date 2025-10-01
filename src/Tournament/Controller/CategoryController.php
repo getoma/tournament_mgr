@@ -157,4 +157,17 @@ class CategoryController
          RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
       )->withStatus(302);
    }
+
+   /**
+    * RESET all match records for a specific category - TEMPORARY, FOR TESTING PURPOSES ONLY
+    */
+   public function resetMatchRecords(Request $request, Response $response, array $args): Response
+   {
+      $category = $request->getAttribute('category');
+      $this->structureLoadService->resetMatchRecords($category);
+      return $response->withHeader(
+         'Location',
+         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
+      )->withStatus(302);
+   }
 }

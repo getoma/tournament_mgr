@@ -38,6 +38,10 @@
 </section>
 {% endif %}
 
+<form action="{{url_for('reset_category_results', route_parameters)}}" method="post">
+  <button type="submit">Ergebnisse löschen</button>
+</form>
+
 </section>
 {% endblock %}
 

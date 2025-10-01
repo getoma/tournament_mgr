@@ -135,6 +135,9 @@ return function (\Slim\App $app)
             $cgrp->get('/ko/{matchName}', [MatchRecordController::class, 'showKoMatch'])->setName('show_ko_match');
             $cgrp->post('/ko/{matchName}', [MatchRecordController::class, 'updateKoMatch'])->setName('update_ko_match')
                ->add( $statusGuardMW->for(TournamentAction::RecordResults) );
+
+            $cgrp->post('resetResults', [CategoryController::class, 'resetMatchRecords'])->setName('reset_category_results')
+               ->add( $statusGuardMW->for(TournamentAction::RecordResults) );
          });
       });
 

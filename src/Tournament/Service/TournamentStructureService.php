@@ -50,4 +50,13 @@ class TournamentStructureService
       return $struc;
    }
 
+   /**
+    * reset all match records for a specific category - TEMPORARY, FOR TESTING PURPOSES ONLY
+    * @param Category $category
+    */
+   public function resetMatchRecords(Category $category): void
+   {
+      $this->matchDataRepo->deleteMatchRecordsByCategoryId($category->id);
+   }
+
 }
