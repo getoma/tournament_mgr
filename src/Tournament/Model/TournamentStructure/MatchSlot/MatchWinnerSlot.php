@@ -8,13 +8,13 @@ use Tournament\Model\Data\Participant;
 
 class MatchWinnerSlot extends MatchSlot
 {
-   public function __construct(public KoNode $matchNode)
+   public function __construct(public readonly KoNode $matchNode)
    {
    }
 
    public function isBye(): bool
    {
-      return $this->matchNode->isBye();
+      return $this->matchNode->isObsolete();
    }
 
    public function str(): string

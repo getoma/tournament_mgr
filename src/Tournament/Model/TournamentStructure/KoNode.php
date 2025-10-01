@@ -2,13 +2,41 @@
 
 namespace Tournament\Model\TournamentStructure;
 
+use Tournament\Model\Data\Area;
+use Tournament\Model\Data\MatchRecord;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\Data\Participant;
 use Tournament\Model\Data\MatchRecordCollection;
 use Tournament\Model\Data\ParticipantCollection;
 
+/**
+ * MatchNode extension to handle an actual KO tree
+ * extends MatchNode with methods to traverse the tree
+ */
 class KoNode extends MatchNode
 {
+   // link to the parent node inside the tree
+   public ?KoNode $parentNode = null;
+
+   // use constructor to forward parentNode links to child nodes
+   public function __construct(string $name, MatchSlot $slotRed, MatchSlot $slotWhite, ?Area $area = null, ?MatchRecord $matchRecord = null)
+   {
+      parent::__construct($name, $slotRed, $slotWhite, $area, $matchRecord);
+      if( $slotRed instanceof MatchWinnerSlot ) $slotRed->matchNode->parentNode = $this;
+      if( $slotWhite instanceof MatchWinnerSlot ) $slotWhite->matchNode->parentNode = $this;
+   }
+
+   /* Match results may not be modified anymore
+    * For a KO tree node, the result may not be modified anymore
+    * if a follow-up match is already established, which means the winner
+    * of the current match is already employed in the next match.
+    * Also, take over any fixed result state from the parent node.
+    */
+   public function isResultFixed(): bool
+   {
+      return parent::isResultFixed() || ($this->parentNode?->isEstablished() ?? false);
+   }
+
    /**
     * Return the rounds of matches in this knockout (sub)structure.
     * Each round is an array of MatchNode objects.
@@ -49,6 +77,24 @@ class KoNode extends MatchNode
       if( $offset < 0 ) $offset = 0; // in this case, we didn't even collect anything beyond the offset
 
       return array_slice( array_reverse($rounds), $offset, $length );
+   }
+
+   /**
+    * find a specific node by its name
+    */
+   public function findByName(string $name): ?KoNode
+   {
+      if( $name === $this->name ) return $this;
+      $node = null;
+      foreach ([$this->slotRed, $this->slotWhite] as $slot)
+      {
+         if ($slot instanceof MatchWinnerSlot)
+         {
+            $node = $slot->matchNode->findByName($name);
+            if( $node ) break;
+         }
+      }
+      return $node;
    }
 
    /**

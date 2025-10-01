@@ -11,6 +11,7 @@ use Tournament\Controller\TestController;
 use Tournament\Policy\TournamentAction;
 
 use Slim\Routing\RouteCollectorProxy;
+use Tournament\Controller\MatchRecordController;
 use Tournament\Exception\EntityNotFoundException;
 use Tournament\Middleware\EntityNotFoundHandler;
 
@@ -119,14 +120,22 @@ return function (\Slim\App $app)
          }
          )->add( $statusGuardMW->for(TournamentAction::ManageParticipants) );
 
-         /* category management */
-         $tgrp->get( '/category/{categoryId:\d+}', [CategoryController::class, 'showCategory'])->setName('show_category');
-         $tgrp->get( '/category/{categoryId:\d+}/configure', [CategoryController::class, 'showCategoryConfiguration'])->setName('show_category_cfg');
-         $tgrp->get( '/category/{categoryId:\d+}/area/ko/{chunk}', [CategoryController::class, 'showKoArea'])->setName('show_ko_area');
-         $tgrp->get( '/category/{categoryId:\d+}/area/pool/{areaid:\d+}', [CategoryController::class, 'showPoolArea'])->setName('show_pool_area');
+         /* category routes */
+         $tgrp->group('/category/{categoryId:\d+}', function (RouteCollectorProxy $cgrp) use ($statusGuardMW)
+         {
+            /* category management */
+            $cgrp->get( '', [CategoryController::class, 'showCategory'])->setName('show_category');
+            $cgrp->get( '/configure', [CategoryController::class, 'showCategoryConfiguration'])->setName('show_category_cfg');
+            $cgrp->get( '/area/ko/{chunk}', [CategoryController::class, 'showKoArea'])->setName('show_ko_area');
+            $cgrp->get( '/area/pool/{areaid:\d+}', [CategoryController::class, 'showPoolArea'])->setName('show_pool_area');
 
-         $tgrp->post('/category/{categoryId:\d+}/configure', [CategoryController::class, 'updateCategoryConfiguration'])->setName('update_category_cfg')
-              ->add( $statusGuardMW->for(TournamentAction::ManageSetup) );
+            $cgrp->post('/configure', [CategoryController::class, 'updateCategoryConfiguration'])->setName('update_category_cfg')
+               ->add( $statusGuardMW->for(TournamentAction::ManageSetup) );
+
+            $cgrp->get('/ko/{matchName}', [MatchRecordController::class, 'showKoMatch'])->setName('show_ko_match');
+            $cgrp->post('/ko/{matchName}', [MatchRecordController::class, 'updateKoMatch'])->setName('update_ko_match')
+               ->add( $statusGuardMW->for(TournamentAction::RecordResults) );
+         });
       });
 
       $auth_grp->get('/user/account', [UserController::class, 'showAccount'])->setName('user_account');

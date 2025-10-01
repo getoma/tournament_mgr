@@ -1,0 +1,41 @@
+{% extends 'base/layout.twig' %}
+{% import 'category/partials.twig' as part %}
+
+{% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id, 'matchName': node.name } %}
+
+{% block nav_extension %}<a href="{{url_for('show_category', route_parameters)}}">Zurück...</a>{% endblock %}
+
+{% block content %}
+<h2>Kampf {{node.name}}</h2>
+<table>
+  <thead>
+    <tr><th>Rot</th><th>Weiß</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <div class="fight_participant red">{{part.printSlot(node.slotRed, route_param, node.getWinner())}}</div>
+        {%- if node.isModifiable() %}
+        <form method="post" action="{{url_for('update_ko_match', route_parameters)}}">
+          <input type="hidden" name="participant" value="{{node.getRedParticipant().id}}">
+          <button name="action" value="winner">Als Gewinner setzen</button>
+        </form>
+        {%- endif %}
+      </td>
+      <td>
+        <div class="fight_participant white">{{part.printSlot(node.slotWhite, route_param, node.getWinner())}}</div>
+        {%- if node.isModifiable() %}
+        <form method="post" action="{{url_for('update_ko_match', route_parameters)}}">
+          <input type="hidden" name="participant" value="{{node.getWhiteParticipant().id}}">
+          <button name="action" value="winner">Als Gewinner setzen</button>
+        </form>
+        {%- endif %}
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+{% if error is not empty %}
+<p class="error">{{error}}</p>
+{% endif %}
+{% endblock %}

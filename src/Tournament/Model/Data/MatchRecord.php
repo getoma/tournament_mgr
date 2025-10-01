@@ -5,16 +5,16 @@ namespace Tournament\Model\Data;
 class MatchRecord
 {
    public function __construct(
-      public int $id,
-      public string $name,
-      public Category $category,
-      public Area $area,
-      public Participant $whiteParticipant,
-      public Participant $redParticipant,
-      public ?Participant $winner,
-      public bool $tie_break,
-      public \DateTime $created_at,
-      public ?\DateTime $finalized_at
+      public ?int $id,
+      public readonly string $name,
+      public readonly Category $category,
+      public readonly Area $area,
+      public readonly Participant $redParticipant,
+      public readonly Participant $whiteParticipant,
+      public ?Participant $winner = null,
+      public bool $tie_break = false,
+      ?\DateTime $created_at = null,
+      public ?\DateTime $finalized_at = null
    )
    {
       if(  isset($this->winner)
@@ -29,5 +29,9 @@ class MatchRecord
       {
          throw new \UnexpectedValueException("invalid match: white and red participant must be different");
       }
+
+      $this->created_at = $created_at ?? new \DateTime();
    }
+
+   public readonly \DateTime $created_at;
 }

@@ -98,4 +98,60 @@ class MatchDataRepository
       }
       return $result;
    }
+
+   public function saveMatchRecord(MatchRecord $record): bool
+   {
+      $result = true;
+
+      if( isset($record->id) )
+      {
+         $stmt = $this->pdo->prepare('
+            UPDATE matches SET
+               winner_id = :winner_id,
+               tie_break = :tie_break,
+               finalized_at = :finalized_at
+            WHERE id = :id
+         ');
+         $result = $stmt->execute([
+            'id'          => $record->id,
+            'winner_id'   => isset($record->winner)? $record->winner->id : null,
+            'tie_break'   => $record->tie_break? 1 : 0,
+            'finalized_at'=> isset($record->finalized_at)? $record->finalized_at->format('Y-m-d H:i:s') : null,
+         ]);
+      }
+      else
+      {
+         $stmt = $this->pdo->prepare('
+            INSERT INTO matches
+               (name, category_id, area_id, red_id, white_id, winner_id, tie_break, created_at, finalized_at)
+            VALUES
+               (:name, :category_id, :area_id, :red_id, :white_id, :winner_id, :tie_break, :created_at, :finalized_at)
+         ');
+         $result = $stmt->execute([
+            'name'        => $record->name,
+            'category_id' => $record->category->id,
+            'area_id'     => $record->area->id,
+            'red_id'      => $record->redParticipant->id,
+            'white_id'    => $record->whiteParticipant->id,
+            'winner_id'   => isset($record->winner)? $record->winner->id : null,
+            'tie_break'   => $record->tie_break? 1 : 0,
+            'created_at'  => $record->created_at->format('Y-m-d H:i:s'),
+            'finalized_at'=> isset($record->finalized_at)? $record->finalized_at->format('Y-m-d H:i:s') : null,
+         ]);
+         $record->id = (int)$this->pdo->lastInsertId();
+
+         /* update buffers */
+         $this->buffer_by_id[$record->id] = $record;
+         $this->buffer_by_name[$record->category->id] ??= [];
+         $this->buffer_by_name[$record->category->id][$record->name] = $record;
+      }
+
+      return $result;
+   }
+
+   public function deleteMatchRecordsByCategoryId(int $categoryId): bool
+   {
+      $stmt = $this->pdo->prepare('DELETE FROM matches WHERE category_id = :category');
+      return $stmt->execute(['category' => $categoryId]);
+   }
 }
