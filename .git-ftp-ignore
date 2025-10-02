@@ -1,0 +1,8 @@
+.gitignore
+.git-ftp-ignore
+composer.lock
+composer.json
+tests/*
+README.md
+.vscode/*
+
