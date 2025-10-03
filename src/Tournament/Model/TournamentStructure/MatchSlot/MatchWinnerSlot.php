@@ -4,7 +4,7 @@ namespace Tournament\Model\TournamentStructure\MatchSlot;
 
 use Tournament\Model\TournamentStructure\MatchSlot;
 use Tournament\Model\TournamentStructure\KoNode;
-use Tournament\Model\Data\Participant;
+use Tournament\Model\Participant\Participant;
 
 class MatchWinnerSlot extends MatchSlot
 {

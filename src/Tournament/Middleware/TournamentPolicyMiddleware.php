@@ -9,6 +9,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
+use Tournament\Policy\CurrentTournamentPolicy;
 use Tournament\Policy\TournamentPolicy;
 
 /**
@@ -30,7 +31,7 @@ class TournamentPolicyMiddleware implements MiddlewareInterface
          throw new \DomainException("Route could not be determined from request. Is the RoutingMiddleware registered?");
       }
 
-      // extract the tournament Id from the route and spawn the policy handler for it
+      // extract the tournament from the route and spawn the policy handler for it
       $policy = new CurrentTournamentPolicy($request->getAttribute('tournament', null), $this->tournamentPolicy);
 
       // inject the policy handler

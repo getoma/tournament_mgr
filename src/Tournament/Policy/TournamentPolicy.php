@@ -2,8 +2,9 @@
 
 namespace Tournament\Policy;
 
-use Tournament\Model\Data\Tournament;
-use Tournament\Model\Data\TournamentStatus;
+use Tournament\Model\Tournament\Tournament;
+use Tournament\Model\Tournament\TournamentStatus;
+
 use Tournament\Repository\TournamentRepository;
 
 /**

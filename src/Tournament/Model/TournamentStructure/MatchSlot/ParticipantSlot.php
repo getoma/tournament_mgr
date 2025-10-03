@@ -3,7 +3,7 @@
 namespace Tournament\Model\TournamentStructure\MatchSlot;
 
 use Tournament\Model\TournamentStructure\MatchSlot;
-use Tournament\Model\Data\Participant;
+use Tournament\Model\Participant\Participant;
 
 class ParticipantSlot extends MatchSlot
 {

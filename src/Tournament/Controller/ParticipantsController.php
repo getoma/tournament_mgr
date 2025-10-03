@@ -7,10 +7,10 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
+use Tournament\Model\Participant\Participant;
+
 use Tournament\Repository\CategoryRepository;
 use Tournament\Repository\ParticipantRepository;
-
-use Tournament\Model\Data\Participant;
 
 use Base\Service\Validator;
 use Respect\Validation\Validator as v;

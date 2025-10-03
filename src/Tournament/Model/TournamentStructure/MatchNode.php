@@ -2,10 +2,11 @@
 
 namespace Tournament\Model\TournamentStructure;
 
+use Tournament\Model\Participant\Participant;
+use Tournament\Model\Area\Area;
+use Tournament\Model\MatchRecord\MatchRecord;
+
 use Tournament\Model\TournamentStructure\MatchSlot;
-use Tournament\Model\Data\Participant;
-use Tournament\Model\Data\Area;
-use Tournament\Model\Data\MatchRecord;
 
 /**
  * base class to manage an atomar match, which might be part of a KO tree, a pool, or whatever

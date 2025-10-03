@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Model\Data;
+namespace Tournament\Model\Participant;
 
 class SlottedParticipantCollection extends \Base\Model\ObjectCollection
 {

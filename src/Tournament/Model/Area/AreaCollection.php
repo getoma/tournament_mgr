@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Model\Data;
+namespace Tournament\Model\Area;
 
 class AreaCollection extends \Base\Model\IdObjectCollection
 {

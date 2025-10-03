@@ -6,11 +6,14 @@ use DateTime;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
-use Tournament\Exception\EntityNotFoundException;
-use Tournament\Model\Data\MatchRecord;
+
+use Tournament\Model\MatchRecord\MatchRecord;
+
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
+
 use Tournament\Service\TournamentStructureService;
+use Tournament\Exception\EntityNotFoundException;
 
 class MatchRecordController
 {

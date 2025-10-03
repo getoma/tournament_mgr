@@ -2,9 +2,10 @@
 
 namespace Tournament\Repository;
 
-use Tournament\Model\Data\Category;
+use Tournament\Model\Category\Category;
+use Tournament\Model\Category\CategoryCollection;
+
 use PDO;
-use Tournament\Model\Data\CategoryCollection;
 
 class CategoryRepository
 {

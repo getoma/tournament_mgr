@@ -7,17 +7,18 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
-use Base\Service\Validator;
 use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\AreaRepository;
 use Tournament\Repository\CategoryRepository;
 
-use Tournament\Model\Data\Area;
-use Tournament\Model\Data\Category;
-use Tournament\Model\Data\Tournament;
-use Tournament\Model\Data\TournamentStatus;
+use Tournament\Model\Area\Area;
+use Tournament\Model\Category\Category;
+use Tournament\Model\Tournament\Tournament;
+use Tournament\Model\Tournament\TournamentStatus;
 
 use Tournament\Policy\TournamentPolicy;
+
+use Base\Service\Validator;
 
 class TournamentController
 {

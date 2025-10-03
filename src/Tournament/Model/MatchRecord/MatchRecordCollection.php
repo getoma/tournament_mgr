@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Model\Data;
+namespace Tournament\Model\MatchRecord;
 
 /**
  * MatchRecord collection is organized by match name

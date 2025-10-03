@@ -2,7 +2,7 @@
 
 namespace Tournament\Model\TournamentStructure;
 
-use Tournament\Model\Data\Participant;
+use Tournament\Model\Participant\Participant;
 
 abstract class MatchSlot
 {

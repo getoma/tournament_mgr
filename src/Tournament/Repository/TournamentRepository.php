@@ -2,9 +2,9 @@
 
 namespace Tournament\Repository;
 
-use Tournament\Model\Data\Tournament;
-use Tournament\Model\Data\TournamentStatus;
-use Tournament\Model\Data\TournamentCollection;
+use Tournament\Model\Tournament\Tournament;
+use Tournament\Model\Tournament\TournamentStatus;
+use Tournament\Model\Tournament\TournamentCollection;
 
 use PDO;
 

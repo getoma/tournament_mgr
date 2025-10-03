@@ -1,16 +1,18 @@
 <?php
 
-namespace Tournament\Middleware;
+namespace Tournament\Policy;
 
-use Tournament\Model\Data\Tournament;
+use Tournament\Model\Tournament\Tournament;
+use Tournament\Model\Tournament\TournamentStatus;
+
 use Tournament\Policy\TournamentAction;
 use Tournament\Policy\TournamentPolicy;
-use Tournament\Model\Data\TournamentStatus;
+
 
 /**
- * Policy handler for a specific tournament, identified by its ID.
+ * Policy handler for a specific tournament.
  * This class wraps around TournamentPolicy and provides methods
- * that do not require passing the tournament ID each time.
+ * that do not require passing the tournament each time.
  */
 class CurrentTournamentPolicy
 {

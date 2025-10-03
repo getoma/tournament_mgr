@@ -7,16 +7,19 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
-use Tournament\Model\Data\Category;
+use Tournament\Model\Category\Category;
+use Tournament\Model\Category\CategoryConfiguration;
 
 use Tournament\Repository\CategoryRepository;
 use Tournament\Repository\ParticipantRepository;
+
 use Tournament\Service\TournamentStructureService;
+use Tournament\Exception\EntityNotFoundException;
 
 use Base\Service\Validator;
 use Respect\Validation\Validator as v;
-use Tournament\Exception\EntityNotFoundException;
-use Tournament\Model\Data\CategoryConfiguration;
+
+
 
 class CategoryController
 {

@@ -1,8 +1,8 @@
 <?php
 
-use App\Model\Data\Category;
-use App\Model\Data\Participant;
-use App\Model\TournamentStructure\TournamentStructure;
+use Tournament\Model\Category\Category;
+use Tournament\Model\Participant\Participant;
+use Tournament\Model\TournamentStructure\TournamentStructure;
 
 use PHPUnit\Framework\TestCase;
 

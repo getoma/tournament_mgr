@@ -1,6 +1,10 @@
 <?php
 
-namespace Tournament\Model\Data;
+namespace Tournament\Model\MatchRecord;
+
+use Tournament\Model\Area\Area;
+use Tournament\Model\Category\Category;
+use Tournament\Model\Participant\Participant;
 
 class MatchRecord
 {

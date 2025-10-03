@@ -2,8 +2,8 @@
 
 namespace Tournament\Repository;
 
-use Tournament\Model\Data\Area;
-use Tournament\Model\Data\AreaCollection;
+use Tournament\Model\Area\Area;
+use Tournament\Model\Area\AreaCollection;
 
 class AreaRepository
 {

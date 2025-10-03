@@ -7,7 +7,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 
 use Tournament\Repository\TournamentRepository;
-use Tournament\Model\Data\TournamentStatus;
+use Tournament\Model\Tournament\TournamentStatus;
 use Base\Service\DbUpdateService;
 
 class IndexPageController

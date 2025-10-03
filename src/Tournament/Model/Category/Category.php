@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Model\Data;
+namespace Tournament\Model\Category;
 
 use Respect\Validation\Validator as v;
 

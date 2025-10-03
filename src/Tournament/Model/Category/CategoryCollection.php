@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Model\Data;
+namespace Tournament\Model\Category;
 
 class CategoryCollection extends \Base\Model\IdObjectCollection
 {

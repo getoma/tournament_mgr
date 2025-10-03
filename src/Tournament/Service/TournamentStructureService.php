@@ -2,13 +2,13 @@
 
 namespace Tournament\Service;
 
-use Tournament\Model\Data\Category;
+use Tournament\Model\Category\Category;
 use Tournament\Model\TournamentStructure\TournamentStructure;
-use Tournament\Repository\AreaRepository;
-use Tournament\Repository\CategoryRepository;
+
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
 use Tournament\Repository\TournamentRepository;
+use Tournament\Repository\AreaRepository;
 
 /**
  * Service to load a complete tournament structure from the repositories, with all data contained

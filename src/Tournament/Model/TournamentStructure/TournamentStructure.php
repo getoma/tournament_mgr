@@ -9,11 +9,12 @@ use Tournament\Model\TournamentStructure\MatchSlot\ByeSlot;
 use Tournament\Model\TournamentStructure\KoChunk;
 use Tournament\Model\TournamentStructure\Pool;
 use Tournament\Model\TournamentStructure\KoNode;
-use Tournament\Model\Data\Area;
-use Tournament\Model\Data\AreaCollection;
-use Tournament\Model\Data\MatchRecordCollection;
-use Tournament\Model\Data\ParticipantCollection;
-use Tournament\Model\Data\SlottedParticipantCollection;
+
+use Tournament\Model\Area\Area;
+use Tournament\Model\Area\AreaCollection;
+use Tournament\Model\MatchRecord\MatchRecordCollection;
+use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\Participant\SlottedParticipantCollection;
 
 /**
  * A class to generate and manage a Tournament structure, consisting of Pools and/or a KO tree

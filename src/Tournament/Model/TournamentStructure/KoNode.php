@@ -2,12 +2,13 @@
 
 namespace Tournament\Model\TournamentStructure;
 
-use Tournament\Model\Data\Area;
-use Tournament\Model\Data\MatchRecord;
+use Tournament\Model\Area\Area;
+use Tournament\Model\MatchRecord\MatchRecord;
+use Tournament\Model\MatchRecord\MatchRecordCollection;
+use Tournament\Model\Participant\Participant;
+use Tournament\Model\Participant\ParticipantCollection;
+
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
-use Tournament\Model\Data\Participant;
-use Tournament\Model\Data\MatchRecordCollection;
-use Tournament\Model\Data\ParticipantCollection;
 
 /**
  * MatchNode extension to handle an actual KO tree

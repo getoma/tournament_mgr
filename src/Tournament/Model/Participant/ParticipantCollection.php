@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Model\Data;
+namespace Tournament\Model\Participant;
 
 class ParticipantCollection extends \Base\Model\IdObjectCollection
 {

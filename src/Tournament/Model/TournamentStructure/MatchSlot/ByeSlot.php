@@ -3,7 +3,7 @@
 namespace Tournament\Model\TournamentStructure\MatchSlot;
 
 use Tournament\Model\TournamentStructure\MatchSlot;
-use Tournament\Model\Data\Participant;
+use Tournament\Model\Participant\Participant;
 
 /* a true BYE that also cannot be filled even if new Participants are added.
  * currently only used in combined mode if the number of pools cannot fill up

@@ -2,9 +2,10 @@
 
 namespace Tournament\Repository;
 
+use Tournament\Model\MatchRecord\MatchRecord;
+use Tournament\Model\MatchRecord\MatchRecordCollection;
+
 use PDO;
-use Tournament\Model\Data\MatchRecord;
-use Tournament\Model\Data\MatchRecordCollection;
 
 class MatchDataRepository
 {
