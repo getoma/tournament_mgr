@@ -2,13 +2,12 @@
 
 namespace Tournament\Model\TournamentStructure;
 
+use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
+use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
-use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\Participant\SlottedParticipantCollection;
-
-use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 
 class Pool
 {

@@ -4,7 +4,7 @@ namespace Base\Service;
 
 use Respect\Validation\Exceptions\NestedValidationException;
 
-class Validator
+class DataValidationService
 {
    /**
     * validates input data against a set of validators

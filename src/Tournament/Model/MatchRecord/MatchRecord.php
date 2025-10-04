@@ -6,10 +6,12 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\Participant;
 
-class MatchRecord
+class MatchRecord extends \Tournament\Model\Base\DbItem
 {
+   public readonly \DateTime $created_at;
+
    public function __construct(
-      public ?int $id,
+      ?int $id = null,
       public readonly string $name,
       public readonly Category $category,
       public readonly Area $area,
@@ -34,8 +36,19 @@ class MatchRecord
          throw new \UnexpectedValueException("invalid match: white and red participant must be different");
       }
 
+      $this->id = $id;
       $this->created_at = $created_at ?? new \DateTime();
    }
 
-   public readonly \DateTime $created_at;
+   public static function validationRules(string $context = 'update'): array
+   {
+      throw new \LogicException("attempt to get validation rules for a match record");
+   }
+
+   public function updateFromArray(array $data): void
+   {
+      throw new \LogicException("bulk update of match record not expected");
+   }
+
+
 }

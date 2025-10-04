@@ -9,7 +9,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 use Slim\Routing\RouteContext;
 use Slim\Exception\HttpForbiddenException;
-use Tournament\Exception\EntityNotFoundException;
+
 use Tournament\Repository\TournamentRepository;
 use Tournament\Policy\TournamentPolicy;
 use Tournament\Policy\TournamentAction;

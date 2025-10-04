@@ -11,14 +11,12 @@ use Tournament\Repository\TournamentRepository;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
-use Tournament\Model\Category\CategoryConfiguration;
+use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\Tournament\TournamentStatus;
 
 use Tournament\Policy\TournamentPolicy;
 use Tournament\Service\TournamentStructureService;
-
-use Base\Service\Validator;
 
 
 class TournamentSettingsController
@@ -57,7 +55,7 @@ class TournamentSettingsController
    public function createTournament(Request $request, Response $response, array $args): Response
    {
       $data = $request->getParsedBody();
-      $errors = Validator::validate($data, Tournament::getValidationRules('create'));
+      $errors = Tournament::validateArray($data);
 
       // return form if there are errors
       if (count($errors) > 0)
@@ -69,10 +67,12 @@ class TournamentSettingsController
       }
 
       // everything is ok, create the tournament
-      $tournament_id = $this->repo->createTournament(...$data);
+      $data['id'] = null;
+      $tournament = new Tournament(...$data);
+      $this->repo->saveTournament($tournament);
 
       return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-         ->urlFor('show_tournament_config', ['tournamentId' => $tournament_id]))->withStatus(302);
+         ->urlFor('show_tournament_config', ['tournamentId' => $tournament->id]))->withStatus(302);
    }
 
    /**
@@ -99,7 +99,7 @@ class TournamentSettingsController
       return $this->view->render($response, 'tournament/configure.twig', [
          'areas' => $areas,
          'categories' => $categories,
-         'category_modes' => Category::get_modes(),
+         'category_modes' => CategoryMode::cases(),
          'errors' => $errors,
          'prev' => $prev,
       ]);
@@ -120,7 +120,7 @@ class TournamentSettingsController
    public function updateTournament(Request $request, Response $response, array $args): Response
    {
       $data = $request->getParsedBody();
-      $errors = Validator::validate($data, Tournament::getValidationRules());
+      $errors = Tournament::validateArray($data);
 
       // return form if there are errors
       if (count($errors) > 0)
@@ -130,11 +130,10 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
+      /** @var Tournament $tournament */
       $tournament = $request->getAttribute('tournament');
-      $tournament->name = $data['name'];
-      $tournament->date = $data['date'];
-      $tournament->notes = $data['notes'] ?? null;
-      $this->repo->updateTournament($tournament);
+      $tournament->updateFromArray($data);
+      $this->repo->saveTournament($tournament);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
@@ -142,13 +141,15 @@ class TournamentSettingsController
    public function changeTournamentStatus(Request $request, Response $response, array $args): Response
    {
       $data = $request->getParsedBody();
-      $new_state = TournamentStatus::load($data['status']);
+      $new_state = TournamentStatus::tryFrom($data['status']);
 
+      /** @var Tournament $tournament */
       $tournament = $request->getAttribute('tournament');
 
-      if( $this->policy->canTransition($tournament, $new_state) )
+      if( $new_state && $this->policy->canTransition($tournament, $new_state) )
       {
-         $this->repo->updateState($tournament->id, $new_state);
+         $tournament->status = $new_state;
+         $this->repo->saveTournament($tournament);
       }
       else
       {
@@ -165,7 +166,7 @@ class TournamentSettingsController
    public function createArea(Request $request, Response $response, array $args): Response
    {
       $data = $request->getParsedBody();
-      $errors = Validator::validate($data, Area::getValidationRules());
+      $errors = Area::validateArray($data);
 
       if (count($errors) > 0)
       {
@@ -175,7 +176,7 @@ class TournamentSettingsController
       }
 
       $area = new Area(null, $request->getAttribute('tournament')->id, $data['name']);
-      $this->repo->createArea($area);
+      $this->repo->saveArea($area);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
@@ -186,8 +187,9 @@ class TournamentSettingsController
    public function updateArea(Request $request, Response $response, array $args): Response
    {
       $data = $request->getParsedBody();
-      $errors = Validator::validate($data, Area::getValidationRules());
+      $errors = Area::validateArray($data);
 
+      /** @var Area $area */
       $area = $request->getAttribute('area');
 
       if (count($errors) > 0)
@@ -197,8 +199,8 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      $area->name = $data['name'];
-      $this->repo->updateArea($area);
+      $area->updateFromArray($data);
+      $this->repo->saveArea($area);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
@@ -218,7 +220,7 @@ class TournamentSettingsController
    public function createCategory(Request $request, Response $response, array $args): Response
    {
       $data = $request->getParsedBody();
-      $errors = Validator::validate($data, Category::getValidationRules('create'));
+      $errors = Category::validateArray($data);
 
       if (count($errors) > 0)
       {
@@ -227,19 +229,32 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      $this->repo->createCategory($request->getAttribute('tournament')->id, $data['name'], $data['mode']);
+      $category = new Category(
+         id: null,
+         tournament_id: $request->getAttribute('tournament')->id,
+         name: $data['name'],
+         mode: $data['mode']
+      );
+
+      if( !$this->repo->saveCategory($category) )
+      {
+         $prev = ['categories' => ['new' => $data]];
+         $err = ['categories' => ['new' => [['msg' => 'Failed to create category']]]];
+         return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
+      }
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
 
    /**
-    * Update an existing category for the tournament
+    * Update an existing category for the tournament from the list of categories
     */
    public function updateCategory(Request $request, Response $response, array $args): Response
    {
       $data = $request->getParsedBody();
-      $errors = Validator::validate($data, Category::getValidationRules());
+      $errors = Category::validateArray($data);
 
+      /** @var Category $category */
       $category = $request->getAttribute('category');
 
       if (count($errors) > 0)
@@ -249,13 +264,72 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      $data['id'] = $category->id;
-      if (!$this->repo->updateCategory($data))
+      $category->updateFromArray($data);
+      if (!$this->repo->saveCategory($category))
       {
          return $this->showTournamentConfiguration($request, $response, $args, ['category' => ['update' => 'Failed to update category']], $data);
       }
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
+   }
+
+   /**
+    * Render the form to configure a category in detail
+    */
+   public function showCategoryConfiguration(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
+   {
+      $tournament = $request->getAttribute('tournament');
+      $category = $request->getAttribute('category');
+      $data = ($request->getMethod() === 'POST') ? $request->getParsedBody() : $request->getQueryParams();
+
+      /* verify return_to parameter */
+      if (isset($data['return_to']))
+      {
+         $return_to = RouteContext::fromRequest($request)->getRouteParser()
+            ->urlFor('show_category', ['tournamentId' => $tournament->id, 'categoryId' => $category->id]);
+      }
+      else
+      {
+         $return_to = $data['return_to'] ?? '';
+      }
+
+      return $this->view->render($response, 'category/configure.twig', [
+         'config' => $category->config,
+         'errors' => $errors,
+         'prev' => $prev,
+         'return_to' => $return_to,
+         'category_modes' => CategoryMode::cases(),
+      ]);
+   }
+
+   /**
+    * Update the detailled category configuration and regenerate the structure
+    */
+   public function updateCategoryConfiguration(Request $request, Response $response, array $args): Response
+   {
+      /** @var Category $category */
+      $category = $request->getAttribute('category');
+
+      /* parse input */
+      $data = $request->getParsedBody();
+      $data['name'] = $category->name; // name is not part of the form, just take it over from the DB
+      $errors = Category::validateArray($data);
+
+      /* return form if there are errors */
+      if (count($errors) > 0)
+      {
+         return $this->showCategoryConfiguration($request, $response, $args, $errors, $data);
+      }
+
+      /* update the data base */
+      $category->updateFromArray($data);
+      $this->repo->saveCategory($category);
+
+      /* reshuffle the participants into the new configuration */
+      $this->structureLoadService->populate($category);
+
+      /* forward to category page */
+      return $this->showCategoryConfiguration($request, $response, $args);
    }
 
    /**
@@ -265,81 +339,5 @@ class TournamentSettingsController
    {
       $this->repo->deleteCategory($request->getAttribute('category')->id);
       return $this->sendToTournamentConfiguration($request, $response, $args);
-   }
-
-   /**
-    * Render the form to configure a category
-    */
-   public function showCategoryConfiguration(
-      Request $request,
-      Response $response,
-      array $args,
-      array $errors = [],
-      array $prev = []
-   ): Response
-   {
-      $tournament = $request->getAttribute('tournament');
-      $category = $request->getAttribute('category');
-      $data = ($request->getMethod() === 'POST') ? $request->getParsedBody() : $request->getQueryParams();
-
-      /* verify return_to parameter */
-      if (empty($data['return_to']??''))
-      {
-         $return_to = RouteContext::fromRequest($request)->getRouteParser()
-            ->urlFor('show_category', ['tournamentId' => $tournament->id, 'categoryId' => $category->id]);
-      }
-      else
-      {
-         $return_to = $data['return_to'];
-      }
-
-      return $this->view->render($response, 'category/configure.twig', [
-         'config' => $category->config,
-         'errors' => $errors,
-         'prev' => $prev,
-         'return_to' => $return_to,
-         'category_modes' => Category::get_modes(),
-         'category_seedings' => Category::get_seedings(),
-      ]);
-   }
-
-   /**
-    * Update the category configuration
-    */
-   public function updateCategoryConfiguration(Request $request, Response $response, array $args): Response
-   {
-      // parse input
-      $data = $request->getParsedBody();
-      $rules = Category::getValidationRules('details');
-      $errors = Validator::validate($data, $rules);
-
-      // return form if there are errors
-      if (count($errors) > 0)
-      {
-         $prev = ['config' => $data];
-         $err = ['config' => $errors];
-         return $this->showCategoryConfiguration($request, $response, $args, $err, $prev);
-      }
-
-      // update the Category accordingly
-      $category = $request->getAttribute('category');
-      $category->mode = $data['mode'];
-      $category->config = CategoryConfiguration::fromArray($data);
-
-      /* store the new category configuration */
-      $this->repo->updateCategoryDetails([
-         'id' => $category->id,
-         'mode' => $category->mode,
-         'config' => $category->config->toArray()
-      ]);
-
-      /* reshuffle the participants into the new configuration */
-      $this->structureLoadService->populate($category);
-
-      /* forward to category page */
-      return $response->withHeader(
-         'Location',
-         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
-      )->withStatus(302);
    }
 }

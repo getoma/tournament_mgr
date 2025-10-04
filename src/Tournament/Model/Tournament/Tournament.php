@@ -4,49 +4,38 @@ namespace Tournament\Model\Tournament;
 
 use Respect\Validation\Validator as v;
 
-class Tournament
+class Tournament extends \Tournament\Model\Base\DbItem
 {
-   // Represents a tournament.
-   /* CREATE TABLE tournaments (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      date DATE NOT NULL,
-      status enum('planning','active','done') NOT NULL default 'planning',
-      notes TEXT default '',
-      CONSTRAINT UC_TOURNAMENT UNIQUE (name, date)
-   ); */
-
    public TournamentStatus $status;
 
    public function __construct(
-      public ?int $id = null,      // Unique identifier for the tournament
+      ?int $id = null,             // Unique identifier for the tournament
       public string $name,         // Name of the tournament
       public string $date,         // Date of the tournament
-      string $status = 'planning', // Status of the tournament (e.g., scheduled, ongoing, completed)
-      public ?string $notes = null // Additional notes about the tournament
+      public ?string $notes = null, // Additional notes about the tournament
+      TournamentStatus|string $status = TournamentStatus::Planning, // Status of the tournament (e.g., scheduled, ongoing, completed)
    )
    {
-      $this->status = TournamentStatus::load($status);
+      $this->status = $status instanceof TournamentStatus ? $status : TournamentStatus::from($status);
+      $this->id = $id;
+   }
+
+   public function updateFromArray(array $data): void
+   {
+      /* status is to be handled explicitly via policy handling, and should be set explicitly */
+      if (isset($data['name'])) $this->name = $data['name'];
+      if (isset($data['date'])) $this->date = $data['date'];
+      if (isset($data['notes'])) $this->notes = $data['notes'];
    }
 
    /* get the validation rules for the tournament */
-   public static function getValidationRules(string $context = 'update'): array
+   protected static function validationRules(): array
    {
-      $rules = [
-         'name' => v::stringType()->notEmpty()->length(1, max: 100)
-            ->noneOf(v::equals('create'), v::equals('update'), v::equals('delete')),
-         'date' => v::date('Y-m-d'),
-         'notes' => v::optional(v::stringType()->length(0, 500))
+      return [
+         'name'   => v::stringType()->notEmpty()->length(1, max: 100)
+                     ->noneOf(v::equals('create'), v::equals('update'), v::equals('delete')),
+         'date'   => v::date('Y-m-d'),
+         'notes'  => v::optional(v::stringType()->length(0, 500)),
       ];
-
-      if ($context === 'update')
-      {
-         /* nothing to add */
-      }
-
-      return $rules;
-
    }
-
-
 }

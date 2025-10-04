@@ -62,7 +62,7 @@
 <p>
   <label><span>{{ label }}</span>
     <select name="{{ name }}"
-      {%- for attr, val in attributes %} {{ attr }}="{{ val }}" {% endfor -%}
+      {%- for attr, val in attributes %} {{ attr }}="{{ val }}"{% endfor -%}
       {%- if required %} required{% endif %}>
       {% for key, text in options %}
       <option value="{{ key|e }}" {% if key==selected %}selected{% endif %}>{{ text|e }}</option>
@@ -77,7 +77,7 @@
 
 {%- macro select_plain(name, options, selected=null, error='', attributes={}, required=false) -%}
 <select name="{{ name }}"
-  {%- for attr, val in attributes %} {{ attr }}="{{ val }}" {% endfor -%}
+  {%- for attr, val in attributes %} {{ attr }}="{{ val }}"{% endfor -%}
   {%- if required %} required{% endif %}>
   {% for key, text in options %}
   <option value="{{ key|e }}" {% if key==selected %}selected{% endif %}>{{ text|e }}</option>

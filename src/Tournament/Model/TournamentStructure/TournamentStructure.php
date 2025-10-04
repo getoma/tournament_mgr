@@ -9,9 +9,9 @@ use Tournament\Model\TournamentStructure\MatchSlot\ByeSlot;
 use Tournament\Model\TournamentStructure\KoChunk;
 use Tournament\Model\TournamentStructure\Pool;
 use Tournament\Model\TournamentStructure\KoNode;
-
 use Tournament\Model\Area\Area;
 use Tournament\Model\Area\AreaCollection;
+use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\Participant\SlottedParticipantCollection;
@@ -42,28 +42,28 @@ class TournamentStructure
    public ParticipantCollection $unmapped_participants;
 
    public function generateStructure(
-      string $mode,
+      CategoryMode $mode,
       int $num_rounds,
       AreaCollection $areas,
       ?int $pool_winners = null,
       ?int $cluster = null)
    {
-      if ($mode === 'ko')
+      if ($mode === CategoryMode::KO)
       {
          $this->ko = static::fillKO( $this->createKoFirstRound($num_rounds) );
       }
-      elseif ($mode === 'pool')
+      elseif ($mode === CategoryMode::Pool)
       {
          throw new \DomainException('Pure pool mode currently not supported');
       }
-      elseif ($mode === 'combined')
+      elseif ($mode === CategoryMode::Combined)
       {
          $this->pools = $this->createAutoPools($num_rounds, $pool_winners);
          $this->ko = static::fillKO( static::createPoolKoFirstRound($this->pools) );
       }
       else
       {
-         throw new \DomainException('Unknown tournament mode: ' . $mode);
+         throw new \DomainException('Unknown tournament mode: ' . $mode.value());
       }
 
       $areas = $areas->values();
@@ -302,7 +302,6 @@ class TournamentStructure
     */
    private function loadPoolParticipants(SlottedParticipantCollection $participants)
    {
-      error_log("loadPoolParticipants: " . count($participants));
       foreach ($participants as $slotId => $p)
       {
          list($poolId, $slotNr) = explode('.', $slotId);
@@ -362,7 +361,7 @@ class TournamentStructure
       // Split into red and white slots
       $numNodes   = count($firstRound);
       $redSlots   = array_slice($participants, 0, $numNodes);
-      $whiteSlots = array_slice($participants, $numNodes);
+      $whiteSlots = array_slice($participants, $numNodes, $numNodes);
       // Fill up both arrays with null ParticipantSlot objects until we have $numNodes objects in both arrays
       $redSlots   = array_merge($redSlots,   array_fill(0, $numNodes - count($redSlots),   null));
       $whiteSlots = array_merge($whiteSlots, array_fill(0, $numNodes - count($whiteSlots), null));

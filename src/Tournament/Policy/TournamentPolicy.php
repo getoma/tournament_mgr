@@ -5,26 +5,19 @@ namespace Tournament\Policy;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\Tournament\TournamentStatus;
 
-use Tournament\Repository\TournamentRepository;
-
 /**
  * Tournament Policy: defines what actions are allowed in which tournament status,
  *                    and if a transition to a new status is allowed.
  */
 final class TournamentPolicy
 {
-
-   public function __construct(private TournamentRepository $repo)
-   {
-   }
-
    /**
     * Checks if a specific action is allowed in the current status of the tournament.
     * @param Tournament $tournamentId
     * @param TournamentAction $action
     * @return bool
     */
-   public function isActionAllowed(Tournament $tournament, TournamentAction $action): bool
+   public static function isActionAllowed(Tournament $tournament, TournamentAction $action): bool
    {
       return match ($tournament->status)
       {
@@ -57,7 +50,7 @@ final class TournamentPolicy
     * @param Tournament $tournamentId
     * @return TournamentStatus[]
     */
-   public function getPossibleTransitions(Tournament $tournament): array
+   public static function getPossibleTransitions(Tournament $tournament): array
    {
       return match ($tournament->status)
       {
@@ -74,7 +67,7 @@ final class TournamentPolicy
     * @param TournamentStatus $newStatus
     * @return bool
     */
-   public function canTransition(Tournament $tournament, TournamentStatus $newStatus): bool
+   public static function canTransition(Tournament $tournament, TournamentStatus $newStatus): bool
    {
       switch ($tournament->status)
       {

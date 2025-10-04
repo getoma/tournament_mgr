@@ -7,14 +7,13 @@ use Tournament\Model\Area\Area;
 
 class KoChunk
 {
-   public  ?KoNode $root = null;
-   private ?string $name = null;
+   private ?Area   $area;
+   private ?string $name;
 
-   function __construct(KoNode $root, ?string $name = null, ?Area $area = null)
+   function __construct(public readonly KoNode $root, ?string $name = null, ?Area $area = null )
    {
-      $this->root = $root;
-      if( $name ) $this->setName($name);
-      if( $area ) $this->setArea($area);
+      $this->setName($name);
+      $this->setArea($area);
    }
 
    /**
@@ -31,25 +30,33 @@ class KoChunk
    {
       $this->name = $name;
 
-      $local_match_idx = 1;
-      /** @var MatchNode $node */
-      foreach (array_merge(...$this->root->getRounds()) as $node)
+      if( isset($name) )
       {
-         $node->name = $name . '-' . $local_match_idx++;
+         $local_match_idx = 1;
+         /** @var MatchNode $node */
+         foreach ($this->root->getMatchList() as $node)
+         {
+            $node->name = $name . '-' . $local_match_idx++;
+         }
       }
    }
 
    public function getArea(): ?Area
    {
-      return $this->root->area;
+      return $this->area;
    }
 
    public function setArea(?Area $area): void
    {
-      /** @var MatchNode $node */
-      foreach (array_merge(...$this->root->getRounds()) as $node)
+      $this->area = $area;
+
+      if( isset($area) )
       {
-         $node->area = $area;
+         /** @var MatchNode $node */
+         foreach ($this->root->getMatchList() as $node)
+         {
+            $node->area = $area;
+         }
       }
    }
 }

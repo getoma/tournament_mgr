@@ -7,7 +7,7 @@ use Tournament\Model\Participant\Participant;
 
 class PoolWinnerSlot extends MatchSlot
 {
-   public function __construct(public int $poolId, public int $rank)
+   public function __construct(public readonly int $poolId, public readonly int $rank)
    {
    }
 

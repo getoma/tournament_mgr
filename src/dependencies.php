@@ -30,6 +30,9 @@ return function (DI\Container $container)
       {
          $twig->addExtension(new \Twig\Extension\DebugExtension());
       }
+
+      $twig->addExtension(new \Tournament\Twig\EnumOptionsExtension());
+
       $twig->getEnvironment()->addGlobal('debug', config::$debug ?? false);
       $twig->getEnvironment()->addGlobal('test_interfaces', config::$test_interfaces ?? false);
 

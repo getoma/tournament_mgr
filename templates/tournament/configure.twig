@@ -83,7 +83,7 @@
         required=true) }}
       </td>
       <td>
-        {{ form.select_plain('mode', category_modes, prev.categories[category.id].mode ?? category.mode,
+        {{ form.select_plain('mode', enum_options(category_modes), prev.categories[category.id].mode ?? category.mode,
            errors.categories[category.id]['mode'], {'form': 'category_update_' ~ category.id}, required=true) }}
       </td>
       <td>
@@ -106,7 +106,7 @@
                             {'placeholder':'Neue Kategorie', 'maxlength':100, 'form':'category_new'}, required=true) }}
       </td>
       <td>
-        {{ form.select_plain('mode', category_modes, prev.categories.new.mode??'', errors.categories.new['mode'],
+        {{ form.select_plain('mode', enum_options(category_modes), prev.categories.new.mode??'', errors.categories.new['mode'],
                              {'form':'category_new'}, required=true) }}
       </td>
       <td>

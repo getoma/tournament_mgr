@@ -87,6 +87,16 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       unset($this->elements[$offset]);
    }
 
+   public function slice(int $offset, ?int $length = null): static
+   {
+      return new static(array_slice($this->elements, $offset, $length));
+   }
+
+   public function filter(callable $callback): static
+   {
+      return new static(array_filter($this->elements, $callback));
+   }
+
    // support empty() on object
    public function __isset($name): bool
    {
