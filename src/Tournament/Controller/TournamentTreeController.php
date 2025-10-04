@@ -5,7 +5,9 @@ namespace Tournament\Controller;
 use DateTime;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+
 use Slim\Views\Twig;
+use Slim\Routing\RouteContext;
 
 use Tournament\Model\MatchRecord\MatchRecord;
 
@@ -15,7 +17,7 @@ use Tournament\Repository\ParticipantRepository;
 use Tournament\Service\TournamentStructureService;
 use Tournament\Exception\EntityNotFoundException;
 
-class MatchRecordController
+class TournamentTreeController
 {
    public function __construct(
       private Twig $view,
@@ -24,6 +26,69 @@ class MatchRecordController
       private TournamentStructureService $structureLoadService,
    )
    {
+   }
+
+   /**
+    * Show a specific category
+    */
+   public function showCategoryTree(Request $request, Response $response, array $args): Response
+   {
+      // Load the tournament structure for this category
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+
+      /* filter pool/ko display if we have a very large structure */
+      if ($structure->ko)
+      {
+         $ko = $structure->ko->getRounds(- ($structure->finale_rounds_cnt ?? 0));
+      }
+
+      return $this->view->render($response, 'category/home.twig', [
+         'pools'      => $structure->pools,
+         'ko'         => $ko,
+         'chunks'     => $structure->chunks,
+         'unmapped_participants' => $structure->unmapped_participants,
+      ]);
+   }
+
+   /**
+    * Show the KO-tree assigned to a specific area and chunk for a specific category
+    */
+   public function showKoArea(Request $request, Response $response, array $args): Response
+   {
+      // Load the tournament structure for this category and fetch the specific chunk
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+      $chunk = $structure->chunks[$args['chunk']] ?? throw new EntityNotFoundException('Chunk not found');
+
+      return $this->view->render($response, 'category/area_ko.twig', [
+         'ko'         => $chunk->root->getRounds(),
+         'chunk'      => $chunk,
+      ]);
+   }
+
+   /**
+    * Show the pool view assigned to a specific area and chunk for a specific category
+    */
+   public function showPoolArea(Request $request, Response $response, array $args): Response
+   {
+      // Load the tournament structure for this category
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+      $area_pools = $structure->getPoolsByArea($request->getAttribute('area')->id);
+      return $this->view->render($response, 'category/area_pool.twig', [
+         'pools' => $area_pools
+      ]);
+   }
+
+   /**
+    * RESET all match records for a specific category - TEMPORARY, FOR TESTING PURPOSES ONLY
+    */
+   public function resetMatchRecords(Request $request, Response $response, array $args): Response
+   {
+      $category = $request->getAttribute('category');
+      $this->structureLoadService->resetMatchRecords($category);
+      return $response->withHeader(
+         'Location',
+         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
+      )->withStatus(302);
    }
 
    public function showKoMatch(Request $request, Response $response, array $args): Response

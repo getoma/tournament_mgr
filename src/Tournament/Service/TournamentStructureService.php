@@ -4,11 +4,9 @@ namespace Tournament\Service;
 
 use Tournament\Model\Category\Category;
 use Tournament\Model\TournamentStructure\TournamentStructure;
-
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
 use Tournament\Repository\TournamentRepository;
-use Tournament\Repository\AreaRepository;
 
 /**
  * Service to load a complete tournament structure from the repositories, with all data contained
@@ -18,7 +16,6 @@ class TournamentStructureService
    public function __construct(
       private TournamentRepository $tournamentRepo,
       private ParticipantRepository $participantRepo,
-      private AreaRepository $areaRepo,
       private MatchDataRepository $matchDataRepo
    ) {
    }
@@ -39,14 +36,31 @@ class TournamentStructureService
    }
 
    /**
+    * populate a tornament structure by shuffling in all participants
+    */
+   public function populate(Category $category): TournamentStructure
+   {
+      $structure = $this->initialize($category);
+      $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
+      $slot_assignment = $structure->shuffleParticipants($participants);
+      $this->participantRepo->updateAllParticipantSlots($category->id, $slot_assignment);
+      return $structure;
+   }
+
+   /**
     * initialize a new TournamentStructure for a category and assign areas.
     */
-   public function initialize(Category $category): TournamentStructure
+   private function initialize(Category $category): TournamentStructure
    {
       $struc = new TournamentStructure();
-      $areas = $this->areaRepo->getAreasByTournamentId($category->tournament_id);
-      $struc->generateStructure($category->mode, $category->config->num_rounds, $areas,
-                                $category->config->pool_winners, $category->config->area_cluster);
+      $areas = $this->tournamentRepo->getAreasByTournamentId($category->tournament_id);
+      $struc->generateStructure(
+         $category->mode,
+         $category->config->num_rounds,
+         $areas,
+         $category->config->pool_winners,
+         $category->config->area_cluster
+      );
       return $struc;
    }
 

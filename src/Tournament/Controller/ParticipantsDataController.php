@@ -9,18 +9,18 @@ use Slim\Routing\RouteContext;
 
 use Tournament\Model\Participant\Participant;
 
-use Tournament\Repository\CategoryRepository;
+use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\ParticipantRepository;
 
-use Base\Service\Validator;
+use Base\Service\DataValidationService;
 use Respect\Validation\Validator as v;
 
-class ParticipantsController
+class ParticipantsDataController
 {
    public function __construct(
       private Twig $view,
       private ParticipantRepository $repo,
-      private CategoryRepository $categoryRepo,
+      private TournamentRepository $tournamentRepo,
    ) {
    }
 
@@ -30,7 +30,7 @@ class ParticipantsController
    private function renderParticipantList(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
    {
       $tournament = $request->getAttribute('tournament');
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($tournament->id);
+      $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
       $participants = $this->repo->getParticipantsByTournamentId($tournament->id);
 
       return $this->view->render($response, 'participants/home.twig', [
@@ -65,7 +65,7 @@ class ParticipantsController
    public function updateParticipantList(Request $request, Response $response, array $args): Response
    {
       $tournament = $request->getAttribute('tournament');
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($tournament->id);
+      $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
       $validation_rules = [];
       foreach ($categories as $category)
       {
@@ -75,7 +75,7 @@ class ParticipantsController
       }
 
       $data = $request->getParsedBody();
-      $errors = Validator::validate($data, $validation_rules);
+      $errors = DataValidationService::validate($data, $validation_rules);
 
       // return form if there are errors
       if (count($errors) > 0)
@@ -89,7 +89,7 @@ class ParticipantsController
       foreach ($categories as $category)
       {
          $participantIds = $data['category_' . $category->id] ?? [];
-         $this->categoryRepo->setCategoryParticipants($category->id, $participantIds);
+         $this->repo->setCategoryParticipants($category->id, $participantIds);
       }
 
       return $this->sendToParticipantList($request, $response, $args);
@@ -107,7 +107,7 @@ class ParticipantsController
          'categories' => v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0)),
          'participants' => v::stringType()->notEmpty()->length(1, max: 10000)->setTemplate('ungültige Länge')
       ];
-      $errors = Validator::validate($data, $rules);
+      $errors = DataValidationService::validate($data, $rules);
 
       /* parse the file content into an array - one participant per line, either as:
          - "firstname lastname", or
@@ -195,7 +195,7 @@ class ParticipantsController
    {
       $tournament = $request->getAttribute('tournament');
       $participant = $request->getAttribute('participant');
-      $categories = $this->categoryRepo->getCategoriesByTournamentId($tournament->id);
+      $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
 
       return $this->view->render($response, 'participants/details.twig', [
          'tournament' => $tournament,
@@ -214,16 +214,16 @@ class ParticipantsController
       $participant = $request->getAttribute('participant');
 
       $data = $request->getParsedBody();
-      $participant_rules = Participant::getValidationRules('create');
+      $participant_rules = Participant::validationRules('create');
       $participant_rules['categories'] = v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0));
-      $errors = Validator::validate($data, $participant_rules);
+      $errors = DataValidationService::validate($data, $participant_rules);
 
       // return form if there are errors
       if (count($errors) > 0)
       {
          return $this->view->render($response, 'participants/details.twig', [
             'tournament' => $tournament,
-            'categories' => $this->categoryRepo->getCategoriesByTournamentId($tournament->id),
+            'categories' => $this->tournamentRepo->getCategoriesByTournamentId($tournament->id),
             'participant' => $participant,
             'errors' => $errors,
             'prev' => $data,

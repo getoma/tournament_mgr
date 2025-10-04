@@ -15,8 +15,8 @@ class MatchDataRepository
    public function __construct(
       private PDO $pdo,
       private ParticipantRepository $participant_repo,
-      private AreaRepository $area_repo,
-      private CategoryRepository $category_repository)
+      private TournamentRepository $tournament_repo
+      )
    {
    }
 
@@ -27,8 +27,8 @@ class MatchDataRepository
          $record = new MatchRecord(
             id:       $data['id'],
             name:     $data['name'],
-            category: $this->category_repository->getCategoryById($data['category_id']),
-            area:     $this->area_repo->getAreaById($data['area_id']),
+            category: $this->tournament_repo->getCategoryById($data['category_id']),
+            area:     $this->tournament_repo->getAreaById($data['area_id']),
             whiteParticipant: $this->participant_repo->getParticipantById($data['white_id']),
             redParticipant:   $this->participant_repo->getParticipantById($data['red_id']),
             winner:           isset($data['winner_id'])? $this->participant_repo->getParticipantById($data['winner_id']) : null,

@@ -2,8 +2,6 @@
 
 namespace Tournament\Service;
 
-use Tournament\Repository\AreaRepository;
-use Tournament\Repository\CategoryRepository;
 use Tournament\Repository\ParticipantRepository;
 use Tournament\Repository\TournamentRepository;
 
@@ -18,9 +16,7 @@ class RouteArgsResolverService
 {
    public function __construct(
       private TournamentRepository $tournamentRepo,
-      private CategoryRepository $categoryRepo,
-      private ParticipantRepository $participantRepo,
-      private AreaRepository $areaRepo
+      private ParticipantRepository $participantRepo
    )
    {
    }
@@ -42,7 +38,7 @@ class RouteArgsResolverService
       }
       if (isset($args['categoryId']))
       {
-         $result['category'] = $this->categoryRepo->getCategoryById($args['categoryId'])
+         $result['category'] = $this->tournamentRepo->getCategoryById($args['categoryId'])
                              ?? throw new EntityNotFoundException('Category not found');
       }
       if (isset($args['participantId']))
@@ -52,7 +48,7 @@ class RouteArgsResolverService
       }
       if (isset($args['areaId']))
       {
-         $result['area'] = $this->areaRepo->getAreaById($args['areaId'])
+         $result['area'] = $this->tournamentRepo->getAreaById($args['areaId'])
                         ?? throw new EntityNotFoundException('Area not found');
       }
 
