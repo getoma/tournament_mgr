@@ -24,14 +24,14 @@ return function (DI\Container $container)
    {
       $twig = Twig::create(__DIR__ . '/../templates', [
          'cache' => false,
-         'debug' => config::$debug,
+         'debug' => config::$debug ?? false,
       ]);
-      if (config::$debug)
+      if (config::$debug ?? false)
       {
          $twig->addExtension(new \Twig\Extension\DebugExtension());
       }
-      $twig->getEnvironment()->addGlobal('debug', config::$debug);
-      $twig->getEnvironment()->addGlobal('test_interfaces', config::$test_interfaces);
+      $twig->getEnvironment()->addGlobal('debug', config::$debug ?? false);
+      $twig->getEnvironment()->addGlobal('test_interfaces', config::$test_interfaces ?? false);
 
       return $twig;
    });
@@ -40,9 +40,9 @@ return function (DI\Container $container)
    $container->set(Base\Service\MailService::class, function ()
    {
       return new Base\Service\MailService(
-         fromAddress: config::$MAIL_FROM_ADDRESS,
-         fromName: config::$MAIL_FROM_NAME,
-         smtpSettings: config::$SMTP_SETTINGS
+         fromAddress: config::$MAIL_FROM_ADDRESS ?? '',
+         fromName: config::$MAIL_FROM_NAME ?? 'Tournament Software',
+         smtpSettings: config::$SMTP_SETTINGS ?? []
       );
    });
 

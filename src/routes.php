@@ -39,7 +39,7 @@ return function (\Slim\App $app)
    $app->add(Slim\Views\TwigMiddleware::create($app, $container->get(Slim\Views\Twig::class)));
 
    // Add Error Handling Middleware
-   $errMW = $app->addErrorMiddleware(config::$debug, true, false);
+   $errMW = $app->addErrorMiddleware(config::$debug ?? false, true, false);
    // Add custom handler for EntityNotFoundException
    $errMW->setErrorHandler(EntityNotFoundException::class, EntityNotFoundHandler::create($app));
 
