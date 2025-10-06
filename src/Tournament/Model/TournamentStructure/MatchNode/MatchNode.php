@@ -1,12 +1,12 @@
 <?php
 
-namespace Tournament\Model\TournamentStructure;
+namespace Tournament\Model\TournamentStructure\MatchNode;
 
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
 use Tournament\Model\MatchRecord\MatchRecord;
 
-use Tournament\Model\TournamentStructure\MatchSlot;
+use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 
 /**
  * base class to manage an atomar match, which might be part of a KO tree, a pool, or whatever

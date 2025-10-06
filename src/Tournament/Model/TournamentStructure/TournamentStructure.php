@@ -6,9 +6,10 @@ use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\PoolWinnerSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\ByeSlot;
+use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\TournamentStructure\KoChunk;
 use Tournament\Model\TournamentStructure\Pool;
-use Tournament\Model\TournamentStructure\KoNode;
+
 use Tournament\Model\Area\Area;
 use Tournament\Model\Area\AreaCollection;
 use Tournament\Model\Category\CategoryMode;
@@ -63,7 +64,7 @@ class TournamentStructure
       }
       else
       {
-         throw new \DomainException('Unknown tournament mode: ' . $mode.value());
+         throw new \DomainException('Unknown tournament mode: ' . $mode->value);
       }
 
       $areas = $areas->values();

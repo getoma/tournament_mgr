@@ -3,6 +3,7 @@
 namespace Tournament\Model\TournamentStructure;
 
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
 use Tournament\Model\MatchRecord\MatchRecordCollection;

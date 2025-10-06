@@ -16,6 +16,8 @@ use Tournament\Repository\ParticipantRepository;
 
 use Tournament\Service\TournamentStructureService;
 use Tournament\Exception\EntityNotFoundException;
+use Tournament\Model\TournamentStructure\MatchNode\KoNode;
+use Tournament\Model\TournamentStructure\TournamentStructure;
 
 class TournamentTreeController
 {
@@ -91,13 +93,32 @@ class TournamentTreeController
       )->withStatus(302);
    }
 
-   public function showKoMatch(Request $request, Response $response, array $args): Response
+   public function showKoMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response
    {
-      $structure = $this->structureLoadService->load($request->getAttribute('category'));
-      $node = $structure->ko->findByName($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+      $structure ??= $this->structureLoadService->load($request->getAttribute('category'));
+      $root = $structure->ko;
+      $node = $root->findByName($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+
+      /* get the ordered list of matches in the current area and a pointer to the current node.
+       * include non-real matches as the current match might be non-real */
+      $nav_match_list = $root->getMatchList()->filter(fn(KoNode $e) => $e->area == $node->area);
+      $current_it = $nav_match_list->getIteratorAt($node->name);
+
+      /* get the next real matches after the current one */
+      $next_matches = $nav_match_list->slice($current_it->skip()->key())->filter(fn(KoNode $n) => $n->isReal());
+
+      /* get the previous real match before the current one */
+      $previous_it = $current_it->back();
+      while( $previous_it->valid() && !$previous_it->current()->isReal() )
+      {
+         $previous_it->prev();
+      }
 
       return $this->view->render($response,'category/match.twig',[
-         'node' => $node
+         'error'    => $error,
+         'node'     => $node,
+         'previous' => $previous_it->current(),
+         'next'     => $next_matches
       ]);
    }
 
@@ -158,9 +179,6 @@ class TournamentTreeController
          $error = 'Diesem Kampf können keine Ergebnisse zugewiesen werden!';
       }
 
-      return $this->view->render($response, 'category/match.twig', [
-         'error' => $error,
-         'node' => $node
-      ]);
+      return $this->showKoMatch($request, $response, $args, $structure, $error);
    }
 }

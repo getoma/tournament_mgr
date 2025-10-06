@@ -2,7 +2,7 @@
 
 namespace Tournament\Model\TournamentStructure;
 
-use Tournament\Model\TournamentStructure\KoNode;
+use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\Area\Area;
 
 class KoChunk

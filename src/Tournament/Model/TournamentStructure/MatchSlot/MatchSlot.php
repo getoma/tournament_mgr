@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Model\TournamentStructure;
+namespace Tournament\Model\TournamentStructure\MatchSlot;
 
 use Tournament\Model\Participant\Participant;
 

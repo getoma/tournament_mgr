@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Model\TournamentStructure;
+namespace Tournament\Model\TournamentStructure\MatchNode;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\MatchRecord\MatchRecord;
@@ -8,6 +8,7 @@ use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
 
+use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 
 /**
@@ -157,9 +158,9 @@ class KoNode extends MatchNode
    /**
     * Return a flat list of all matches in this knockout (sub)structure.
     */
-   public function getMatchList(): array
+   public function getMatchList(): MatchNodeCollection
    {
-      return array_merge(...$this->getRounds());
+      return new MatchNodeCollection(array_merge(...$this->getRounds()));
    }
 
    /**

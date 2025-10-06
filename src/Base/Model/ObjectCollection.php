@@ -74,7 +74,14 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       $type = $this->elements_type();
       if ($value instanceof $type)
       {
-         $this->elements[$offset] = $value;
+         if( isset($offset) )
+         {
+            $this->elements[$offset] = $value;
+         }
+         else
+         {
+            $this->elements[] = $value;
+         }
       }
       else
       {

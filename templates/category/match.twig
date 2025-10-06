@@ -14,7 +14,7 @@
   <tbody>
     <tr>
       <td>
-        <div class="fight_participant red">{{part.printSlot(node.slotRed, route_param, node.getWinner())}}</div>
+        <div class="fight_participant red">{{part.printSlot(node.slotRed, node.getWinner())}}</div>
         {%- if node.isModifiable() %}
         <form method="post" action="{{url_for('update_ko_match', route_parameters)}}">
           <input type="hidden" name="participant" value="{{node.getRedParticipant().id}}">
@@ -23,7 +23,7 @@
         {%- endif %}
       </td>
       <td>
-        <div class="fight_participant white">{{part.printSlot(node.slotWhite, route_param, node.getWinner())}}</div>
+        <div class="fight_participant white">{{part.printSlot(node.slotWhite, node.getWinner())}}</div>
         {%- if node.isModifiable() %}
         <form method="post" action="{{url_for('update_ko_match', route_parameters)}}">
           <input type="hidden" name="participant" value="{{node.getWhiteParticipant().id}}">
@@ -38,4 +38,15 @@
 {% if error is not empty %}
 <p class="error">{{error}}</p>
 {% endif %}
+
+<nav id="match_nav">
+<ul>
+  {% if previous is not empty -%}
+  <li><a href="{{url_for('show_ko_match', route_parameters|merge({'matchName': previous.name}))}}">Kampf {{previous.name}}</a> - {{part.printMatch(previous)}}</li>
+  {%endif%}
+  {% for match in next -%}
+  <li><a href="{{url_for('show_ko_match', route_parameters|merge({'matchName': match.name}))}}">Kampf {{match.name}}</a> - {{part.printMatch(match)}}</li>
+  {%endfor%}
+</ul>
+</nav>
 {% endblock %}
