@@ -10,14 +10,20 @@ use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
 use Tournament\Model\MatchRecord\MatchRecord;
+use Tournament\Model\Category\Category;
+use Tournament\Model\TournamentStructure\MatchNode\KoNode;
+use Tournament\Model\TournamentStructure\TournamentStructure;
 
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
 
 use Tournament\Service\TournamentStructureService;
 use Tournament\Exception\EntityNotFoundException;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
-use Tournament\Model\TournamentStructure\TournamentStructure;
+
+use Respect\Validation\Validator as v;
+use Base\Service\DataValidationService;
+use Tournament\Model\MatchRecord\MatchPoint;
+use Tournament\Model\MatchRecord\MatchPointCollection;
 
 class TournamentTreeController
 {
@@ -95,7 +101,11 @@ class TournamentTreeController
 
    public function showKoMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response
    {
-      $structure ??= $this->structureLoadService->load($request->getAttribute('category'));
+      /** @var Category $category */
+      $category = $request->getAttribute('category');
+
+      /* load the structure and find the current node/match */
+      $structure ??= $this->structureLoadService->load($category);
       $root = $structure->ko;
       $node = $root->findByName($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
 
@@ -114,69 +124,124 @@ class TournamentTreeController
          $previous_it->prev();
       }
 
+      /* load match point handler to get the list of possible points */
+      $mphdl = $category->getMatchPointHandler();
+
+      /* load the list of points per participant */
+      $record = $node->getMatchRecord()?->points ?? new MatchPointCollection();
+
+      $pts = [];
+      foreach( ['red' => $record->for($node->getRedParticipant()), 'white' => $record->for($node->getWhiteParticipant()) ]
+             as $color => $pt_list)
+      {
+         $pts[$color] = [
+            'points'  => $mphdl->getPoints($pt_list),
+            'penalty' => $mphdl->getActivePenalties($pt_list),
+            'undo'    => $pt_list->filter(fn($p) => $p->isSolitary())->back()
+         ];
+      }
+
       return $this->view->render($response,'category/match.twig',[
          'error'    => $error,
          'node'     => $node,
          'previous' => $previous_it->current(),
-         'next'     => $next_matches
+         'next'     => $next_matches,
+         'possible_pts' => $mphdl->getPointList(),
+         'points'   => $pts,
+         'debug' => null
       ]);
    }
 
    public function updateKoMatch(Request $request, Response $response, array $args): Response
    {
+      /** @var Category $category */
+      $category = $request->getAttribute('category');
+
+      /* load the structure and find the current node/match */
       $structure = $this->structureLoadService->load($request->getAttribute('category'));
       $node = $structure->ko->findByName($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
 
+      /* prepare error message */
       $error = '';
 
-      if( $node->isModifiable() )
+      if( !$node->isDetermined() )
       {
-         $saveRecord = false;
-
-         $record = $node->getMatchRecord()
-            ?? new MatchRecord(
-               id: null,
-               name: $node->name,
-               category: $request->getAttribute('category'),
-               area: $node->area,
-               redParticipant: $node->getRedParticipant(),
-               whiteParticipant: $node->getWhiteParticipant(),
-         );
-
-         $data = $request->getParsedBody();
-         if( $data['action'] === 'winner' )
-         {
-            $participant = $this->p_repo->getParticipantById($data['participant']) ?? throw new EntityNotFoundException('Unknown Participant');
-
-            if( $participant == $record->redParticipant || $participant == $record->whiteParticipant )
-            {
-               $record->winner = $participant;
-               $record->finalized_at = new \DateTime();
-            }
-            else
-            {
-               $error = "Gewinner passt nicht zu den Teilnehmern, aktualisierung wird abgelehnt";
-            }
-
-            $saveRecord = true;
-         }
-
-         if( $saveRecord )
-         {
-            if( $this->m_repo->saveMatchRecord($record) )
-            {
-               $node->setMatchRecord($record);
-            }
-            else
-            {
-               $error = 'Aktualisierung ist fehlgeschlagen :-(';
-            }
-
-         }
+         $error = "Match ist noch nicht valide";
       }
       else
       {
-         $error = 'Diesem Kampf können keine Ergebnisse zugewiesen werden!';
+         /* load match point handler to evaluate the input */
+         $mphdl = $category->getMatchPointHandler();
+
+         /* load and validate the input data */
+         $data = $request->getParsedBody();
+         $rules = [
+            'participant' => v::in([$node->getRedParticipant()->id, $node->getWhiteParticipant()->id]),
+            'action' => v::in(array_merge($mphdl->getPointList(), ['winner', 'undo'])),
+            'undo' => v::optional(v::intVal()->positive())
+         ];
+         $err_list = DataValidationService::validate($data, $rules);
+
+         if( !empty($err_list))
+         {
+            $error = 'Eingabe abgelehnt';
+         }
+         else
+         {
+            $record = $node->provideMatchRecord($category);
+            $participant = $this->p_repo->getParticipantById($data['participant']) ?? throw new EntityNotFoundException('Unknown Participant');
+
+            $saveRecord = false;
+
+            if( $data['action'] === 'winner' )
+            {
+               if( $node->isModifiable() )
+               {
+                  $record->winner = $participant;
+                  $record->finalized_at = new \DateTime();
+                  $saveRecord = true;
+               }
+               else
+               {
+                  $error = 'Gewinner kann nicht mehr neu gesetzt werden';
+               }
+            }
+            else if ($data['action'] === 'undo')
+            {
+               if( $mphdl->removePoint($record, $data['undo']) )
+               {
+                  $saveRecord = true;
+               }
+               else
+               {
+                  $error = 'Punkt kann nicht zurückgenommen werden, abgelehnt';
+               }
+            }
+            else
+            {
+               $pt = new MatchPoint(null, $participant, $data['action'], new \DateTime());
+               if( $mphdl->addPoint($record, $pt) )
+               {
+                  $saveRecord = true;
+               }
+               else
+               {
+                  $error = 'Invalider Punkt, abgelehnt';
+               }
+            }
+
+            if( $saveRecord )
+            {
+               if( $this->m_repo->saveMatchRecord($record) )
+               {
+                  $node->setMatchRecord($record);
+               }
+               else
+               {
+                  $error = 'Aktualisierung ist fehlgeschlagen :-(';
+               }
+            }
+         }
       }
 
       return $this->showKoMatch($request, $response, $args, $structure, $error);

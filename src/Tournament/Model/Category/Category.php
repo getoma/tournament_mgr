@@ -3,6 +3,7 @@
 namespace Tournament\Model\Category;
 
 use Respect\Validation\Validator as v;
+use Tournament\Model\MatchPointHandler\MatchPointHandler;
 
 class Category extends \Tournament\Model\Base\DbItem
 {
@@ -15,7 +16,7 @@ class Category extends \Tournament\Model\Base\DbItem
       ?int $id,                              // Unique identifier for the category
       public readonly int $tournament_id,    // Identifier for the tournament this category belongs to
       public string $name,                   // Name of the category (e.g., "Juniors -60kg")
-      string|CategoryMode $mode = CategoryMode::KO,            // Tournament mode (e.g., "ko", "pool", "combined")
+      string|CategoryMode $mode = CategoryMode::KO, // Tournament mode (e.g., "ko", "pool", "combined")
       ?CategoryConfiguration $config = null, // detailled configuration for the category (e.g., seeding strategy, pool sizes)
    )
    {
@@ -28,8 +29,8 @@ class Category extends \Tournament\Model\Base\DbItem
    public static function validationRules(): array
    {
       return [
-         'mode'   => v::in(array_column(CategoryMode::cases(), 'value')),
-         'name'   => v::stringType()->notEmpty()->length(1, max: 100),
+         'mode' => v::in(array_column(CategoryMode::cases(), 'value')),
+         'name' => v::stringType()->notEmpty()->length(1, max: 100),
       ]
       + CategoryConfiguration::validationRules();
    }
@@ -40,6 +41,16 @@ class Category extends \Tournament\Model\Base\DbItem
       if (isset($data['name'])) $this->name = $data['name'];
       if (isset($data['mode'])) $this->mode = CategoryMode::from($data['mode']);
       $this->config->updateFromArray($data);
+   }
+
+   /**
+    * put creation of MatchPointHandler into Category,
+    * as it might depend on specific Category-wide configurations
+    * (e.g. whether Hansokus cause Ippons)
+    */
+   public function getMatchPointHandler(): MatchPointHandler
+   {
+      return new \Tournament\Model\MatchPointHandler\Kendo();
    }
 }
 

@@ -4,6 +4,7 @@ namespace Tournament\Model\TournamentStructure\MatchNode;
 
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
+use Tournament\Model\Category\Category;
 use Tournament\Model\MatchRecord\MatchRecord;
 
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
@@ -71,6 +72,19 @@ class MatchNode
       }
 
       $this->matchRecord = $matchRecord;
+   }
+
+   public function provideMatchRecord(Category $category): MatchRecord
+   {
+      $this->matchRecord ??= new MatchRecord(
+         id: null,
+         name: $this->name,
+         category: $category,
+         area: $this->area,
+         redParticipant: $this->getRedParticipant(),
+         whiteParticipant: $this->getWhiteParticipant(),
+      );
+      return $this->matchRecord;
    }
 
    public function getMatchRecord(): ?MatchRecord

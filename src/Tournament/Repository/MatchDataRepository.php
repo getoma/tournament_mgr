@@ -24,6 +24,7 @@ class MatchDataRepository
    {
       if( !isset($this->buffer_by_id[$data['id']]) )
       {
+         /* create match record */
          $record = new MatchRecord(
             id:       $data['id'],
             name:     $data['name'],
@@ -37,6 +38,22 @@ class MatchDataRepository
             finalized_at: isset($data['finalized_at'])? new \DateTime($data['finalized_at']) : null,
          );
 
+         /* load points for this match */
+         $stmt = $this->pdo->prepare('SELECT * FROM match_points WHERE match_id = :match ORDER BY id ASC');
+         $stmt->execute(['match' => $record->id]);
+         foreach( $stmt->fetchAll(PDO::FETCH_ASSOC) as $row )
+         {
+            $point = new \Tournament\Model\MatchRecord\MatchPoint(
+               id: $row['id'],
+               participant: $this->participant_repo->getParticipantById($row['participant_id']),
+               point: $row['point'],
+               given_at: new \DateTime($row['given_at']),
+               caused_by: $row['caused_by']? $record->points[$row['caused_by']]??null : null
+            );
+            $record->points[$point->id] = $point;
+         }
+
+         /* update buffers */
          $this->buffer_by_id[$record->id] = $record;
          $this->buffer_by_name[$record->category->id] ??= [];
          $this->buffer_by_name[$record->category->id][$record->name] = $record;
@@ -128,6 +145,7 @@ class MatchDataRepository
             VALUES
                (:name, :category_id, :area_id, :red_id, :white_id, :winner_id, :tie_break, :created_at, :finalized_at)
          ');
+
          $result = $stmt->execute([
             'name'        => $record->name,
             'category_id' => $record->category->id,
@@ -139,12 +157,58 @@ class MatchDataRepository
             'created_at'  => $record->created_at->format('Y-m-d H:i:s'),
             'finalized_at'=> isset($record->finalized_at)? $record->finalized_at->format('Y-m-d H:i:s') : null,
          ]);
-         $record->id = (int)$this->pdo->lastInsertId();
 
-         /* update buffers */
-         $this->buffer_by_id[$record->id] = $record;
-         $this->buffer_by_name[$record->category->id] ??= [];
-         $this->buffer_by_name[$record->category->id][$record->name] = $record;
+         if( $result )
+         {
+            $record->id = (int)$this->pdo->lastInsertId();
+
+            /* update buffers */
+            $this->buffer_by_id[$record->id] = $record;
+            $this->buffer_by_name[$record->category->id] ??= [];
+            $this->buffer_by_name[$record->category->id][$record->name] = $record;
+         }
+      }
+
+      /* update the associated points */
+      if( $result )
+      {
+         $new_points = $record->points->filter(fn($p) => !isset($p->id));
+         $removed_points = $record->points->getDropped();
+
+         if ($new_points->count())
+         {
+            $stmt = $this->pdo->prepare('
+               INSERT INTO match_points
+                  (match_id, participant_id, point, given_at, caused_by)
+               VALUES
+                  (:match_id, :participant_id, :point, :given_at, :caused_by)
+            ');
+
+            foreach ($new_points as $point)
+            {
+               $res = $stmt->execute([
+                  'match_id'       => $record->id,
+                  'participant_id' => $point->participant->id,
+                  'point'          => $point->point,
+                  'given_at'       => $point->given_at->format('Y-m-d H:i:s'),
+                  'caused_by'      => $point->caused_by?->id,
+               ]);
+               $result = $result && $res;
+               if( $res )
+               {
+                  $point->id = (int)$this->pdo->lastInsertId();
+               }
+            }
+         }
+
+         if ($removed_points->count())
+         {
+            $ids = $removed_points->column('id');
+            $in  = '?'.str_repeat(',?', count($ids) - 1);
+            $stmt = $this->pdo->prepare("DELETE FROM match_points WHERE id IN ($in)");
+            $res = $stmt->execute($ids);
+            $result = $result && $res;
+         }
       }
 
       return $result;

@@ -9,9 +9,9 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 {
    protected array $elements = [];
 
-   public static function new(): static
+   public static function new(iterable $data = []): static
    {
-      return new static();
+      return new static($data);
    }
 
    public function __construct(iterable $data = [])
@@ -39,6 +39,11 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return array_values($this->elements);
    }
 
+   public function column(string $attr): array
+   {
+      return array_column($this->elements, $attr);
+   }
+
    public function keys(): array
    {
       return array_keys($this->elements);
@@ -47,6 +52,16 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
    public function items(): array
    {
       return $this->elements;
+   }
+
+   public function front(): mixed
+   {
+      return $this->elements[array_key_first($this->elements)] ?? null;
+   }
+
+   public function back(): mixed
+   {
+      return $this->elements[array_key_last($this->elements)] ?? null;
    }
 
    public function getIterator(): \Traversable
@@ -92,6 +107,14 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
    public function offsetUnset($offset): void
    {
       unset($this->elements[$offset]);
+   }
+
+   public function drop($value): bool
+   {
+      $offset = array_search($value, $this->elements, true);
+      if ($offset === false) return false;
+      $this->offsetUnset($offset);
+      return true;
    }
 
    public function slice(int $offset, ?int $length = null): static

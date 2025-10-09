@@ -8,8 +8,6 @@ use Tournament\Model\Participant\Participant;
 
 class MatchRecord extends \Tournament\Model\Base\DbItem
 {
-   public readonly \DateTime $created_at;
-
    public function __construct(
       ?int $id = null,
       public readonly string $name,
@@ -19,8 +17,9 @@ class MatchRecord extends \Tournament\Model\Base\DbItem
       public readonly Participant $whiteParticipant,
       public ?Participant $winner = null,
       public bool $tie_break = false,
-      ?\DateTime $created_at = null,
-      public ?\DateTime $finalized_at = null
+      public readonly \DateTime $created_at = new \DateTime(),
+      public ?\DateTime $finalized_at = null,
+      public readonly MatchPointCollection $points = new MatchPointCollection()
    )
    {
       if(  isset($this->winner)
@@ -37,7 +36,6 @@ class MatchRecord extends \Tournament\Model\Base\DbItem
       }
 
       $this->id = $id;
-      $this->created_at = $created_at ?? new \DateTime();
    }
 
    public static function validationRules(string $context = 'update'): array
@@ -50,5 +48,11 @@ class MatchRecord extends \Tournament\Model\Base\DbItem
       throw new \LogicException("bulk update of match record not expected");
    }
 
+   public function getOpponent(Participant $p): Participant
+   {
+      if( $p === $this->redParticipant   ) return $this->whiteParticipant;
+      if( $p === $this->whiteParticipant ) return $this->redParticipant;
+      throw new \UnexpectedValueException("given participant is not part of this record.");
+   }
 
 }
