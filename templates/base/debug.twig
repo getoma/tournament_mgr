@@ -1,0 +1,18 @@
+{# usage:
+
+  {{ print_vars(_context) }}
+
+  This will print all available variables in the current context with their type.
+  To show the full content of a specific variable, use
+
+  {{ dump(variable) }}
+
+#}
+
+{% macro print_vars(ctx) -%}
+<pre>
+  {% for name, value in ctx -%}
+  {{name}}: {{ value|print_type }}
+  {% endfor -%}
+</pre>
+{% endmacro %}

@@ -29,6 +29,7 @@ return function (DI\Container $container)
       if (config::$debug ?? false)
       {
          $twig->addExtension(new \Twig\Extension\DebugExtension());
+         $twig->addExtension(new \Tournament\Twig\DebugExtension());
       }
 
       $twig->addExtension(new \Tournament\Twig\EnumOptionsExtension());
