@@ -6,7 +6,7 @@
 {% block nav_extension %}<a href="{{url_for('show_category', route_parameters)}}">Zurück...</a>{% endblock %}
 
 {% macro printControls(node,participant,possible_pts,undo,route_parameters) -%}
-{%- if node.isDetermined() %}
+{%- if node.isDetermined() and policy.isActionAllowed('RecordResults') %}
 <form method="post" action="{{url_for('update_ko_match', route_parameters)}}">
   <input type="hidden" name="participant" value="{{participant.id}}">
   <input type="hidden" name="undo" value="{{undo.id}}">
@@ -36,11 +36,6 @@
 
 {% block content %}
 <h2>Kampf {{node.name}}</h2>
-{% if debug is not null %}
-<pre>
-  {{dump(debug)}}
-</pre>
-{%endif-%}
 <table>
   <thead>
     <tr><th>Rot</th><th>Weiß</th></tr>

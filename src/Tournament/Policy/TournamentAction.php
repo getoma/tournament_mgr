@@ -2,9 +2,10 @@
 
 namespace Tournament\Policy;
 
-enum TournamentAction
+enum TournamentAction: string
 {
-   case ManageSetup;        // manage tournament setup (categories, areas, structure)
-   case ManageParticipants; // manage participants (add, edit, remove)
-   case RecordResults;      // record results (matches)
+   case ManageDetails      = "ManageDetails";      // manage tournament details (name, date, notes)
+   case ManageSetup        = "ManageSetup";        // manage tournament setup (categories, areas, structure)
+   case ManageParticipants = "ManageParticipants"; // manage participants (add, edit, remove)
+   case RecordResults      = "RecordResults";      // record results (matches)
 }

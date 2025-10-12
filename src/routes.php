@@ -96,9 +96,11 @@ return function (\Slim\App $app)
 
          /* tournament configuration pages */
          $tgrp->get( '/configure', [TournamentSettingsController::class, 'showTournamentConfiguration'])->setName('show_tournament_config');
+         $tgrp->post('/configure', [TournamentSettingsController::class, 'updateTournament'])->setName('update_tournament_config')
+            ->add( $statusGuardMW->for(TournamentAction::ManageDetails) );
+
          $tgrp->group('', function (RouteCollectorProxy $cgrp)
          {
-            $cgrp->post('/configure', [TournamentSettingsController::class, 'updateTournament'])->setName('update_tournament_config');
             $cgrp->post('/area/create', [TournamentSettingsController::class, 'createArea'])->setName('create_area');
             $cgrp->post('/area/{areaId:\d+}/update', [TournamentSettingsController::class, 'updateArea'])->setName('update_area');
             $cgrp->post('/area/{areaId:\d+}/delete', [TournamentSettingsController::class, 'deleteArea'])->setName('delete_area');

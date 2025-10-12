@@ -13,24 +13,24 @@
   <header class="header">
   <div class="header-container">
     <h1>
-      {% block heading %}
+      {%- block heading -%}
         {{ tournament.name|default('Kendo Turniersoftware') }}
-      {% endblock %}
+      {%- endblock -%}
     </h1>
 
     <nav class="nav-actions">
-      {% if current_user %}
+      {% if current_user -%}
         <a href="{{url_for('logout')}}">Logout</a>
         <a href="{{url_for('user_account')}}">Account</a>
-        {%else%}
+      {%-else%}
         <a href="{{url_for('login')}}">Login</a>
-        {%endif%}
+      {%-endif%}
     </nav>
   </div>
   </header>
 
   <!-- Main Content -->
-  <main class="login-page">
+  <main>
     <section id="content">
       {% block content %}{% endblock %}
     </section>

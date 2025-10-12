@@ -6,17 +6,20 @@
 <section>
 <h2>Details</h2>
 <form action="{{url_for('update_tournament_config', {'tournamentId': tournament.id})}}" method="post">
+  {% set isActive=policy.isActionAllowed('ManageDetails') -%}
+  {% if isActive -%}
   {{ form.input('text', 'name', 'Name', prev.tournament.name ?? tournament.name, errors.tournament['name'],
-  {'maxlength':100}, required=true) }}
+  {'maxlength':100}, required=true, active=isActive) }}
+  {% endif -%}
   {{ form.input('date', 'date', 'Datum', prev.tournament.date ?? tournament.date, errors.tournament['date'],
-  required=true) }}
+  required=true, active=isActive) }}
   {{ form.textarea('notes', 'Notizen', prev.tournament.notes ?? tournament.notes, errors.tournament['notes'],
-  {'rows':4}) }}
-  {{ form.submit('Aktualisieren') }}
+  {'rows':4}, active=isActive) }}
+  {% if isActive %}{{ form.submit('Aktualisieren') }}{%endif%}
 </form>
 
 <form action="{{url_for('update_tournament_status', {'tournamentId': tournament.id})}}" method="post">
-<ul>
+<ul id="new_status_list">
 {% for status in policy.getPossibleTransitions() %}
 <li>{{form.submit('Neuer Status: ' ~ status.value, 'status', status.value)}}</li>
 {% endfor %}
@@ -27,7 +30,8 @@
 <section>
 <h2>Kampfflächen</h2>
 
-<table>
+{% if policy.isActionAllowed('ManageSetup') -%}
+<table id="area_list">
   <thead>
     <tr>
       <th>Name</th>
@@ -61,12 +65,21 @@
     </tr>
   </tbody>
 </table>
+{% else -%}
+<ul id="area_list">
+  {% for area in areas -%}
+  <li>{{area.name}}</li>
+  {% endfor -%}
+</ul>
+{% endif -%}
+
 </section>
 
 <section>
 <h2>Kategorien</h2>
 
-<table>
+{% if policy.isActionAllowed('ManageSetup') -%}
+<table id="category_list">
   <thead>
     <tr>
       <th>Name</th>
@@ -83,7 +96,7 @@
         required=true) }}
       </td>
       <td>
-        {{ form.select_plain('mode', enum_options(category_modes), prev.categories[category.id].mode ?? category.mode,
+        {{ form.select_plain('mode', enum_options(category_modes), prev.categories[category.id].mode ?? category.mode.value,
            errors.categories[category.id]['mode'], {'form': 'category_update_' ~ category.id}, required=true) }}
       </td>
       <td>
@@ -117,6 +130,13 @@
     </tr>
   </tbody>
 </table>
+{% else -%}
+<ul id="category_list">
+  {% for category in categories -%}
+  <li><a href="{{url_for('show_category', {'tournamentId': tournament.id, 'categoryId': category.id})}}">{{category.name}} ({{category.mode.value}})</a></li>
+  {% endfor -%}
+</ul>
+{% endif -%}
 </section>
 
 {% endblock %}

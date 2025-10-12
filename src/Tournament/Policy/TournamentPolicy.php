@@ -23,25 +23,25 @@ final class TournamentPolicy
       {
          TournamentStatus::Planning => match ($action)
          {
+            TournamentAction::ManageDetails   => true,
             TournamentAction::ManageSetup     => true,
             TournamentAction::ManageParticipants => true,
             default => false,
          },
          TournamentStatus::Planned => match ($action)
          {
+            TournamentAction::ManageDetails   => true,
             TournamentAction::ManageParticipants => true,
             default => false,
          },
          TournamentStatus::Running => match ($action)
          {
+            TournamentAction::ManageDetails   => true,
             TournamentAction::ManageParticipants => true,
             TournamentAction::RecordResults   => true,
             default => false,
          },
-         TournamentStatus::Completed => match ($action)
-         {
-            default => false,
-         },
+         default => false,
       };
    }
 

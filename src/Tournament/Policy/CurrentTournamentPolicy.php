@@ -20,8 +20,9 @@ class CurrentTournamentPolicy
    {
    }
 
-   public function isActionAllowed(TournamentAction $action): bool
+   public function isActionAllowed(TournamentAction|string $action): bool
    {
+      if( is_string($action) ) $action = TournamentAction::from($action);
       return $this->tournament ? $this->policy->isActionAllowed($this->tournament, $action) : false;
    }
 
@@ -30,8 +31,9 @@ class CurrentTournamentPolicy
       return $this->tournament ? $this->policy->getPossibleTransitions($this->tournament) : [];
    }
 
-   public function canTransitionToStatus(TournamentStatus $newStatus): bool
+   public function canTransitionToStatus(TournamentStatus|string $newStatus): bool
    {
+      if (is_string($newStatus)) $newStatus = TournamentAction::from($newStatus);
       return $this->tournament ? $this->policy->canTransition($this->tournament, $newStatus) : false;
    }
 }
