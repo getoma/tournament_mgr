@@ -278,26 +278,15 @@ class TournamentSettingsController
     */
    public function showCategoryConfiguration(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
    {
-      $tournament = $request->getAttribute('tournament');
+      /** @var Category */
       $category = $request->getAttribute('category');
       $data = ($request->getMethod() === 'POST') ? $request->getParsedBody() : $request->getQueryParams();
-
-      /* verify return_to parameter */
-      if (isset($data['return_to']))
-      {
-         $return_to = RouteContext::fromRequest($request)->getRouteParser()
-            ->urlFor('show_category', ['tournamentId' => $tournament->id, 'categoryId' => $category->id]);
-      }
-      else
-      {
-         $return_to = $data['return_to'] ?? '';
-      }
 
       return $this->view->render($response, 'category/configure.twig', [
          'config' => $category->config,
          'errors' => $errors,
          'prev' => $prev,
-         'return_to' => $return_to,
+         'return_to' => $data['return_to'] ?? 'show_category',
          'category_modes' => CategoryMode::cases(),
       ]);
    }

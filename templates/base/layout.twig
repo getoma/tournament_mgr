@@ -31,6 +31,16 @@
 
   <!-- Main Content -->
   <main>
+
+    <aside>
+      <nav class="tournament">
+        {% block nav_extension %}{% endblock -%}
+        {% if return_to is not empty %}<a href="{{url_for(return_to, route_args)}}">&lt;&lt;Zurück</a>{%endif%}
+        {% if tournament is defined %}<a href="{{ url_for('show_tournament', {'tournamentId': tournament.id}) }}">Turnier-Hauptseite</a>{%endif%}
+        <a href="{{url_for('home')}}">Turniere Übersicht</a>
+      </nav>
+    </aside>
+
     <section id="content">
       {% block content %}{% endblock %}
     </section>

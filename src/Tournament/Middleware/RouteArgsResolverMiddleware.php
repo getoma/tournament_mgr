@@ -34,6 +34,7 @@ class RouteArgsResolverMiddleware implements MiddlewareInterface
       {
          $request = $request->withAttribute($key, $value);
          $this->twig?->getEnvironment()->addGlobal($key, $value);
+         $this->twig?->getEnvironment()->addGlobal('route_args', $routeArgs);
       }
       return $handler->handle($request);
    }
