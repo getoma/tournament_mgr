@@ -131,7 +131,10 @@ class TournamentTreeController
       $record = $node->getMatchRecord()?->points ?? new MatchPointCollection();
 
       $pts = [];
-      foreach( ['red' => $record->for($node->getRedParticipant()), 'white' => $record->for($node->getWhiteParticipant()) ]
+      $redP = $node->getRedParticipant();
+      $whiteP = $node->getWhiteParticipant();
+      foreach( ['red'   => isset($redP)?   $record->for($redP) : $record->new(),
+                'white' => isset($whiteP)? $record->for($whiteP) : $record->new()]
              as $color => $pt_list)
       {
          $pts[$color] = [
