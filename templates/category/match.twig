@@ -3,56 +3,92 @@
 
 {% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id, 'matchName': node.name } %}
 
+
+{% block special_links -%}
+  <link rel="stylesheet" href="{{url_for('home')}}css/match.css">
+{% endblock -%}
+
 {% block nav_extension %}<a href="{{url_for('show_category', route_parameters)}}">Zurück...</a>{% endblock %}
 
 {% macro printControls(node,participant,possible_pts,undo,route_parameters) -%}
-{%- if node.isDetermined() and policy.isActionAllowed('RecordResults') %}
-<form method="post" action="{{url_for('update_ko_match', route_parameters)}}">
+<form method="post" action="{{url_for('update_ko_match', route_parameters)}}" class="match_control">
   <input type="hidden" name="participant" value="{{participant.id}}">
   <input type="hidden" name="undo" value="{{undo.id}}">
   {% for name, pt in possible_pts -%}
   <button name="action" value="{{pt}}">{{pt}}</button>
   {% endfor -%}
-  <button name="action" value="undo"{%if undo is null%} disabled{%endif%}>Undo ({{undo.point}})</button>
-  {% if node.isModifiable() -%}
-  <button name="action" value="winner">Als Gewinner setzen</button>
-  {% endif -%}
+  <button name="action" value="undo"{%if undo is null%} disabled{%endif%}>Undo{%if undo is not null%} ({{undo.point}}){%endif%}</button>
+  <button name="action" value="winner"
+    {%- if not node.isModifiable() or node.getWinner() is same as(participant) %} disabled{%endif-%}
+  >Als Gewinner setzen</button>
 </form>
-{% endif -%}
 {% endmacro -%}
 
-{% macro printPoints(points,penalties) -%}
-<ul class="point_list">
+{% macro printPoints(points,undo) -%}
+<ul>
   {% for pt in points -%}
-  <li>{{pt.point}}</li>
+  <li{%if pt is same as(undo)%} class="undo"{%endif%}>{{pt.point}}</li>
   {% endfor -%}
 </ul>
-<ul class="penalty_list">
-  {% for pt in penalties -%}
-  <li>{{pt.point}}</li>
-  {% endfor -%}
-</ul>
+{% endmacro -%}
+
+{% macro printMatchLinks(matchList, route_parameters) -%}
+<table>
+  <thead><tr><th>Kampf</th><th class="redside">Kämpfer Rot</th><th class="whiteside">Kämpfer Weiß</th></tr></thead>
+  <tbody>
+    {% for match in matchList -%}
+    <tr>
+      <td class="match_name"><a href="{{url_for('show_ko_match', route_parameters|merge({'matchName': match.name}))}}">{{match.name}}</a></td>
+      <td class="participant_name redside">{{part.printSlot(match.slotRed, match.getWinner())}}</td>
+      <td class="participant_name whiteside">{{part.printSlot(match.slotWhite, match.getWinner())}}</td>
+    </tr>
+    {% endfor -%}
+  </tbody>
+</table>
 {% endmacro -%}
 
 {% block content %}
+{% if previous is not empty -%}
+<h2>Vorheriger Kampf</h2>
+<nav id="previous_match_nav" class="match_nav">
+  {{_self.printMatchLinks({0: previous}, route_parameters)}}
+</nav>
+{%- endif %}
+
 <h2>Kampf {{node.name}}</h2>
-<table>
+<table class="match_table">
   <thead>
-    <tr><th>Rot</th><th>Weiß</th></tr>
+    <tr>
+      <th colspan="4" class="redside">Kämpfer Rot</th>
+      <th colspan="4" class="whiteside">Kämpfer Weiß</th>
+    </tr>
+    <tr>
+      <th>Name</th><th>Hansoku</th><th>Punkte</th>
+      <th colspan="2">Sieger</th>
+      <th>Punkte</th><th>Hansoku</th><th>Name</th>
+    </tr>
   </thead>
   <tbody>
     <tr>
-      <td>
-        <div class="fight_participant red">{{part.printSlot(node.slotRed, node.getWinner())}}</div>
-        {{_self.printPoints(points['red'].points,points['red'].penalty)}}
+      <td class="participant_name redside">{{part.printSlot(node.slotRed, node.getWinner())}}</td>
+      <td class="penalty redside">{{_self.printPoints(points['red'].penalty,points['red'].undo)}}</td>
+      <td class="points redside">{{_self.printPoints(points['red'].points,points['red'].undo)}}</td>
+      <td class="winner redside">{% if node.getRedParticipant() is same as(node.getWinner()) %}X{%endif%}</td>
+      <td class="winner whiteside">{% if node.getWhiteParticipant() is same as(node.getWinner()) %}X{%endif%}</td>
+      <td class="points whiteside">{{_self.printPoints(points['white'].points,points['white'].undo)}}</td>
+      <td class="penalty whiteside">{{_self.printPoints(points['white'].penalty,points['white'].undo)}}</td>
+      <td class="participant_name whiteside">{{part.printSlot(node.slotWhite, node.getWinner())}}</td>
+    </tr>
+    {% if node.isDetermined() and policy.isActionAllowed('RecordResults') -%}
+    <tr>
+      <td colspan="4" class="controls redside">
         {{_self.printControls(node, node.getRedParticipant(),possible_pts,points['red'].undo,route_parameters)}}
       </td>
-      <td>
-        <div class="fight_participant white">{{part.printSlot(node.slotWhite, node.getWinner())}}</div>
-        {{_self.printPoints(points['white'].points,points['white'].penalty)}}
+      <td colspan="4" class="controls whiteside">
         {{_self.printControls(node, node.getWhiteParticipant(),possible_pts,points['white'].undo,route_parameters)}}
       </td>
     </tr>
+  {% endif -%}
   </tbody>
 </table>
 
@@ -60,14 +96,18 @@
 <p class="error">{{error}}</p>
 {% endif %}
 
-<nav id="match_nav">
-<ul>
-  {% if previous is not empty -%}
-  <li><a href="{{url_for('show_ko_match', route_parameters|merge({'matchName': previous.name}))}}">Kampf {{previous.name}}</a> - {{part.printMatch(previous)}}</li>
-  {%endif%}
-  {% for match in next -%}
-  <li><a href="{{url_for('show_ko_match', route_parameters|merge({'matchName': match.name}))}}">Kampf {{match.name}}</a> - {{part.printMatch(match)}}</li>
-  {%endfor%}
-</ul>
+<aside class="legend">
+  <ul>
+    {% for name,symbol in possible_pts -%}
+    <li>{{symbol}} = {{name}}</li>
+    {% endfor -%}
+  </ul>
+</aside>
+
+{% if next is not empty -%}
+<h2>Nächste Kämpfe</h2>
+<nav id="next_match_nav" class="match_nav">
+  {{_self.printMatchLinks(next, route_parameters)}}
 </nav>
+{%endif-%}
 {% endblock %}

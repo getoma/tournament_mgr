@@ -56,7 +56,11 @@
   <li><span class="round_caption">Runde {{loop.index}}</span>
     <ul class="fight_round">
       {% for node in round %}
-      <li><span class="fight_name"><a href="{{ url_for('show_ko_match', route_param|merge({'matchName': node.name})) }}">Kampf {{node.name}}{% if node.area is defined %} ({{node.area.name}}){%endif%}</a></span>
+      <li><span class="fight_name">
+        {%- if node.isReal() %}<a href="{{ url_for('show_ko_match', route_param|merge({'matchName': node.name})) }}">{%endif-%}
+          Kampf {{node.name}}{% if node.area is defined %} ({{node.area.name}}){%endif%}
+        {%- if node.isReal() %}</a>{% endif -%}
+        </span>
         {{ _self.printMatch(node) }}
       </li>
       {% endfor %}

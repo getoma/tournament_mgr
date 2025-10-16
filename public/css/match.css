@@ -1,0 +1,87 @@
+table.match_table,
+table.match_table th,
+table.match_table td
+{
+   border: 1px solid black;
+   border-collapse:collapse
+}
+
+th.redside
+{
+   background-color: red;
+}
+
+th.whiteside
+{
+   background-color: white;
+}
+
+table em
+{
+   font-style: normal;
+   font-weight:bold;
+}
+
+table.match_table th,
+table.match_table td
+{
+   padding:0.5ex;
+}
+
+table.match_table td.redside
+{
+   text-align:left
+}
+
+table.match_table td.whiteside
+{
+   text-align:right
+}
+
+table.match_table tbody ul
+{
+   padding: 0;
+   margin: 0;
+}
+
+table.match_table tbody li
+{
+   display: inline-block;
+   list-style-type: none;
+   padding:1px;
+   text-align:center;
+   width:1em
+}
+
+table.match_table tbody li.undo
+{
+   background-color: khaki;
+}
+
+td.participant_name
+{
+   width:30ex;
+}
+
+td.points,
+td.penalty
+{
+   width:10ex;
+}
+
+table.match_table td.winner
+{
+   width:3ex;
+   text-align:center;
+}
+
+nav.match_nav table th
+{
+   border:1px solid black;
+   padding: 0.5ex;
+}
+
+nav.match_nav td
+{
+   text-align:center
+}
