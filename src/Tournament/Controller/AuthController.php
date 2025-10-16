@@ -44,7 +44,7 @@ class AuthController
       if ($this->authService->login($email, $password))
       {
          /* Redirect the user after a successful login */
-         $redirect = $this->session->get('redirect_after_login') ?? RouteContext::fromRequest($request)->getRouteParser()->urlFor('home');
+         $redirect = $this->session->get('redirect_after_login') ?? RouteContext::fromRequest($request)->getRouteParser()->urlFor('homeadmin');
          $this->session->remove('redirect_after_login');
 
          /* a successful login from anyone is a nice hook to clean up any expired reset tokens, so let's do it here */

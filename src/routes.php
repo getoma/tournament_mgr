@@ -78,6 +78,10 @@ return function (\Slim\App $app)
     */
    $app->group('', function (RouteCollectorProxy $auth_grp) use ($statusGuardMW)
    {
+   
+     /* Adminbereich */
+   $auth_grp->get('/auth/homeadmin', function ($request, $response, $args) {return $this->get(Slim\Views\Twig::class)->render($response, 'auth/homeadmin.twig');})->setName('homeadmin');
+
       /* create tournament */
       $auth_grp->get('/tournament/create', [TournamentController::class, 'showFormNewTournament'])->setName('new_tournament_form');
       $auth_grp->post('/tournament/create', [TournamentController::class, 'createTournament'])->setName('create_tournament');

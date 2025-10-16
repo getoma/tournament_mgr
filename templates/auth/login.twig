@@ -1,5 +1,22 @@
 {% extends "base/layout.twig" %}
 
 {% block content %}
-    {% include 'auth/login_clean.twig' %}
+<h1>Login</h1>
+
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+<form method="post" action="{{ url_for('login') }}">
+  <p>
+    <label>E-Mail: <input type="text" name="email" required></label>
+  </p>
+  <p>
+    <label>Passwort: <input type="password" name="password" required></label>
+  </p>
+  <p>
+    <button type="submit">Anmelden</button>
+    <a href="{{ url_for('pw_forgot') }}">Passwort vergessen?</a>
+  </p>
+</form>
 {% endblock %}
