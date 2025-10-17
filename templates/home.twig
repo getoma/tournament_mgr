@@ -1,7 +1,22 @@
 {% extends 'base/layout.twig' %}
 
 {% block content %}
-<h1> Öffentlicher Teil </h1>
+<ul class="tournament_list_by_state">
+  {% for status, tournaments in tournaments_by_state %}
+  <li>
+    <h2>{{status}}</h2>
+    <ul>
+      {% for tournament in tournaments %}
+      <li>
+        <a href="{{ url_for('show_tournament', { tournamentId: tournament.id }) }}">{{ tournament.name }} - {{
+          tournament.date }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </li>
+  {%endfor%}
+  <li><a href="{{ url_for('new_tournament_form') }}">Neues Turnier anlegen</a></li>
+</ul>
 
 {%- if test_interfaces %}
 <p class="debug_stuff">

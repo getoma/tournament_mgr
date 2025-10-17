@@ -7,7 +7,8 @@
         "slim/twig-view": "^3.4",
         "php-di/slim-bridge": "^3.4",
         "respect/validation": "^2.4",
-        "phpmailer/phpmailer": "^6.10"
+        "phpmailer/phpmailer": "^6.10",
+        "robmorgan/phinx": "^0.16.10"
     },
 
     "autoload": {
@@ -16,8 +17,14 @@
             "Tournament\\": "src/Tournament/"
         }
     },
+
+    "config": {
+      "platform":{
+         "php": "8.1.0"
+      }
+    },
     "require-dev": {
-        "phpunit/phpunit": "^11.5",
-        "symfony/var-dumper": "^7.3"
+        "symfony/var-dumper": "^6.4",
+        "phpunit/phpunit": "^10.5"
     }
 }
