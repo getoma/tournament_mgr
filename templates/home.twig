@@ -3,13 +3,15 @@
 {% block content %}
 <ul class="tournament_list_by_state">
   {% for status, tournaments in tournaments_by_state %}
-  <li><h2>{{status}}</h2>
+  <li>
+    <h2>{{status}}</h2>
     <ul>
-    {% for tournament in tournaments %}
-    <li>
-      <a href="{{ url_for('show_tournament', { tournamentId: tournament.id }) }}">{{ tournament.name }} - {{ tournament.date }}</a>
-    </li>
-    {% endfor %}
+      {% for tournament in tournaments %}
+      <li>
+        <a href="{{ url_for('show_tournament', { tournamentId: tournament.id }) }}">{{ tournament.name }} - {{
+          tournament.date }}</a>
+      </li>
+      {% endfor %}
     </ul>
   </li>
   {%endfor%}

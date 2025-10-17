@@ -61,9 +61,6 @@ return function (\Slim\App $app)
     * Route setup
     */
 
-   /* navigation */
-   $app->get('/', [IndexPageController::class, 'index'])->setName('home');
-
    /* login/logout/pw reset */
    $app->get('/login',   [AuthController::class, 'showLogin'])->setName('login');
    $app->post('/login',  [AuthController::class, 'login'])->setName('login_post');
@@ -78,6 +75,9 @@ return function (\Slim\App $app)
     */
    $app->group('', function (RouteCollectorProxy $auth_grp) use ($statusGuardMW)
    {
+      /* navigation */
+      $auth_grp->get('/', [IndexPageController::class, 'index'])->setName('home');
+
       /* create tournament */
       $auth_grp->get('/tournament/create', [TournamentSettingsController::class, 'showFormNewTournament'])->setName('new_tournament_form');
       $auth_grp->post('/tournament/create', [TournamentSettingsController::class, 'createTournament'])->setName('create_tournament');

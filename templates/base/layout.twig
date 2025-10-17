@@ -3,38 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <title>{% block title %}Tournament powered by Slim{% endblock %}</title>
+  <!-- Lokales CSS -->
+  <link rel="stylesheet" href="{{ url_for('home') }}css/style.css">
   <link rel="stylesheet" href="{{url_for('home')}}css/tree.css">
 </head>
 <body>
-  <header>
-    <nav class="global">
-      <div id="account_actions">
-        {% if current_user %}
+
+  <!-- Header -->
+  <header class="header">
+  <div class="header-container">
+    <h1>
+      {% block heading %}
+        {{ tournament.name|default('Kendo Turniersoftware') }}
+      {% endblock %}
+    </h1>
+
+    <nav class="nav-actions">
+      {% if current_user %}
         <a href="{{url_for('logout')}}">Logout</a>
         <a href="{{url_for('user_account')}}">Account</a>
         {%else%}
         <a href="{{url_for('login')}}">Login</a>
         {%endif%}
-
-      </div>
     </nav>
-    <h1>{% block heading %}{{tournament? tournament.name : "Turniere - Übersicht"}}{% endblock %}</h1>
+  </div>
   </header>
 
-  <main>
-    <aside>
-      <nav class="tournament">
-        {% block nav_extension %}{% endblock -%}
-        {% if return_to is defined %}<a href="{{return_to}}">&lt;&lt;Zurück</a>{%endif%}
-        {% if tournament is defined %}<a href="{{ url_for('show_tournament', {'tournamentId': tournament.id}) }}">Turnier-Hauptseite</a>{%endif%}
-        <a href="{{url_for('home')}}">Turniere Übersicht</a>
-      </nav>
-    </aside>
-
+  <!-- Main Content -->
+  <main class="login-page">
     <section id="content">
       {% block content %}{% endblock %}
     </section>
   </main>
-</body>
 
+</body>
 </html>
