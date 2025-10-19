@@ -9,7 +9,7 @@ use Tournament\Model\Participant\Participant;
 class MatchRecord extends \Tournament\Model\Base\DbItem
 {
    public function __construct(
-      ?int $id = null,
+      ?int $id,
       public readonly string $name,
       public readonly Category $category,
       public readonly Area $area,
