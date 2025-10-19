@@ -33,7 +33,7 @@ class ParticipantsDataController
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
       $participants = $this->repo->getParticipantsByTournamentId($tournament->id);
 
-      return $this->view->render($response, 'participants/home.twig', [
+      return $this->view->render($response, 'tournament/participants/overview.twig', [
          'tournament' => $tournament,
          'categories' => $categories,
          'participants' => $participants,
@@ -197,7 +197,7 @@ class ParticipantsDataController
       $participant = $request->getAttribute('participant');
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
 
-      return $this->view->render($response, 'participants/details.twig', [
+      return $this->view->render($response, 'tournament/participants/details.twig', [
          'tournament' => $tournament,
          'categories' => $categories,
          'participant' => $participant,
@@ -221,7 +221,7 @@ class ParticipantsDataController
       // return form if there are errors
       if (count($errors) > 0)
       {
-         return $this->view->render($response, 'participants/details.twig', [
+         return $this->view->render($response, 'tournament/participants/details.twig', [
             'tournament' => $tournament,
             'categories' => $this->tournamentRepo->getCategoriesByTournamentId($tournament->id),
             'participant' => $participant,

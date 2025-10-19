@@ -36,7 +36,7 @@ class TournamentSettingsController
    {
       $categories = $this->repo->getCategoriesByTournamentId($request->getAttribute('tournament')->id);
 
-      return $this->view->render($response, 'tournament/home.twig', [
+      return $this->view->render($response, 'tournament/navigation/tournament_home.twig', [
          'categories' => $categories,
       ]);
    }
@@ -44,9 +44,12 @@ class TournamentSettingsController
    /**
     * Show the form to create a new tournament
     */
-   public function showFormNewTournament(Request $request, Response $response, array $args): Response
+   public function showFormNewTournament(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
    {
-      return $this->view->render($response, 'tournament/new.twig');
+      return $this->view->render($response, 'tournament/settings/tournament_new.twig', [
+         'errors' => ['tournament' => $errors],
+         'prev'   => ['tournament' => $prev]
+      ]);
    }
 
    /**
@@ -60,10 +63,7 @@ class TournamentSettingsController
       // return form if there are errors
       if (count($errors) > 0)
       {
-         return $this->view->render($response, 'tournament/new.twig', [
-            'errors' => ['tournament' => $errors ],
-            'prev'   => ['tournament' => $data]
-         ]);
+         return $this->showFormNewTournament($request, $response, $args, $errors, $data);
       }
 
       // everything is ok, create the tournament
@@ -82,7 +82,7 @@ class TournamentSettingsController
    {
       $categories = $this->repo->getCategoriesByTournamentId($request->getAttribute('tournament')->id);
 
-      return $this->view->render($response, 'tournament/controlpanel.twig', [
+      return $this->view->render($response, 'tournament/navigation/controlpanel.twig', [
          'categories' => $categories,
       ]);
    }
@@ -96,7 +96,7 @@ class TournamentSettingsController
       $categories = $this->repo->getCategoriesByTournamentId($tournament->id);
       $areas = $this->repo->getAreasByTournamentId($tournament->id);
 
-      return $this->view->render($response, 'tournament/configure.twig', [
+      return $this->view->render($response, 'tournament/settings/tournament.twig', [
          'areas' => $areas,
          'categories' => $categories,
          'category_modes' => CategoryMode::cases(),
@@ -282,7 +282,7 @@ class TournamentSettingsController
       $category = $request->getAttribute('category');
       $data = ($request->getMethod() === 'POST') ? $request->getParsedBody() : $request->getQueryParams();
 
-      return $this->view->render($response, 'category/configure.twig', [
+      return $this->view->render($response, 'tournament/settings/category.twig', [
          'config' => $category->config,
          'errors' => $errors,
          'prev' => $prev,

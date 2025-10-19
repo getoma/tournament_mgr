@@ -26,7 +26,7 @@ class TestController
    public function showDbMigrationList(Request $request, Response $response, array $args, string $message = ''): Response
    {
       $versions = array_reverse($this->dbUpdateService->getMigrations());
-      return $this->view->render($response, 'test/dbmigration.twig', [
+      return $this->view->render($response, 'special_pages/db_selection.twig', [
          'current'  => $this->dbUpdateService->getCurrentVersion(),
          'versions' => array_combine($versions, $versions),
          'message' => $message

@@ -50,7 +50,7 @@ class TournamentTreeController
          $ko = $structure->ko->getRounds(- ($structure->finale_rounds_cnt ?? 0));
       }
 
-      return $this->view->render($response, 'category/home.twig', [
+      return $this->view->render($response, 'tournament/navigation/category_home.twig', [
          'pools'      => $structure->pools,
          'ko'         => $ko,
          'chunks'     => $structure->chunks,
@@ -67,7 +67,7 @@ class TournamentTreeController
       $structure = $this->structureLoadService->load($request->getAttribute('category'));
       $chunk = $structure->chunks[$args['chunk']] ?? throw new EntityNotFoundException('Chunk not found');
 
-      return $this->view->render($response, 'category/area_ko.twig', [
+      return $this->view->render($response, 'tournament/navigation/area_ko.twig', [
          'ko'         => $chunk->root->getRounds(),
          'chunk'      => $chunk,
       ]);
@@ -81,7 +81,7 @@ class TournamentTreeController
       // Load the tournament structure for this category
       $structure = $this->structureLoadService->load($request->getAttribute('category'));
       $area_pools = $structure->getPoolsByArea($request->getAttribute('area')->id);
-      return $this->view->render($response, 'category/area_pool.twig', [
+      return $this->view->render($response, 'tournament/navigation/area_pool.twig', [
          'pools' => $area_pools
       ]);
    }
@@ -144,7 +144,7 @@ class TournamentTreeController
          ];
       }
 
-      return $this->view->render($response,'category/match.twig',[
+      return $this->view->render($response, 'tournament/match/match.twig',[
          'error'    => $error,
          'node'     => $node,
          'previous' => $previous_it->current(),

@@ -34,7 +34,7 @@ class EntityNotFoundHandler implements ErrorHandlerInterface
       }
 
       $response = $this->responseFactory->createResponse(404);
-      return $this->view->render($response, 'info_pages/entity_not_found.twig', [
+      return $this->view->render($response, 'special_pages/entity_not_found.twig', [
          'message' => $exception->getMessage(),
       ]);
    }
