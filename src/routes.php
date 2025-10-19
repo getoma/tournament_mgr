@@ -130,6 +130,8 @@ return function (\Slim\App $app)
             $cgrp->post('/configure', [TournamentSettingsController::class, 'updateCategoryConfiguration'])->setName('update_category_cfg')
                ->add($statusGuardMW->for(TournamentAction::ManageSetup));
 
+            $cgrp->post('/repopulate', [TournamentTreeController::class, 'repopulate'])->setName('repopulate_category');
+
             /* Tournament tree navigation */
             $cgrp->get( '/tree', [TournamentTreeController::class, 'showCategoryTree'])->setName('show_category');
             $cgrp->get( '/area/ko/{chunk}', [TournamentTreeController::class, 'showKoArea'])->setName('show_ko_area');

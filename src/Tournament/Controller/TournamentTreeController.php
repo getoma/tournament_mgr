@@ -86,6 +86,19 @@ class TournamentTreeController
       )->withStatus(302);
    }
 
+   /**
+    * reroll all participants
+    */
+   public function repopulate(Request $request, Response $response, array $args): Response
+   {
+      $category = $request->getAttribute('category');
+      $this->structureLoadService->populate($category);
+      return $response->withHeader(
+         'Location',
+         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
+      )->withStatus(302);
+   }
+
    public function showKoMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response
    {
       /** @var Category $category */
