@@ -24,7 +24,7 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 
    abstract static protected function elements_type(): string;
 
-   public function has(int|string $key): bool
+   public function keyExists(int|string $key): bool
    {
       return isset($this->elements[$key]);
    }
@@ -115,6 +115,34 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       if ($offset === false) return false;
       $this->offsetUnset($offset);
       return true;
+   }
+
+   public function unshift($value): void
+   {
+      array_unshift($this->elements, $value);
+   }
+
+   public function search($value): mixed
+   {
+      return array_search($value, $this->elements, true);
+   }
+
+   public function contains($value): bool
+   {
+      return $this->search($value) !== false;
+   }
+
+   public function reverse(): static
+   {
+      return static::new(array_reverse($this->elements));
+   }
+
+   public function column_map(string $attr): self
+   {
+      $result = self::new();
+      $keys = array_column($this->elements, $attr);
+      $result->elements = array_combine($keys, $this->elements);
+      return $result;
    }
 
    public function slice(int $offset, ?int $length = null): static

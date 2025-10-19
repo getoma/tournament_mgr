@@ -40,6 +40,6 @@ class SlottedParticipantCollection extends \Base\Model\ObjectCollection
 
    public function all(): ParticipantCollection
    {
-      return new ParticipantCollection( array_merge( $this->values(), $this->unslotted() ) );
+      return new ParticipantCollection( array_merge( $this->elements, $this->unslotted_ ) );
    }
 }

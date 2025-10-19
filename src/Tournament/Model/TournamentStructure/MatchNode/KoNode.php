@@ -170,7 +170,7 @@ class KoNode extends MatchNode
    {
       foreach ($this->getMatchList() as $match)
       {
-         if ($matchRecords->has($match->name))
+         if ($matchRecords->keyExists($match->name))
          {
             $match->setMatchRecord($matchRecords[$match->name]);
          }
