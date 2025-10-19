@@ -16,7 +16,24 @@
 {% if pools is not empty %}
 <section>
 <h3>Pools</h3>
-{{ part.printPools(pools, route_parameters) }}
+<ul class="pool_list">
+  {% for pool in pools %}
+  <li>
+    <p class="pool_name">Pool {{pool.getName()}}</p>
+    <ul class="participant_list">
+      {% for slot in pool.participants %}
+      <li>{{slot.lastname}}, {{slot.firstname}}</li>
+      {% endfor %}
+    </ul>
+    <p class="fight_list">Kämpfe:</p>
+    <ul class="fight_list">
+      {% for match in pool.getMatchList() %}
+      <li>{{ part.printMatch(match) }}</li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
 </section>
 {% endif %}
 

@@ -133,7 +133,6 @@ return function (\Slim\App $app)
             /* Tournament tree navigation */
             $cgrp->get( '/tree', [TournamentTreeController::class, 'showCategoryTree'])->setName('show_category');
             $cgrp->get( '/area/ko/{chunk}', [TournamentTreeController::class, 'showKoArea'])->setName('show_ko_area');
-            $cgrp->get( '/area/pool/{areaid:\d+}', [TournamentTreeController::class, 'showPoolArea'])->setName('show_pool_area');
 
             /* Match updating */
             $cgrp->get('/ko/{matchName}', [TournamentTreeController::class, 'showKoMatch'])->setName('show_ko_match');

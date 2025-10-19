@@ -99,15 +99,14 @@ class TournamentStructure
 
    public function loadMatchRecords(MatchRecordCollection $matchRecords)
    {
-      if ($this->ko)
-      {
-         $this->ko->setMatchRecords($matchRecords);
-      }
       foreach ($this->pools as $pool)
       {
          $pool->setMatchRecords($matchRecords);
       }
-
+      if ($this->ko)
+      {
+         $this->ko->setMatchRecords($matchRecords);
+      }
    }
 
    public function getPoolsByArea(Area|int $area): array
@@ -132,8 +131,9 @@ class TournamentStructure
     * This method will create pools with a maximum size defined in the category configuration.
     * Autogeneration of pools is only valid for combined mode.
     */
-   private static function createAutoPools(int $numRounds, int $winnersPerPool = 2): array
+   private static function createAutoPools(int $numRounds, ?int $winnersPerPool = null): array
    {
+      $winnersPerPool ??= 2;
       $numSlots = pow(2, $numRounds);
       $numPools = pow(2, floor(log($numSlots / $winnersPerPool, 2))); // number of pools, must be a power of 2, rest filled up with BYEs
       return array_map(fn($i) => new Pool($i), range(0, $numPools - 1));

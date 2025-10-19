@@ -74,19 +74,6 @@ class TournamentTreeController
    }
 
    /**
-    * Show the pool view assigned to a specific area and chunk for a specific category
-    */
-   public function showPoolArea(Request $request, Response $response, array $args): Response
-   {
-      // Load the tournament structure for this category
-      $structure = $this->structureLoadService->load($request->getAttribute('category'));
-      $area_pools = $structure->getPoolsByArea($request->getAttribute('area')->id);
-      return $this->view->render($response, 'tournament/navigation/area_pool.twig', [
-         'pools' => $area_pools
-      ]);
-   }
-
-   /**
     * RESET all match records for a specific category - TEMPORARY, FOR TESTING PURPOSES ONLY
     */
    public function resetMatchRecords(Request $request, Response $response, array $args): Response

@@ -101,7 +101,7 @@ class MatchNode
    /* BYE match - only one participant there */
    public function isBye(): bool
    {
-      return !$this->slotRed->isBye() || !$this->slotWhite->isBye();
+      return $this->slotRed->isBye() !== $this->slotWhite->isBye();
    }
 
    /* Match is a real match, and not just a dummy node that will never be conducted */
@@ -125,7 +125,7 @@ class MatchNode
    /* Match is actually spawned, regardless of result */
    public function isEstablished(): bool
    {
-      return !!$this->matchRecord;
+      return isset($this->matchRecord);
    }
 
    /* Match is ongoing, but no winner, yet */
