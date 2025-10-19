@@ -9,9 +9,9 @@ class Tournament extends \Tournament\Model\Base\DbItem
    public TournamentStatus $status;
 
    public function __construct(
-      ?int $id = null,             // Unique identifier for the tournament
-      public string $name,         // Name of the tournament
-      public string $date,         // Date of the tournament
+      ?int $id,                     // Unique identifier for the tournament
+      public string $name,          // Name of the tournament
+      public string $date,          // Date of the tournament
       public ?string $notes = null, // Additional notes about the tournament
       TournamentStatus|string $status = TournamentStatus::Planning, // Status of the tournament (e.g., scheduled, ongoing, completed)
    )
