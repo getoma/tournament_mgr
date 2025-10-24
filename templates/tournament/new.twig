@@ -2,6 +2,8 @@
 {% import 'base/form.twig' as form %}
 
 {% block content %}
+<div class="form-box">
+<h1> Neues Turnier anlegen</h1><br>
 <form action="{{url_for('create_tournament')}}" method="post">
    {{ form.input('text', 'name', 'Name', prev.tournament.name ?? tournament.name, errors.tournament['name'], {'maxlength':100},
    required=true) }}
@@ -9,4 +11,5 @@
    {{ form.textarea('notes', 'Notizen', prev.tournament.notes ?? tournament.notes, errors.tournament['notes']) }}
    {{ form.submit('Anlegen') }}
 </form>
+</div>
 {% endblock %}

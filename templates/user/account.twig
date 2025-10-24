@@ -9,6 +9,7 @@
 <p class="error">{{ error }}</p>
 {% endif %}
 
+<div class="form-box">
 <form method="post" action="{{ url_for('user_account_post') }}">
   <p>
     <label>E-Mail: <span>{{user.email}}</span></label>
@@ -30,4 +31,5 @@
     <button type="submit">Aktualisieren</button>
   </p>
 </form>
+</div>
 {% endblock %}
