@@ -1,10 +1,14 @@
 {% extends 'base/layout.twig' %}
 
 {% block content %}
-<nav>
-   <ul>
-   <li><a href="{{url_for('show_participant_list', {'tournamentId': tournament.id})}}">Anmeldungen</a></li>
-   <li><a href="{{url_for('show_tournament_config', {'tournamentId': tournament.id})}}">Turnier konfigurieren</a></li>
-   </ul>
-</nav>
+<div class="nav-cards">
+  <a href="{{ url_for('show_participant_list', {'tournamentId': tournament.id}) }}" class="card">
+    <h3>Anmeldungen</h3>
+    <p>Teilnehmerliste ansehen und verwalten</p>
+  </a>
+  <a href="{{ url_for('show_tournament_config', {'tournamentId': tournament.id}) }}" class="card">
+    <h3>Turnier konfigurieren</h3>
+    <p>Turnier-Details, Kampfflächen & Kategorien bearbeiten</p>
+  </a>
+</div>
 {% endblock %}

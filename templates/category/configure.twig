@@ -3,7 +3,7 @@
 
 {% block content %}
 
-<section>
+<section class="form-box">
 <h2>{{category.name}} - Konfiguration</h2>
 <form action="{{url_for('update_category_cfg', {'tournamentId': tournament.id, 'categoryId': category.id})}}" method="post">
   {% set isActive = policy.isActionAllowed('ManageSetup') -%}

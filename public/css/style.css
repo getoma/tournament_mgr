@@ -30,120 +30,480 @@ body {
   font-size: 1.5rem;
 }
 
-/* Navigation rechts */
-.nav-actions {
+/* Main Contant */
+.main-content {
   display: flex;
-  gap: 1rem; /* Abstand zwischen Links */
-}
-
-.nav-actions a {
-  text-decoration: none;
-  color: #333;
-  font-weight: 500;
-}
-
-.nav-actions a:hover {
-  color: #667eea;
-}
-
-/* Login-Seite zentrieren */
-.login-page {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   padding: 2rem;
 }
 
-/* Login-Card */
-.login-card {
-  background-color: #fff;
-  padding: 2.5rem 2rem;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
+main {
+  display: flex;
   width: 100%;
+  max-width: 1200px;              /* zentrale Begrenzung */
+  gap: 2rem;
+}
+
+/* Seitenmenü */
+aside {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  width: 220px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  height: fit-content; /* passt sich dem Inhalt an */
+  position: sticky;    /* bleibt beim Scrollen sichtbar */
+  top: 1rem;           /* Abstand zum oberen Rand */
+}
+
+nav.tournament {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+nav.tournament a {
+  text-decoration: none;
+  color: #333;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+nav.tournament a:hover {
+  background-color: #f0f0f0;
+  color: #667eea;
+}
+
+/* Untermenü (submenu) */
+nav.tournament .submenu {
+  padding-left: 1.2rem; /* Einrücken */
+  margin-top: 0.5rem;
+  border-left: 2px solid #667eea; /* Optionale visuelle Trennung */
+}
+
+nav.tournament .submenu a {
+  font-weight: 400;
+  color: #555;
+  text-decoration: none;
+  display: block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+}
+
+nav.tournament .submenu a:hover {
+  background-color: #c3c9ff;
+  color: #3344cc;
+}
+
+
+/* Statusbox */
+.status-box {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  width: 300px; /* gewünschte Quadratbreite */
+  min-height: 300px; /* damit es wie ein Quadrat wirkt */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.status-box h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #333;
   text-align: center;
 }
 
-/* Titel & Untertitel */
-.login-title {
-  font-size: 2rem;
-  font-weight: bold;
+.status-box ul {
+  padding-left: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.status-box ul li {
   margin-bottom: 0.5rem;
+}
+
+.status-box ul li a {
+  text-decoration: none;
+  color: #667eea;
+  transition: color 0.2s;
+}
+
+.status-box ul li a:hover {
+  color: #4455cc;
+}
+
+/* Tabelle Turnierstaus */
+.left-align {
+  text-align: left;
+}
+
+/* Turnierkonfiguration */
+.boxed-section {
+  position: relative;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 2rem 1.5rem 1.5rem;
+  margin: 2rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: none;
+}
+
+.boxed-title {
+  position: absolute;
+  top: -0.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #f5f6f7;
+  padding: 0 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: #333;
 }
 
-.login-subtitle {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 2rem;
+/* Usermenue */
+
+.user-menu {
+  position: relative;
+  display: inline-block;
 }
 
-/* Form */
-.login-form {
+.user-menu-btn {
+  background: #f5f6f7;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.5em 0.9em;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.2s ease;
+  line-height: 1.2; /* verhindert zusätzliche Höhe */
+}
+
+.user-menu-btn:hover {
+  background: #e8e9eb;
+}
+
+.user-menu-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%; /* direkt unter dem Button */
+  /* kein margin, kein gap! */
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  min-width: 150px;
+  z-index: 999;
+  padding-top: 2px; /* damit es visuell Luft hat, ohne echten Spalt */
+}
+
+.user-menu-dropdown a {
+  display: block;
+  padding: 0.6em 1em;
+  text-decoration: none;
+  color: #333;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.user-menu-dropdown a:hover {
+  background: #eef2ff;
+  color: #4455cc;
+}
+
+.user-menu:hover .user-menu-dropdown,
+.user-menu-dropdown:hover {
+  display: block;
+}
+
+/* Card Style*/
+
+.nav-cards {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.nav-cards .card {
+  flex: 1 1 220px;
+  max-width: 280px;
+  background-color: #ffffff; /* neutral */
+  color: #333;               /* dunkler Text */
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-cards .card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+.nav-cards .card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  background: #f0f0f0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 50%;
+}
+
+.nav-cards .card h3 {
+  margin: 0.5rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.nav-cards .card p {
+  font-size: 0.9rem;
+  margin: 0;
+  color: #555;
+}
+
+@media (max-width: 768px) {
+  .nav-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .nav-cards .card {
+    max-width: 90%;
+  }
+}
+
+/* Teilnehmer Tabelle*/
+.participants-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.participants-table thead {
+  background-color: #f0f0f0;
+}
+
+.participants-table th, td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.participants-table tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.participants-table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.participants-table td form {
+  display: inline-block;
+  margin: 0;
+}
+
+.participants-table td a, td input[type="submit"] {
+  background-color: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.participants-table td a:hover, td input[type="submit"]:hover {
+  background-color: #4455cc;
+}
+
+input[type="checkbox"] {
+  width: 1.2em;
+  height: 1.2em;
+  cursor: pointer;
+}
+
+.boxed-section {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  margin: 2rem 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.boxed-section h2 {
+  margin-top: 0;
+  font-size: 1.3rem;
+  color: #333;
+}
+
+.boxed-section form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.form-group {
-  text-align: left;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.3rem;
-  color: #444;
-  font-weight: 500;
-}
-
-.form-group input {
+/* form box */
+.form-box {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   width: 100%;
-  padding: 0.75rem 1rem;
+}
+
+.form-box h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.form-box input[type="submit"], 
+.form-box button {
+  background-color: #f0f0f0;   /* neutral hellgrau */
+  color: #333;                 /* dunkler Text */
   border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-group input:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-  outline: none;
-}
-
-/* Button */
-.btn-login {
-  padding: 0.75rem;
-  background-color: #667eea;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: bold;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
   cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
-.btn-login:hover {
-  background-color: #5563c1;
-  transform: translateY(-2px);
+.form-box input[type="submit"]:hover, 
+.form-box button:hover {
+  background-color: #e0e0e0;   /* etwas dunkler beim Hover */
+  color: #111;
 }
 
-/* Links unter dem Formular */
-.login-links {
+.form-box textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 1rem;
+  resize: vertical;
+}
+
+.category-fieldset {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.category-fieldset legend {
+  font-weight: 600;
+  color: #333;
+}
+
+.category-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.category-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.95rem;
+}
+
+.form-btn {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 1rem;
+}
+
+.form-btn:hover {
+  background-color: #e0e0e0;
+}
+
+/* Status Position*/
+.form-box-header {
   display: flex;
   justify-content: space-between;
-  margin-top: 1.5rem;
-  font-size: 0.85rem;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
-.login-links a {
-  color: #667eea;
-  text-decoration: none;
+.form-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 100%;
 }
 
-.login-links a:hover {
-  text-decoration: underline;
+.tournament-status {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 250px;  /* feste Mindestbreite */
 }
+
+.tournament-status ul {
+  display: flex;
+  list-style: none;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+.tournament-status li {
+  flex-shrink: 0;
+}
+
+.tournament-status input[type="submit"] {
+  width: 150px;
+  min-height: 36px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f0f0f0;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.tournament-status input[type="submit"]:hover {
+  background: #e0e0e0;
+}
+
