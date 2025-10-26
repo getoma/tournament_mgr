@@ -9,7 +9,7 @@ use Respect\Validation\Validator as v;
 class Participant extends \Tournament\Model\Base\DbItem
 {
    public function __construct(
-      ?int $id = null,                     // Unique identifier for the participant
+      ?int $id,                           // Unique identifier for the participant
       public readonly int $tournament_id, // Identifier for the tournament this participant belongs to
       public string $lastname,   // Last name of the participant
       public string $firstname,  // First name of the participant
