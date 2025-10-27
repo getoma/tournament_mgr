@@ -72,6 +72,7 @@ class MatchNode
       }
 
       $this->matchRecord = $matchRecord;
+      $this->area = $matchRecord->area;
    }
 
    public function provideMatchRecord(Category $category): MatchRecord

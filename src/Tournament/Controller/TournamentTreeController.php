@@ -9,10 +9,12 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
-use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\Category\Category;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\Pool\Pool;
 use Tournament\Model\TournamentStructure\TournamentStructure;
+use Tournament\Model\MatchRecord\MatchPoint;
+use Tournament\Model\MatchRecord\MatchPointCollection;
 
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
@@ -22,8 +24,7 @@ use Tournament\Exception\EntityNotFoundException;
 
 use Respect\Validation\Validator as v;
 use Base\Service\DataValidationService;
-use Tournament\Model\MatchRecord\MatchPoint;
-use Tournament\Model\MatchRecord\MatchPointCollection;
+
 
 class TournamentTreeController
 {
@@ -74,6 +75,21 @@ class TournamentTreeController
    }
 
    /**
+    * Show the overview of a single pool
+    */
+   public function showPool(Request $request, Response $response, array $args): Response
+   {
+      // Load the tournament structure for this category and fetch the specific chunk
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+      /** @var Pool $pool */
+      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found');
+
+      return $this->view->render($response, 'tournament/navigation/pool_home.twig', [
+         'pool' => $pool,
+      ]);
+   }
+
+   /**
     * RESET all match records for a specific category - TEMPORARY, FOR TESTING PURPOSES ONLY
     */
    public function resetMatchRecords(Request $request, Response $response, array $args): Response
@@ -99,23 +115,37 @@ class TournamentTreeController
       )->withStatus(302);
    }
 
-   public function showKoMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response
+   public function showMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response
    {
       /** @var Category $category */
       $category = $request->getAttribute('category');
 
       /* load the structure and find the current node/match */
       $structure ??= $this->structureLoadService->load($category);
-      $root = $structure->ko;
-      $node = $root->findByName($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
 
-      /* get the ordered list of matches in the current area and a pointer to the current node.
-       * include non-real matches as the current match might be non-real */
-      $nav_match_list = $root->getMatchList()->filter(fn(KoNode $e) => $e->area == $node->area);
+      if( isset($args['pool']) )
+      {
+         /** @var Pool $pool */
+         $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
+         /* get the ordered list of matches in the current pool */
+         $nav_match_list = $pool->getMatchList();
+         /* get the current match node */
+         $node = $nav_match_list->find($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+      }
+      else
+      {
+         /* get the ordered list of matches in the current area.
+          * include non-real matches as the current match might be non-real */
+         $root = $structure->ko;
+         $node = $root->findByName($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+         $nav_match_list = $root->getMatchList()->filter(fn(MatchNode $e) => $e->area == $node->area);
+      }
+
+      /* get an iterator to the current node for further navigation build-up */
       $current_it = $nav_match_list->getIteratorAt($node->name);
 
       /* get the next real matches after the current one */
-      $next_matches = $nav_match_list->slice($current_it->skip()->key())->filter(fn(KoNode $n) => $n->isReal());
+      $next_matches = $nav_match_list->slice($current_it->skip()->key())->filter(fn(MatchNode $n) => $n->isReal());
 
       /* get the previous real match before the current one */
       $previous_it = $current_it->back();
@@ -145,24 +175,39 @@ class TournamentTreeController
       }
 
       return $this->view->render($response, 'tournament/match/match.twig',[
+         'type'     => isset($args['pool'])?'pool':'ko',
          'error'    => $error,
          'node'     => $node,
          'previous' => $previous_it->current(),
          'next'     => $next_matches,
          'possible_pts' => $mphdl->getPointList(),
          'points'   => $pts,
-         'debug' => null
+         'pool'     => $args['pool']??null,
       ]);
    }
 
-   public function updateKoMatch(Request $request, Response $response, array $args): Response
+   public function updateMatch(Request $request, Response $response, array $args): Response
    {
       /** @var Category $category */
       $category = $request->getAttribute('category');
 
       /* load the structure and find the current node/match */
       $structure = $this->structureLoadService->load($request->getAttribute('category'));
-      $node = $structure->ko->findByName($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+
+      if (isset($args['pool']))
+      {
+         /** @var Pool $pool */
+         $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
+         /* get the ordered list of matches in the current pool */
+         $node = $pool->getMatchList()->find($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+      }
+      else
+      {
+         /* get the ordered list of matches in the current area.
+          * include non-real matches as the current match might be non-real */
+         $root = $structure->ko;
+         $node = $root->findByName($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+      }
 
       /* prepare error message */
       $error = '';
@@ -247,6 +292,6 @@ class TournamentTreeController
          }
       }
 
-      return $this->showKoMatch($request, $response, $args, $structure, $error);
+      return $this->showMatch($request, $response, $args, $structure, $error);
    }
 }

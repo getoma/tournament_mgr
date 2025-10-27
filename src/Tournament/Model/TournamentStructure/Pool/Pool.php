@@ -6,20 +6,28 @@ use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
+use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
-use Tournament\Model\Participant\SlottedParticipantCollection;
+use Tournament\Model\PoolRankHandler\PoolRankCollection;
+use Tournament\Model\PoolRankHandler\PoolRankHandler;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 
 class Pool
 {
-   public array $matches = [];
+   private MatchNodeCollection $matches;
+   private ParticipantCollection $participants;
+   private PoolRankCollection $ranking;
 
    public function __construct(
       private string $name,
-      public  SlottedParticipantCollection $participants = new SlottedParticipantCollection(),
+      private PoolRankHandler $rankHandler,
+      private int $num_winners = 2,
       private ?Area $area = null
    )
    {
+      $this->matches = MatchNodeCollection::new();
+      $this->participants = ParticipantCollection::new();
    }
 
    /**
@@ -37,10 +45,11 @@ class Pool
    {
       $this->name = $name;
 
-      $local_match_idx = 1;
+      $local_match_idx = 0;
+      /** @var MatchNode $node */
       foreach ($this->matches as $node)
       {
-         $node->setName($name . "." . $local_match_idx++);
+         $node->name = $this->nameFor($local_match_idx++);
       }
    }
 
@@ -52,9 +61,10 @@ class Pool
    public function setArea(?Area $area): void
    {
       $this->area = $area;
+      /** @var MatchNode $node */
       foreach ($this->matches as $node)
       {
-         $node->setArea($area);
+         $node->area = $area;
       }
    }
 
@@ -62,35 +72,73 @@ class Pool
     * recursively collect all participants in this match tree
     * @return ParticipantCollection of Participant objects
     */
-   public function getParticipantList(): ParticipantCollection
+   public function getParticipants(): ParticipantCollection
    {
-      return $this->participants->all();
+      return $this->participants;
    }
 
-   public function getMatchList(): array
+   public function setParticipants(ParticipantCollection $p): void
+   {
+      $this->participants = $p;
+      $this->generateMatches();
+   }
+
+   public function getMatchList(): MatchNodeCollection
    {
       return $this->matches;
    }
 
    /**
+    * get the current ranking (via lazy calculation)
+    */
+   public function getRanking(): PoolRankCollection
+   {
+      return $this->ranking ??= $this->rankHandler->deriveRanking($this->matches);
+   }
+
+   /**
     * get the participant of rank $rank
+    * do not return a result until this pool was fully conducted and decided
+    * to not confuse with invalid intermediate results
+    * if intermediate results are needed, use getRanking()
     */
    public function getRanked($rank = 1): ?Participant
    {
-      /* TODO: derive ranked list from match results */
-      return null;
+      if( !$this->isDecided() ) return null;
+      $ranked = $this->getRanking()->filter(fn($r) => $r->rank === $rank);
+      return $ranked->count() === 1? $ranked->front()->participant : null;
+   }
+
+   /**
+    * check whether all assigned matches are done
+    */
+   public function isConducted(): bool
+   {
+      return $this->matches->all(fn($m, $k) => $m->isCompleted() );
+   }
+
+   /**
+    * check whether the relevant ranks of this pool are decided
+    * it is decided if, and only if
+    * - all matches are completed
+    * - we have exactly $num_winners winners
+    */
+   public function isDecided(): bool
+   {
+      if( !$this->isConducted() ) return false;
+      return $this->num_winners === $this->getRanking()->filter(fn($r) => $r->rank <= $this->num_winners)->count();
    }
 
    /**
     * generate the matches in this Pool.
     */
-   public function generateMatches(): void
+   private function generateMatches(): void
    {
       /* https://de.wikipedia.org/wiki/Jeder-gegen-jeden-Turnier#Rutschsystem */
-      $this->matches = [];
+      $this->matches = MatchNodeCollection::new();
 
       $players = $this->participants->values();
-      if( count($this->participants) % 2 ) $players[] = null; // fill up to an even number of participants
+      if( count($players) % 2 ) $players[] = null; // fill up to an even number of participants with one BYE slot if needed
 
       $numPlayers = count($players);
       $rounds = $numPlayers - 1;
@@ -106,8 +154,8 @@ class Pool
             {
                $red     = new ParticipantSlot($p_red);
                $white   = new ParticipantSlot($p_white);
-               $matchId = count($this->matches);
-               $this->matches[] = new MatchNode($this->name.".".$matchId, $red, $white, $this->area);
+               $matchId = $this->matches->count();
+               $this->matches[] = new MatchNode($this->nameFor($matchId), $red, $white, $this->area);
             }
          }
 
@@ -132,5 +180,36 @@ class Pool
             $match->setMatchRecord($matchRecords[$match->name]);
          }
       }
+
+      /* check if there are further records for this pool for additional matches (-> decision matches) */
+      $matchId = $this->matches->count()-1;
+      while ($matchRecords->keyExists($matchName = $this->nameFor(++$matchId)))
+      {
+         /** @var MatchRecord $record - fetch this additional record from the provided ones */
+         $record = $matchRecords[$matchName];
+
+         $p_red   = $record->redParticipant;
+         $p_white = $record->whiteParticipant;
+         if( $this->participants->contains($p_red) && $this->participants->contains($p_white) )
+         {
+            $red     = new ParticipantSlot($p_red);
+            $white   = new ParticipantSlot($p_white);
+            $newNode = new MatchNode($matchName, $red, $white, $this->area);
+            $newNode->setMatchRecord($record);
+            $this->matches[] = $newNode;
+         }
+         else
+         {
+            throw new \DomainException("Invalid Match record for Pool " . $this->name . ": participants do not match");
+         }
+      }
+   }
+
+   /**
+    * match name constructor
+    */
+   private function nameFor(int $matchId): string
+   {
+      return $this->name . "." . $matchId;
    }
 }

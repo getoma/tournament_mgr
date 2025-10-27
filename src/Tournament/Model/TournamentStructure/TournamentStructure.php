@@ -17,6 +17,7 @@ use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\Participant\SlottedParticipantCollection;
+use Tournament\Model\PoolRankHandler\PoolRankHandler;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 
@@ -55,6 +56,7 @@ class TournamentStructure
       CategoryMode $mode,
       int $num_rounds,
       AreaCollection $areas,
+      PoolRankHandler $poolRankHdl,
       ?int $pool_winners = null,
       ?int $cluster = null)
    {
@@ -68,7 +70,7 @@ class TournamentStructure
       }
       elseif ($mode === CategoryMode::Combined)
       {
-         $this->pools = $this->createAutoPools($num_rounds, $pool_winners);
+         $this->pools = $this->createAutoPools($num_rounds, $poolRankHdl, $pool_winners);
          $this->ko = static::fillKO( static::createPoolKoFirstRound($this->pools) );
       }
       else
@@ -138,12 +140,12 @@ class TournamentStructure
     * This method will create pools with a maximum size defined in the category configuration.
     * Autogeneration of pools is only valid for combined mode.
     */
-   private static function createAutoPools(int $numRounds, ?int $winnersPerPool = null): PoolCollection
+   private static function createAutoPools(int $numRounds, PoolRankHandler $poolRankHdl, ?int $winnersPerPool = null): PoolCollection
    {
       $winnersPerPool ??= 2;
       $numSlots = pow(2, $numRounds);
       $numPools = pow(2, floor(log($numSlots / $winnersPerPool, 2))); // number of pools, must be a power of 2, rest filled up with BYEs
-      return PoolCollection::new( array_map(fn($i) => new Pool($i), range(0, $numPools - 1)) );
+      return PoolCollection::new( array_map(fn($i) => new Pool($i, $poolRankHdl), range(0, $numPools - 1)) );
    }
 
    /**
@@ -210,7 +212,7 @@ class TournamentStructure
             // create PoolWinnerSlot objects for each pool winner in the chunk
             foreach ($poolIds as $poolId)
             {
-               $slots[] = new PoolWinnerSlot($poolId, $place + 1); // place starts at 0, but we want it to start at 1
+               $slots[] = new PoolWinnerSlot($pools[$poolId], $place + 1); // place starts at 0, but we want it to start at 1
             }
          }
 
@@ -300,21 +302,26 @@ class TournamentStructure
     */
    private function loadPoolParticipants(SlottedParticipantCollection $participants)
    {
+      /* distribute the participants to a separate collection for each pool */
+      $pool_participants = [];
       foreach ($participants as $slotId => $p)
       {
          list($poolId, $slotNr) = explode('.', $slotId);
          if ( $this->pools->keyExists($poolId) )
          {
-            $this->pools[$poolId]->participants[$slotNr] = $p;
+            $pool_participants[$poolId] ??= ParticipantCollection::new();
+            $pool_participants[$poolId][] = $p;
          }
          else
          {
             $this->unmapped_participants[] = $p;
          }
       }
-      foreach ($this->pools as $pool)
+
+      /* forward the collected participants to each pool */
+      foreach ($pool_participants as $id => $col)
       {
-         $pool->generateMatches();
+         $this->pools[$id]->setParticipants($col);
       }
    }
 

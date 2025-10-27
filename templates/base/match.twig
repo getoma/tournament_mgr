@@ -18,6 +18,28 @@
 {%-endif%}
 {% endmacro %}
 
+{% macro printMatchLinks(matchList, route_parameters, route_name='show_ko_match') -%}
+<table>
+  <thead>
+    <tr>
+      <th>Kampf</th>
+      <th class="redside">Kämpfer Rot</th>
+      <th class="whiteside">Kämpfer Weiß</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for match in matchList -%}
+    <tr>
+      <td class="match_name"><a
+          href="{{url_for(route_name, route_parameters|merge({'matchName': match.name}))}}">{{match.name}}</a></td>
+      <td class="participant_name redside">{{_self.printSlot(match.slotRed, match.getWinner())}}</td>
+      <td class="participant_name whiteside">{{_self.printSlot(match.slotWhite, match.getWinner())}}</td>
+    </tr>
+    {% endfor -%}
+  </tbody>
+</table>
+{% endmacro -%}
+
 {% macro printKo(ko, chunks, route_param) %}
 <ul class="fight_tree">
   {%- if chunks is defined %}

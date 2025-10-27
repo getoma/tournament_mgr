@@ -1,17 +1,28 @@
 {% extends 'base/layout.twig' %}
 {% import 'base/match.twig' as part %}
 
-{% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id, 'matchName': node.name } %}
+{% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id, 'matchName': node.name, 'pool': pool } %}
+
+{% if type == 'ko' %}
+{% set update_route, get_route = 'update_ko_match', 'show_ko_match' %}
+{% else %}
+{% set update_route, get_route = 'update_pool_match', 'show_pool_match' %}
+{% endif %}
 
 
 {% block special_links -%}
   <link rel="stylesheet" href="{{url_for('home')}}css/match.css">
 {% endblock -%}
 
-{% block nav_extension %}<a href="{{url_for('show_category', route_parameters)}}">Zurück...</a>{% endblock %}
+{% block nav_extension -%}
+{% if pool is not empty -%}
+<a href="{{url_for('show_pool', route_parameters)}}">Zurück...</a>
+{% endif -%}
+<a href="{{url_for('show_category', route_parameters)}}">Zur Kategorie</a>
+{% endblock %}
 
-{% macro printControls(node,participant,possible_pts,undo,route_parameters) -%}
-<form method="post" action="{{url_for('update_ko_match', route_parameters)}}" class="match_control">
+{% macro printControls(node,participant,possible_pts,undo,update_route,route_parameters) -%}
+<form method="post" action="{{url_for(update_route, route_parameters)}}" class="match_control">
   <input type="hidden" name="participant" value="{{participant.id}}">
   <input type="hidden" name="undo" value="{{undo.id}}">
   {% for name, pt in possible_pts -%}
@@ -32,26 +43,11 @@
 </ul>
 {% endmacro -%}
 
-{% macro printMatchLinks(matchList, route_parameters) -%}
-<table>
-  <thead><tr><th>Kampf</th><th class="redside">Kämpfer Rot</th><th class="whiteside">Kämpfer Weiß</th></tr></thead>
-  <tbody>
-    {% for match in matchList -%}
-    <tr>
-      <td class="match_name"><a href="{{url_for('show_ko_match', route_parameters|merge({'matchName': match.name}))}}">{{match.name}}</a></td>
-      <td class="participant_name redside">{{part.printSlot(match.slotRed, match.getWinner())}}</td>
-      <td class="participant_name whiteside">{{part.printSlot(match.slotWhite, match.getWinner())}}</td>
-    </tr>
-    {% endfor -%}
-  </tbody>
-</table>
-{% endmacro -%}
-
 {% block content %}
 {% if previous is not empty -%}
 <h2>Vorheriger Kampf</h2>
 <nav id="previous_match_nav" class="match_nav">
-  {{_self.printMatchLinks({0: previous}, route_parameters)}}
+  {{part.printMatchLinks({0: previous}, route_parameters, get_route)}}
 </nav>
 {%- endif %}
 
@@ -82,10 +78,10 @@
     {% if node.isDetermined() and policy.isActionAllowed('RecordResults') -%}
     <tr>
       <td colspan="4" class="controls redside">
-        {{_self.printControls(node, node.getRedParticipant(),possible_pts,points['red'].undo,route_parameters)}}
+        {{_self.printControls(node, node.getRedParticipant(),possible_pts,points['red'].undo,update_route,route_parameters)}}
       </td>
       <td colspan="4" class="controls whiteside">
-        {{_self.printControls(node, node.getWhiteParticipant(),possible_pts,points['white'].undo,route_parameters)}}
+        {{_self.printControls(node, node.getWhiteParticipant(),possible_pts,points['white'].undo,update_route,route_parameters)}}
       </td>
     </tr>
   {% endif -%}
@@ -107,7 +103,7 @@
 {% if next is not empty -%}
 <h2>Nächste Kämpfe</h2>
 <nav id="next_match_nav" class="match_nav">
-  {{_self.printMatchLinks(next, route_parameters)}}
+  {{part.printMatchLinks(next, route_parameters, get_route)}}
 </nav>
 {%endif-%}
 {% endblock %}

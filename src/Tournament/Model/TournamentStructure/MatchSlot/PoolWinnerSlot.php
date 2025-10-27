@@ -3,10 +3,11 @@
 namespace Tournament\Model\TournamentStructure\MatchSlot;
 
 use Tournament\Model\Participant\Participant;
+use Tournament\Model\TournamentStructure\Pool\Pool;
 
 class PoolWinnerSlot extends MatchSlot
 {
-   public function __construct(public readonly int $poolId, public readonly int $rank)
+   public function __construct(public readonly Pool $pool, public readonly int $rank)
    {
    }
 
@@ -17,11 +18,11 @@ class PoolWinnerSlot extends MatchSlot
 
    public function str(): string
    {
-      return 'Pool ' . $this->poolId . ' Platz ' . $this->rank;
+      return 'Pool ' . $this->pool->getName() . ' Platz ' . $this->rank;
    }
 
    public function getParticipant(): ?Participant
    {
-      return null;
+      return $this->pool->getRanked($this->rank);
    }
 }
