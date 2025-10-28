@@ -69,18 +69,26 @@
       <td class="participant_name redside">{{part.printSlot(node.slotRed, node.getWinner())}}</td>
       <td class="penalty redside">{{_self.printPoints(points['red'].penalty,points['red'].undo)}}</td>
       <td class="points redside">{{_self.printPoints(points['red'].points,points['red'].undo)}}</td>
-      <td class="winner redside">{% if node.getRedParticipant() is same as(node.getWinner()) %}X{%endif%}</td>
-      <td class="winner whiteside">{% if node.getWhiteParticipant() is same as(node.getWinner()) %}X{%endif%}</td>
+      <td class="winner redside">{% if node.isTied() %}-{% elseif node.getRedParticipant() is same as(node.getWinner()) %}X{%endif%}</td>
+      <td class="winner whiteside">{% if node.isTied() %}-{% elseif node.getWhiteParticipant() is same as(node.getWinner()) %}X{%endif%}</td>
       <td class="points whiteside">{{_self.printPoints(points['white'].points,points['white'].undo)}}</td>
       <td class="penalty whiteside">{{_self.printPoints(points['white'].penalty,points['white'].undo)}}</td>
       <td class="participant_name whiteside">{{part.printSlot(node.slotWhite, node.getWinner())}}</td>
     </tr>
     {% if node.isDetermined() and policy.isActionAllowed('RecordResults') -%}
     <tr>
-      <td colspan="4" class="controls redside">
+      <td colspan="3" class="controls redside">
         {{_self.printControls(node, node.getRedParticipant(),possible_pts,points['red'].undo,update_route,route_parameters)}}
       </td>
-      <td colspan="4" class="controls whiteside">
+      <td colspan="2" class="controls noside">
+        {% if node.tiesAllowed() -%}
+        <form method="post" action="{{url_for(update_route, route_parameters)}}" class="match_control">
+            <button name="action" value="tie"
+            {%- if not node.isModifiable() or node.isTied() %} disabled{%endif-%}
+            >Unentschieden</button>
+        {%- endif %}
+      </td>
+      <td colspan="3" class="controls whiteside">
         {{_self.printControls(node, node.getWhiteParticipant(),possible_pts,points['white'].undo,update_route,route_parameters)}}
       </td>
     </tr>

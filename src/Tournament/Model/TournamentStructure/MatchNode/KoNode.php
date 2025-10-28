@@ -24,7 +24,7 @@ class KoNode extends MatchNode
    // use constructor to forward parentNode links to child nodes
    public function __construct(string $name, MatchSlot $slotRed, MatchSlot $slotWhite, ?Area $area = null, ?MatchRecord $matchRecord = null)
    {
-      parent::__construct($name, $slotRed, $slotWhite, $area, $matchRecord);
+      parent::__construct($name, $slotRed, $slotWhite, $area, false, $matchRecord);
       if( $slotRed instanceof MatchWinnerSlot ) $slotRed->matchNode->parentNode = $this;
       if( $slotWhite instanceof MatchWinnerSlot ) $slotWhite->matchNode->parentNode = $this;
    }
@@ -38,6 +38,11 @@ class KoNode extends MatchNode
    public function isResultFixed(): bool
    {
       return parent::isResultFixed() || ($this->parentNode?->isEstablished() ?? false);
+   }
+
+   public function tiesAllowed(): bool
+   {
+      return false; // KO matches always need a winner to be completed
    }
 
    /**
@@ -129,7 +134,7 @@ class KoNode extends MatchNode
     * get a participants of a specific rank (1=winner, 2=runner-up, 3=third place, ...)
     * @return Participant[]
     */
-   public function getRanked($rank = 1): ParticipantCollection
+   public function getRanked(int $rank): ParticipantCollection
    {
       $result = [];
       if ($rank === 1)

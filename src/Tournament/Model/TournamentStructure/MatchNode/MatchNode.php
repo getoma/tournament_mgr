@@ -21,6 +21,7 @@ class MatchNode
       public readonly MatchSlot $slotRed,    // slot contents may be modified, but the slot itself is fixed
       public readonly MatchSlot $slotWhite,  // slot contents may be modified, but the slot itself is fixed
       public  ?Area $area = null,
+      private bool $tie_break = false,
       private ?MatchRecord $matchRecord = null
    )
    {
@@ -73,6 +74,7 @@ class MatchNode
 
       $this->matchRecord = $matchRecord;
       $this->area = $matchRecord->area;
+      $this->tie_break = $matchRecord->tie_break;
    }
 
    public function provideMatchRecord(Category $category): MatchRecord
@@ -82,6 +84,7 @@ class MatchNode
          name: $this->name,
          category: $category,
          area: $this->area,
+         tie_break: $this->tie_break,
          redParticipant: $this->getRedParticipant(),
          whiteParticipant: $this->getWhiteParticipant(),
       );
@@ -91,6 +94,11 @@ class MatchNode
    public function getMatchRecord(): ?MatchRecord
    {
       return $this->matchRecord;
+   }
+
+   public function tiesAllowed(): bool
+   {
+      return !$this->tie_break;
    }
 
    /* completely empty node match, no participants, ever */
@@ -132,19 +140,29 @@ class MatchNode
    /* Match is ongoing, but no winner, yet */
    public function isOngoing(): bool
    {
-      return $this->matchRecord && !$this->matchRecord->winner;
+      return $this->matchRecord && !isset($this->matchRecord->finalized_at);
    }
 
    /* There was an actual match, and that one is decided */
    public function isCompleted(): bool
    {
-      return $this->matchRecord && $this->matchRecord->winner;
+      return $this->matchRecord && isset($this->matchRecord->finalized_at);
+   }
+
+   public function isTieBreak(): bool
+   {
+      return $this->tie_break;
    }
 
    /* "Winner" of this match is known, regardless whether there was an actual match or not */
    public function isDecided(): bool
    {
-      return !!$this->getWinner();
+      return $this->getWinner() !== null;
+   }
+
+   public function isTied(): bool
+   {
+      return $this->isCompleted() && !isset($this->matchRecord->winner);
    }
 
    /* Match result may not be modified anymore */

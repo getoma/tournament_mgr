@@ -102,7 +102,7 @@ class Pool
     * to not confuse with invalid intermediate results
     * if intermediate results are needed, use getRanking()
     */
-   public function getRanked($rank = 1): ?Participant
+   public function getRanked(int $rank): ?Participant
    {
       if( !$this->isDecided() ) return null;
       $ranked = $this->getRanking()->filter(fn($r) => $r->rank === $rank);
@@ -128,6 +128,50 @@ class Pool
       if( !$this->isConducted() ) return false;
       return $this->num_winners === $this->getRanking()->filter(fn($r) => $r->rank <= $this->num_winners)->count();
    }
+
+   /**
+    * check whether an additional tie break match is needed
+    */
+   public function needsTieBreakMatch(): bool
+   {
+      if (!$this->isConducted()) return false;
+      return $this->num_winners !== $this->getRanking()->filter(fn($r) => $r->rank <= $this->num_winners)->count();
+   }
+
+   /**
+    * add a tie break match
+    */
+   public function addTieBreakMatch(): MatchNode
+   {
+      /* deduct the participants that will need a tie break - the first two participants with the same current rank */
+      list($red, $white) = [null,null];
+      foreach( $this->getRanking() as $rank_entry )
+      {
+         if( !isset($red) || $red->rank !== $rank_entry->rank )
+         {
+            $red = $rank_entry;
+         }
+         else
+         {
+            $white = $rank_entry;
+            break;
+         }
+      }
+
+      if( !isset($white) )
+      {
+         throw new \RuntimeException("no tie break participants could be identified.");
+      }
+
+      /* create a new MatchNode for them */
+      $red     = new ParticipantSlot($red->participant);
+      $white   = new ParticipantSlot($white->participant);
+      $matchId = $this->matches->count();
+      $node = new MatchNode($this->nameFor($matchId), $red, $white, $this->area, true);
+      $this->matches[] = $node;
+      return $node;
+   }
+
 
    /**
     * generate the matches in this Pool.

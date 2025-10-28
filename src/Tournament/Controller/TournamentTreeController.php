@@ -90,6 +90,51 @@ class TournamentTreeController
    }
 
    /**
+    * add a tie break match to a pool if needed, and redirect to the new match
+    */
+   public function addPoolTieBreak(Request $request, Response $response, array $args): Response
+   {
+      /** @var Category $category */
+      $category = $request->getAttribute('category');
+
+      /* load the structure and find the current node/match */
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+
+      /** @var Pool $pool */
+      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
+
+      if( !$pool->needsTieBreakMatch() )
+      {
+         $error = 'no tie break needed';
+      }
+      else
+      {
+         /* generate the new tie break match and register it in the database */
+         $new_node = $pool->addTieBreakMatch();
+         $args['matchName'] = $new_node->name;
+         if (!$this->m_repo->saveMatchRecord($new_node->provideMatchRecord($category)))
+         {
+            $error = 'Match-Generierung ist fehlgeschlagen :-(';
+         }
+      }
+
+      if( $error )
+      {
+         return $this->view->render($response, 'tournament/navigation/pool_home.twig', [
+            'pool'  => $pool,
+            'error' => $error
+         ]);
+      }
+      else
+      {
+         return $response->withHeader(
+            'Location',
+            RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_pool_match', $args)
+         )->withStatus(302);
+      }
+   }
+
+   /**
     * RESET all match records for a specific category - TEMPORARY, FOR TESTING PURPOSES ONLY
     */
    public function resetMatchRecords(Request $request, Response $response, array $args): Response
@@ -224,8 +269,8 @@ class TournamentTreeController
          /* load and validate the input data */
          $data = $request->getParsedBody();
          $rules = [
-            'participant' => v::in([$node->getRedParticipant()->id, $node->getWhiteParticipant()->id]),
-            'action' => v::in(array_merge($mphdl->getPointList(), ['winner', 'undo'])),
+            'participant' => v::optional(v::in([$node->getRedParticipant()->id, $node->getWhiteParticipant()->id])),
+            'action' => v::in(array_merge($mphdl->getPointList(), ['winner', 'undo', 'tie'])),
             'undo' => v::optional(v::intVal()->positive())
          ];
          $err_list = DataValidationService::validate($data, $rules);
@@ -237,44 +282,64 @@ class TournamentTreeController
          else
          {
             $record = $node->provideMatchRecord($category);
-            $participant = $this->p_repo->getParticipantById($data['participant']) ?? throw new EntityNotFoundException('Unknown Participant');
-
             $saveRecord = false;
 
-            if( $data['action'] === 'winner' )
+            if ($data['action'] === 'tie')
             {
-               if( $node->isModifiable() )
-               {
-                  $record->winner = $participant;
-                  $record->finalized_at = new \DateTime();
-                  $saveRecord = true;
-               }
-               else
+               if (!$node->isModifiable())
                {
                   $error = 'Gewinner kann nicht mehr neu gesetzt werden';
                }
-            }
-            else if ($data['action'] === 'undo')
-            {
-               if( $mphdl->removePoint($record, $data['undo']) )
+               else if (!$node->tiesAllowed())
                {
-                  $saveRecord = true;
+                  $error = 'Dieser Kampf darf nicht unentschieden enden';
                }
                else
                {
-                  $error = 'Punkt kann nicht zurückgenommen werden, abgelehnt';
+                  $record->winner = null;
+                  $record->finalized_at = new \DateTime();
+                  $saveRecord = true;
                }
             }
             else
             {
-               $pt = new MatchPoint(null, $participant, $data['action'], new \DateTime());
-               if( $mphdl->addPoint($record, $pt) )
+               $participant = $this->p_repo->getParticipantById($data['participant']) ?? throw new EntityNotFoundException('Unknown Participant');
+
+               if( $data['action'] === 'winner' )
                {
-                  $saveRecord = true;
+                  if( $node->isModifiable() )
+                  {
+                     $record->winner = $participant;
+                     $record->finalized_at = new \DateTime();
+                     $saveRecord = true;
+                  }
+                  else
+                  {
+                     $error = 'Gewinner kann nicht mehr neu gesetzt werden';
+                  }
+               }
+               else if ($data['action'] === 'undo')
+               {
+                  if( $mphdl->removePoint($record, $data['undo']) )
+                  {
+                     $saveRecord = true;
+                  }
+                  else
+                  {
+                     $error = 'Punkt kann nicht zurückgenommen werden, abgelehnt';
+                  }
                }
                else
                {
-                  $error = 'Invalider Punkt, abgelehnt';
+                  $pt = new MatchPoint(null, $participant, $data['action'], new \DateTime());
+                  if( $mphdl->addPoint($record, $pt) )
+                  {
+                     $saveRecord = true;
+                  }
+                  else
+                  {
+                     $error = 'Invalider Punkt, abgelehnt';
+                  }
                }
             }
 

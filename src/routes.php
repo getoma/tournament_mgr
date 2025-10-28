@@ -139,11 +139,14 @@ return function (\Slim\App $app)
 
             /* Match updating */
             $cgrp->get('/ko/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('show_ko_match');
-            $cgrp->post('/ko/{matchName}', [TournamentTreeController::class, 'updateKoMatch'])->setName('update_ko_match')
+            $cgrp->post('/ko/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('update_ko_match')
                ->add( $statusGuardMW->for(TournamentAction::RecordResults) );
 
-            $cgrp->get('/pool/{pool}/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('show_pool_match');
-            $cgrp->post('/pool/{pool}/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('update_pool_match')
+            $cgrp->get('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('show_pool_match');
+            $cgrp->post('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('update_pool_match')
+               ->add($statusGuardMW->for(TournamentAction::RecordResults));
+
+            $cgrp->post('/pool/{pool}/addTieBreak', [TournamentTreeController::class, 'addPoolTieBreak'])->setName('add_pool_tiebreak')
                ->add($statusGuardMW->for(TournamentAction::RecordResults));
 
             $cgrp->post('resetResults', [TournamentTreeController::class, 'resetMatchRecords'])->setName('reset_category_results')

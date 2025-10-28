@@ -17,13 +17,18 @@
   <nav id="pool_match_nav" class="match_nav">
     {{part.printMatchLinks(pool.getMatchList(), route_parameters, 'show_pool_match')}}
   </nav>
+  {% if pool.needsTieBreakMatch() -%}
+  <form method="post" action="{{url_for('add_pool_tiebreak', route_parameters)}}" class="pool_control" id="tie_break_match_adder">
+    <button>Entscheidungskampf hinzufügen</button>
+  </form>
+  {% endif %}
 </section>
 
 <section class="pool_ranking">
-  <h2>Platzierungen</h2>
+  <h2>Platzierung</h2>
   <table>
     <thead>
-      <tr><th>Platz</th><th>Name</th><th>Siege</th><th>Punkte</th></tr>
+      <tr><th>Platz</th><th>Name</th><th>Siege</th><th>Unentschieden</th><th>Punkte</th></tr>
     </thead>
     <tbody>
       {% for entry in pool.getRanking() -%}
@@ -31,9 +36,10 @@
         <td>{{entry.rank}}</td>
         <td>{{entry.participant.lastname}}, {{entry.participant.firstname}}</td>
         <td>{{entry.wins}}</td>
+        <td>{{entry.ties}}</td>
         <td>{{entry.points}}</td>
       </tr>
-      {%- endfor %}
+      {% endfor -%}
     </tbody>
   </table>
 </section>

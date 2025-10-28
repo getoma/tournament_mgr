@@ -21,19 +21,36 @@ class GenericPoolRankHandler implements PoolRankHandler
          /* make sure all participants are part of $ranks */
          $redP = $match->getRedParticipant();
          $whiteP = $match->getWhiteParticipant();
-         $ranks[$redP->id]   ??= new PoolRank($redP, 0, 0, 0);
-         $ranks[$whiteP->id] ??= new PoolRank($whiteP, 0, 0, 0);
+         $ranks[$redP->id]   ??= new PoolRank($redP);
+         $ranks[$whiteP->id] ??= new PoolRank($whiteP);
 
          /* do not evaluate any points if this match isn't done yet */
          if (!$match->isCompleted()) continue;
 
-         /* increase the win counter for the corresponding participant */
-         $ranks[$match->getWinner()->id]->wins += 1;
+         /* increase the KPI counters for the corresponding participant */
+         $match_record = $match->getMatchRecord();
+         if( $match_record->tie_break )
+         {
+            // a tie break match always has a winner if it is completed
+            $ranks[$match_record->winner->id]->tie_breaks += 1;
+         }
+         else
+         {
+            if( $match_record->winner )
+            {
+               $ranks[$match_record->winner->id]->wins += 1;
+            }
+            else
+            {
+               $ranks[$redP->id]->ties += 1;
+               $ranks[$whiteP->id]->ties += 1;
+            }
 
-         /* increase point counters */
-         $points = $this->mpHdl->getPoints($match->getMatchRecord()->points);
-         $ranks[$redP->id]->points += $points->for($redP)->count();
-         $ranks[$whiteP->id]->points += $points->for($whiteP)->count();
+            /* increase point counters, (only count points from non-tie-break matches) */
+            $points = $this->mpHdl->getPoints($match_record->points);
+            $ranks[$redP->id]->points += $points->for($redP)->count();
+            $ranks[$whiteP->id]->points += $points->for($whiteP)->count();
+         }
       }
 
       /* now sort into ranks according the comparision rules */
@@ -63,6 +80,8 @@ class GenericPoolRankHandler implements PoolRankHandler
    static protected function rank_order(PoolRank $a, PoolRank $b): int
    {
       return  ($b->wins <=> $a->wins)
-           ?: ($b->points <=> $a->points);
+           ?: ($b->ties <=> $a->ties)
+           ?: ($b->points <=> $a->points)
+           ?: ($b->tie_breaks <=> $a->tie_breaks);
    }
 }
