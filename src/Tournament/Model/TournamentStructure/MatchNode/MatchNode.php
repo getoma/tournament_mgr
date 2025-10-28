@@ -22,7 +22,8 @@ class MatchNode
       public readonly MatchSlot $slotWhite,  // slot contents may be modified, but the slot itself is fixed
       public  ?Area $area = null,
       private bool $tie_break = false,
-      private ?MatchRecord $matchRecord = null
+      private ?MatchRecord $matchRecord = null,
+      public bool $frozen = false           // wether match record data is frozen for this node or not
    )
    {
       if( $this->slotRed === $this->slotWhite )
@@ -67,16 +68,33 @@ class MatchNode
       {
          throw new \DomainException("inconsistent match record: red participant does not match");
       }
-      if (($p_white->id !== $matchRecord->whiteParticipant->id))
+      if ($p_white->id !== $matchRecord->whiteParticipant->id)
       {
          throw new \DomainException("inconsistent match record: white participant does not match");
       }
 
+      /* update this note with those inputs */
       $this->matchRecord = $matchRecord;
       $this->area = $matchRecord->area;
       $this->tie_break = $matchRecord->tie_break;
+
+      /* freeze the previous nodes */
+      $this->slotRed->freezeResult();
+      $this->slotWhite->freezeResult();
    }
 
+   /**
+    * provide the match record for this node if existing.
+    */
+   public function getMatchRecord(): ?MatchRecord
+   {
+      return $this->matchRecord;
+   }
+
+   /**
+    * provide the match record for this node.
+    * if none available yet, initialize it.
+    */
    public function provideMatchRecord(Category $category): MatchRecord
    {
       $this->matchRecord ??= new MatchRecord(
@@ -91,11 +109,7 @@ class MatchNode
       return $this->matchRecord;
    }
 
-   public function getMatchRecord(): ?MatchRecord
-   {
-      return $this->matchRecord;
-   }
-
+   /* whether a tie result is allowed */
    public function tiesAllowed(): bool
    {
       return !$this->tie_break;
@@ -137,18 +151,19 @@ class MatchNode
       return isset($this->matchRecord);
    }
 
-   /* Match is ongoing, but no winner, yet */
+   /* Match is ongoing */
    public function isOngoing(): bool
    {
       return $this->matchRecord && !isset($this->matchRecord->finalized_at);
    }
 
-   /* There was an actual match, and that one is decided */
+   /* There was an actual match, and that one is already finalized */
    public function isCompleted(): bool
    {
       return $this->matchRecord && isset($this->matchRecord->finalized_at);
    }
 
+   /* whether this is a tie break match */
    public function isTieBreak(): bool
    {
       return $this->tie_break;
@@ -165,14 +180,30 @@ class MatchNode
       return $this->isCompleted() && !isset($this->matchRecord->winner);
    }
 
-   /* Match result may not be modified anymore */
+   /* Match points may not be modified anymore
+    */
+   public function isFrozen(): bool
+   {
+      return $this->frozen;
+   }
+
+   /* Match data may be modified - if we have determined the participants, and it is not frozen, yet */
+   public function isModifiable(): bool
+   {
+      return $this->isDetermined() && !$this->isFrozen();
+   }
+
+   /* Match result may not be modified anymore
+    * Per default, result is only fixed when fully frozen,
+    * but this may not be the case for specialized nodes
+    */
    public function isResultFixed(): bool
    {
-      return false; // for a plain match node, currently no condition
+      return $this->isFrozen();
    }
 
    /* Match results may be modified - if we have determined the participants, and it is not fixed, yet */
-   public function isModifiable(): bool
+   public function isResultModifiable(): bool
    {
       return $this->isDetermined() && !$this->isResultFixed();
    }
@@ -182,8 +213,7 @@ class MatchNode
     */
    public function getRedParticipant(): ?Participant
    {
-      if ($this->matchRecord) return $this->matchRecord->redParticipant;
-      return $this->slotRed->getParticipant();
+      return $this->matchRecord?->redParticipant ?: $this->slotRed->getParticipant();
    }
 
    /**
@@ -191,8 +221,7 @@ class MatchNode
     */
    public function getWhiteParticipant(): ?Participant
    {
-      if ($this->matchRecord) return $this->matchRecord->whiteParticipant;
-      return $this->slotWhite->getParticipant();
+      return $this->matchRecord?->whiteParticipant ?: $this->slotWhite->getParticipant();
    }
 
 
@@ -214,12 +243,6 @@ class MatchNode
     */
    public function getDefeated(): ?Participant
    {
-      if ($this->matchRecord && $this->matchRecord->winner)
-      {
-         return $this->matchRecord->winner === $this->matchRecord->redParticipant
-            ? $this->matchRecord->whiteParticipant
-            : $this->matchRecord->redParticipant;
-      }
-      return null;
+      return  $this->matchRecord?->winner? $this->matchRecord->getOpponent($this->matchRecord->winner) : null;
    }
 }

@@ -250,6 +250,17 @@ class Pool
    }
 
    /**
+    * freeze all results, to not allow any further modifications of points or winners
+    */
+   public function freezeResults()
+   {
+      foreach ($this->matches as $match)
+      {
+         $match->frozen = true;
+      }
+   }
+
+   /**
     * match name constructor
     */
    private function nameFor(int $matchId): string

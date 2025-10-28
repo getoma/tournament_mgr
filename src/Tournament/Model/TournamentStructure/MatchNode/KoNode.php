@@ -18,31 +18,35 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
  */
 class KoNode extends MatchNode
 {
-   // link to the parent node inside the tree
-   public ?KoNode $parentNode = null;
-
    // use constructor to forward parentNode links to child nodes
-   public function __construct(string $name, MatchSlot $slotRed, MatchSlot $slotWhite, ?Area $area = null, ?MatchRecord $matchRecord = null)
+   public function __construct( string $name,
+                                MatchSlot $slotRed,
+                                MatchSlot $slotWhite,
+                                ?Area $area = null,
+                                ?MatchRecord $matchRecord = null,
+                                private bool $result_fixed = false)
    {
       parent::__construct($name, $slotRed, $slotWhite, $area, false, $matchRecord);
-      if( $slotRed instanceof MatchWinnerSlot ) $slotRed->matchNode->parentNode = $this;
-      if( $slotWhite instanceof MatchWinnerSlot ) $slotWhite->matchNode->parentNode = $this;
    }
 
-   /* Match results may not be modified anymore
-    * For a KO tree node, the result may not be modified anymore
-    * if a follow-up match is already established, which means the winner
-    * of the current match is already employed in the next match.
-    * Also, take over any fixed result state from the parent node.
-    */
+   /* Match results may not be modified anymore */
    public function isResultFixed(): bool
    {
-      return parent::isResultFixed() || ($this->parentNode?->isEstablished() ?? false);
+      return parent::isResultFixed() || $this->result_fixed;
    }
 
+   /* KO matches always need a winner to be completed */
    public function tiesAllowed(): bool
    {
-      return false; // KO matches always need a winner to be completed
+      return false;
+   }
+
+   /**
+    * fix result only, but still allow modifications to points
+    */
+   public function freezeResult(): void
+   {
+      $this->result_fixed = true;
    }
 
    /**

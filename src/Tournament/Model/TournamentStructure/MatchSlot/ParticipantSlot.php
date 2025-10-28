@@ -25,4 +25,9 @@ class ParticipantSlot extends MatchSlot
       return $this->participant;
    }
 
+   public function freezeResult(): void
+   {
+      // nothing to do
+   }
+
 }

@@ -25,4 +25,9 @@ class PoolWinnerSlot extends MatchSlot
    {
       return $this->pool->getRanked($this->rank);
    }
+
+   public function freezeResult(): void
+   {
+      $this->pool->freezeResults();
+   }
 }

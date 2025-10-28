@@ -286,7 +286,7 @@ class TournamentTreeController
 
             if ($data['action'] === 'tie')
             {
-               if (!$node->isModifiable())
+               if (!$node->isResultModifiable())
                {
                   $error = 'Gewinner kann nicht mehr neu gesetzt werden';
                }
@@ -307,7 +307,7 @@ class TournamentTreeController
 
                if( $data['action'] === 'winner' )
                {
-                  if( $node->isModifiable() )
+                  if( $node->isResultModifiable() )
                   {
                      $record->winner = $participant;
                      $record->finalized_at = new \DateTime();
@@ -318,27 +318,34 @@ class TournamentTreeController
                      $error = 'Gewinner kann nicht mehr neu gesetzt werden';
                   }
                }
-               else if ($data['action'] === 'undo')
+               else if( !$node->isResultModifiable() )
                {
-                  if( $mphdl->removePoint($record, $data['undo']) )
-                  {
-                     $saveRecord = true;
-                  }
-                  else
-                  {
-                     $error = 'Punkt kann nicht zurückgenommen werden, abgelehnt';
-                  }
+                  $error = "Punkt-Änderungen nicht (mehr) erlaubt.";
                }
                else
                {
-                  $pt = new MatchPoint(null, $participant, $data['action'], new \DateTime());
-                  if( $mphdl->addPoint($record, $pt) )
+                  if ($data['action'] === 'undo')
                   {
-                     $saveRecord = true;
+                     if( $mphdl->removePoint($record, $data['undo']) )
+                     {
+                        $saveRecord = true;
+                     }
+                     else
+                     {
+                        $error = 'Punkt kann nicht zurückgenommen werden, abgelehnt';
+                     }
                   }
                   else
                   {
-                     $error = 'Invalider Punkt, abgelehnt';
+                     $pt = new MatchPoint(null, $participant, $data['action'], new \DateTime());
+                     if( $mphdl->addPoint($record, $pt) )
+                     {
+                        $saveRecord = true;
+                     }
+                     else
+                     {
+                        $error = 'Invalider Punkt, abgelehnt';
+                     }
                   }
                }
             }

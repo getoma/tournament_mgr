@@ -21,4 +21,9 @@ abstract class MatchSlot
     * whether this slot represents a BYE
     */
    abstract public function isBye(): bool;
+
+   /**
+    * make sure the participant provided by this slot is no longer modified
+    */
+   abstract public function freezeResult(): void;
 }

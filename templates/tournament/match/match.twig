@@ -30,7 +30,7 @@
   {% endfor -%}
   <button name="action" value="undo"{%if undo is null%} disabled{%endif%}>Undo{%if undo is not null%} ({{undo.point}}){%endif%}</button>
   <button name="action" value="winner"
-    {%- if not node.isModifiable() or node.getWinner() is same as(participant) %} disabled{%endif-%}
+    {%- if not node.isResultModifiable() or node.getWinner() is same as(participant) %} disabled{%endif-%}
   >Als Gewinner setzen</button>
 </form>
 {% endmacro -%}
@@ -75,7 +75,7 @@
       <td class="penalty whiteside">{{_self.printPoints(points['white'].penalty,points['white'].undo)}}</td>
       <td class="participant_name whiteside">{{part.printSlot(node.slotWhite, node.getWinner())}}</td>
     </tr>
-    {% if node.isDetermined() and policy.isActionAllowed('RecordResults') -%}
+    {% if node.isModifiable() and policy.isActionAllowed('RecordResults') -%}
     <tr>
       <td colspan="3" class="controls redside">
         {{_self.printControls(node, node.getRedParticipant(),possible_pts,points['red'].undo,update_route,route_parameters)}}
@@ -84,7 +84,7 @@
         {% if node.tiesAllowed() -%}
         <form method="post" action="{{url_for(update_route, route_parameters)}}" class="match_control">
             <button name="action" value="tie"
-            {%- if not node.isModifiable() or node.isTied() %} disabled{%endif-%}
+            {%- if not node.isResultModifiable() or node.isTied() %} disabled{%endif-%}
             >Unentschieden</button>
         {%- endif %}
       </td>

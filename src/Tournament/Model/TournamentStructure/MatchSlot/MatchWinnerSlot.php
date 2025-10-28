@@ -25,4 +25,9 @@ class MatchWinnerSlot extends MatchSlot
    {
       return $this->matchNode->getWinner();
    }
+
+   public function freezeResult(): void
+   {
+      $this->matchNode->freezeResult();
+   }
 }
