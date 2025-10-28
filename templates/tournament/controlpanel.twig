@@ -1,5 +1,15 @@
 {% extends 'base/layout.twig' %}
 
+{% block nav_extension %}
+  {% if tournament is defined %}
+    <!-- Untermenü für die "Turnier-Hauptseite" -->
+    <ul class="submenu">
+      <li class="active">Turnierleitung</a>
+      </li>
+    </ul>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
 <div class="nav-cards">
   <a href="{{ url_for('show_participant_list', {'tournamentId': tournament.id}) }}" class="card">

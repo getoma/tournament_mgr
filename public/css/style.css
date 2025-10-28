@@ -39,61 +39,115 @@ body {
 main {
   display: flex;
   width: 100%;
-  max-width: 1200px;              /* zentrale Begrenzung */
+  max-width: 1200px;   
   gap: 2rem;
 }
 
-/* Seitenmenü */
+/* Sidebar */
 aside {
-  background-color: #ffffff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  min-width: 220px;               
+  background-color: #f0f4f8; 
   padding: 1rem;
-  width: 220px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  height: fit-content; /* passt sich dem Inhalt an */
-  position: sticky;    /* bleibt beim Scrollen sichtbar */
-  top: 1rem;           /* Abstand zum oberen Rand */
-}
-
-nav.tournament {
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  border-right: 1px solid #ccc;   
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  justify-content: flex-start;
+  height: auto; 
+}
+
+/* Hauptmenü */
+nav.tournament ul {
+  list-style: none;           
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;     
+  gap: 0.25rem;
 }
 
 nav.tournament a {
+  display: block;
+  padding: 0.5rem 0.9rem;     
   text-decoration: none;
   color: #333;
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-  transition: background 0.2s;
+  border-radius: 0.4rem;
+  transition: background 0.3s, color 0.3s;
 }
 
-nav.tournament a:hover {
-  background-color: #f0f0f0;
-  color: #667eea;
+nav.tournament a:hover,
+nav.tournament a.active {
+  background-color: #0077cc;
+  color: #fff;
 }
 
-/* Untermenü (submenu) */
+/* Submenü */
 nav.tournament .submenu {
-  padding-left: 1.2rem; /* Einrücken */
-  margin-top: 0.5rem;
-  border-left: 2px solid #667eea; /* Optionale visuelle Trennung */
+  list-style: none;           
+  margin: 0.2rem 0 0 1rem;    
+  padding: 0;
+}
+
+nav.tournament .submenu li {
+  margin: 0;                  
 }
 
 nav.tournament .submenu a {
-  font-weight: 400;
-  color: #555;
-  text-decoration: none;
   display: block;
-  padding: 0.3rem 0.8rem;
-  border-radius: 4px;
+  padding: 0.35rem 0.9rem;    
+  font-size: 0.9rem;
+  color: #555;
+  border-radius: 0.3rem;
+  transition: background 0.2s, color 0.2s;
 }
 
 nav.tournament .submenu a:hover {
-  background-color: #c3c9ff;
-  color: #3344cc;
+  background-color: #e0f0ff;  
+  color: #0077cc;
+}
+
+nav.tournament .submenu li.active {
+  display: block;
+  padding: 0.35rem 0.9rem;   
+  font-size: 0.9rem;
+  color: #0077cc;   
+  font-weight: bold;  
+  border-radius: 0.3rem;
+  background-color: #e0f0ff; 
+}
+
+/* Sub-Submenü als dritte Ebene */
+nav.tournament .submenu-2 {
+  list-style: none;
+  padding: 0;
+  margin: 0.2rem 0 0 2rem;
+}
+
+nav.tournament .submenu-2 li,
+nav.tournament .submenu-2 li a {
+  display: block;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.9rem;
+}
+
+nav.tournament .submenu-2 a {
+  color: #555;
+  border-radius: 0.3rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+nav.tournament .submenu-2 a:hover {
+  background-color: #e0f0ff;  
+  color: #0077cc;
+}
+
+/* Aktiver Menü */
+nav.tournament .submenu-2 li.active {
+  color: #0077cc;
+  font-weight: bold;
+  background-color: #e0f0ff;
+  border-radius: 0.3rem;
 }
 
 
@@ -103,8 +157,8 @@ nav.tournament .submenu a:hover {
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 1rem;
-  width: 300px; /* gewünschte Quadratbreite */
-  min-height: 300px; /* damit es wie ein Quadrat wirkt */
+  width: 300px;
+  min-height: 300px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   list-style: none;
   display: flex;

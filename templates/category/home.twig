@@ -7,12 +7,21 @@
 {% block nav_extension %}
   {% if tournament is defined %}
     <!-- Untermenü für die "Turnier-Hauptseite" -->
-    <div class="submenu">
-	<a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">Turnierleitung</a>
-      <a href="{{ url_for('show_category_cfg', route_parameters) }}">Kategorie konfigurieren</a>
-    </div>
+    <ul class="submenu">
+      <li>
+        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
+          Turnierleitung
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('show_category_cfg', route_parameters) }}">
+          Kategorie konfigurieren
+        </a>
+      </li>
+    </ul>
   {% endif %}
 {% endblock %}
+
 
 {% block content %}
 <section>

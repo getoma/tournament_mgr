@@ -1,9 +1,9 @@
 {% extends 'base/layout.twig' %}
 
 {% block nav_extension %}
-  <div class="submenu">
-  <a href="{{ url_for('new_tournament_form') }}">Neues Turnier anlegen</a>
-</div>
+  <ul class="submenu">
+    <li><a href="{{ url_for('new_tournament_form') }}">Neues Turnier anlegen</a></li>
+  </ul>
 {% endblock %}
 
 {% block content %}

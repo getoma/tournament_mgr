@@ -5,11 +5,19 @@
 {% block nav_extension %}
   {% if tournament is defined %}
     <!-- Untermenü für die "Turnier-Hauptseite" -->
-    <div class="submenu">
-      <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">Turnierleitung</a>
-    </div>
+    <ul class="submenu">
+      <li>
+        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
+          Turnierleitung
+        </a>
+      </li>
+    </ul>
+<ul class="submenu-2">
+          <li class="active">Konfiguration</li>
+</ul>
   {% endif %}
 {% endblock %}
+
 
 {% block content %}
 <section class="form-box">

@@ -39,17 +39,28 @@
   </header>
 
   <!-- Main Content -->
-<div class="main-content">
-  <main>
 
+<main class="main-content">
+
+      {% if current_user -%}
   <aside>
       <nav class="tournament">
-        {% if return_to is not empty %}<a href="{{url_for(return_to, route_args)}}">&lt;&lt;Zurück</a>{%endif%}
-	<a href="{{url_for('home')}}">Turniere Übersicht</a>
-        {% if tournament is defined %}<a href="{{ url_for('show_tournament', {'tournamentId': tournament.id}) }}">Turnierkategorien</a>{%endif%}
-{% block nav_extension %}{% endblock %}
-      </nav>
+  <ul>
+    {% if return_to is not empty %}
+      <li><a href="{{ url_for(return_to, route_args) }}">&laquo; Zurück</a></li>
+    {% endif %}
+
+    <li><a href="{{ url_for('home') }}">Turniere Übersicht</a></li>
+
+    {% if tournament is defined %}
+      <li><a href="{{ url_for('show_tournament', {'tournamentId': tournament.id}) }}">Turnierkategorien</a></li>
+    {% endif %}
+
+    {% block nav_extension %}{% endblock %}
+  </ul>
+</nav>
     </aside>
+ {%-endif%}
 
     <section id="content">
       {% block content %}{% endblock %}
