@@ -214,7 +214,7 @@ class ParticipantsDataController
       $participant = $request->getAttribute('participant');
 
       $data = $request->getParsedBody();
-      $participant_rules = Participant::validationRules('create');
+      $participant_rules = Participant::validationRules();
       $participant_rules['categories'] = v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0));
       $errors = DataValidationService::validate($data, $participant_rules);
 
