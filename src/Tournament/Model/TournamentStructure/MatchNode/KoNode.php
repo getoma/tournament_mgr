@@ -10,6 +10,7 @@ use Tournament\Model\Participant\ParticipantCollection;
 
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
+use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
 
 /**
  * MatchNode extension to handle an actual KO tree
@@ -44,16 +45,16 @@ class KoNode extends MatchNode
     * Each round is an array of MatchNode objects.
     * The first round is the first array, the second round is the second array, etc.
     * The last round is the final match represented by $this object.
-    * @return array of array of MatchNode
+    * @return MatchRoundCollection
     */
-   public function getRounds(int $offset = 0, ?int $length = null): array
+   public function getRounds(int $offset = 0, ?int $length = null): MatchRoundCollection
    {
-      $rounds = [];
-      $currentRound = [$this];
-      while (count($currentRound) > 0)
+      $rounds = MatchRoundCollection::new();
+      $currentRound = MatchNodeCollection::new([$this]);
+      while (!$currentRound->empty())
       {
-         $rounds[] = $currentRound;
-         $nextRound = [];
+         $rounds->unshift($currentRound);
+         $nextRound = MatchNodeCollection::new();
          foreach ($currentRound as $match)
          {
             if ($match->slotRed instanceof MatchWinnerSlot)
@@ -69,7 +70,7 @@ class KoNode extends MatchNode
          }
          $currentRound = $nextRound;
 
-         if( ($offset < 0) && (count($rounds) >= -$offset) )
+         if( ($offset < 0) && ($rounds->count() >= -$offset) )
          {
             /* abort early if we are asked to cut rounds counting from the back */
             break;
@@ -78,7 +79,7 @@ class KoNode extends MatchNode
 
       if( $offset < 0 ) $offset = 0; // in this case, we didn't even collect anything beyond the offset
 
-      return array_slice( array_reverse($rounds), $offset, $length );
+      return $rounds->slice($offset, $length);
    }
 
    /**
@@ -160,7 +161,7 @@ class KoNode extends MatchNode
     */
    public function getMatchList(): MatchNodeCollection
    {
-      return new MatchNodeCollection(array_merge(...$this->getRounds()));
+      return $this->getRounds()->flatten();
    }
 
    /**

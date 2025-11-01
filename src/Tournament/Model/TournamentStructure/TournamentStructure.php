@@ -275,16 +275,14 @@ class TournamentStructure
    private function loadKoParticipants(SlottedParticipantCollection $participants)
    {
       /* map nodes by their localid */
-      $firstRound = $this->ko->getRounds(0, 1)[0];
-      $names = array_map(fn($n) => $n->name, $firstRound);
-      $firstRound = array_combine($names, $firstRound);
+      $firstRound = $this->ko->getRounds()->front()->column_map('name');
 
       /* assign participants */
       foreach ($participants as $slotId => $p)
       {
          $nodeName = substr($slotId, 0, -1);
          $color = substr($slotId, -1);
-         if (array_key_exists($nodeName, $firstRound))
+         if ($firstRound->keyExists($nodeName))
          {
             if ($color === 'r') $firstRound[$nodeName]->slotRed->participant = $p;
             elseif ($color === 'w') $firstRound[$nodeName]->slotWhite->participant = $p;
@@ -355,11 +353,11 @@ class TournamentStructure
        */
 
       // get references to all MatchNodes in the first round.
-      $firstRound = $this->ko->getRounds()[0];
+      $firstRound = $this->ko->getRounds()->front();
       // Initial shuffle to randomize assignment of participants to initial colors
       shuffle($participants);
       // Split into red and white slots
-      $numNodes   = count($firstRound);
+      $numNodes   = $firstRound->count();
       $redSlots   = array_slice($participants, 0, $numNodes);
       $whiteSlots = array_slice($participants, $numNodes, $numNodes);
       // Fill up both arrays with null ParticipantSlot objects until we have $numNodes objects in both arrays
@@ -371,7 +369,7 @@ class TournamentStructure
 
       // now assign the slots to each match
       $newMapping = new SlottedParticipantCollection();
-      for ($i = 0; $i < count($firstRound); $i++)
+      for ($i = 0; $i < $firstRound->count(); $i++)
       {
          $firstRound[$i]->slotRed->participant = $redSlots[$i];
          if ($redSlots[$i])
@@ -453,7 +451,7 @@ class TournamentStructure
       $numClusters       = $numAreas * ($cluster ?? 1);
       $rounds            = $this->ko->getRounds();
       $finale_rounds_cnt = ceil(log($numClusters, 2));
-      $first_finale_idx  = count($rounds) - $finale_rounds_cnt;
+      $first_finale_idx  = $rounds->count() - $finale_rounds_cnt;
 
       $areas_i = $areas->values();
 
@@ -494,27 +492,27 @@ class TournamentStructure
       else
       {
          /* not enough rounds to split into pre-finale chunks */
-         $finale_rounds_cnt = count($rounds);
+         $finale_rounds_cnt = $rounds->count();
       }
 
       /**
        * assign the finale rounds to the areas.
        */
       $area_usage = array_fill(0, $numAreas, 0); // track usage of each area
-      $final_matches = array_merge(...array_slice($rounds, -$finale_rounds_cnt)); // get all final matches from the last rounds
+      $final_matches = $rounds->slice(-$finale_rounds_cnt)->flatten(); // get all final matches from the last rounds into a single list
 
-      /** @var SoloMatch $node */
+      /** @var KoNode $node */
       foreach ($final_matches as $node)
       {
          /* find all areas with the least usage, and select one area that is also used in the previous matches, if possible */
          $min_usage = min($area_usage);
          $available_areas_idx_list = array_keys(array_filter($area_usage, fn($usage) => $usage === $min_usage));
          $available_areas = array_intersect_key($areas_i, array_flip($available_areas_idx_list));
-         if ($redArea = $node->slotRed->matchNode->area)
+         if ( ($node->slotRed instanceOf MatchWinnerSlot) && ($redArea = $node->slotRed->matchNode->area) )
          {
             $area_idx = array_search($redArea, $available_areas);
          }
-         if (($area_idx === false) && ($whiteArea = $node->slotWhite->matchNode->area))
+         if (($area_idx === false) && ($node->slotWhite instanceof MatchWinnerSlot) && ($whiteArea = $node->slotWhite->matchNode->area))
          {
             $area_idx = array_search($whiteArea, $available_areas);
          }
