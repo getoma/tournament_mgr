@@ -1,11 +1,32 @@
 {% extends 'base/layout.twig' %}
 
-{% block content %}
-<ul>
-{% for category in categories %}
-   <li><a href="{{url_for('show_category', {'tournamentId': tournament.id, 'categoryId': category.id})}}">{{category.name}}</a></li>
-{% endfor %}
-   <li><a href="{{url_for('tournament_control', {'tournamentId': tournament.id})}}">Turnierleitung</a></li>
-</ul>
+{% block nav_extension %}
+  {% if tournament is defined %}
+    <!-- Untermenü für die "Turnier-Hauptseite" -->
+    <ul class="submenu">
+      <li>
+        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
+          Turnierleitung
+        </a>
+      </li>
+    </ul>
+  {% endif %}
 {% endblock %}
+
+
+{% block content %}
+<h1>Turnierkategorien</h1>
+
+<div class="nav-cards">
+  {% for category in categories %}
+    <a href="{{ url_for('show_category', {'tournamentId': tournament.id, 'categoryId': category.id}) }}" class="card">
+      <h3>{{ category.name }}</h3>
+      <p>Turnier ansehen</p>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}
+
+
+
 

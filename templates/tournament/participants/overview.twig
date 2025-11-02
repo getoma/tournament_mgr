@@ -1,9 +1,28 @@
 {% extends 'base/layout.twig' %}
 {% import 'base/form.twig' as form %}
 
+{% block nav_extension %}
+  {% if tournament is defined %}
+    <!-- Untermenü für die "Turnier-Hauptseite" -->
+    <ul class="submenu">
+      <li>
+        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
+        Turnierleitung
+        </a>
+      <ul class="submenu-2">
+        <li class="active">Anmeldungen</li>
+      </ul>
+      </li>
+    </ul>
+
+  {% endif %}
+{% endblock %}
+
+
 {% block content %}
+<div class="form-box">
 <h2>Teilnehmer</h2>
-<table>
+<table class="participants-table">
    <thead>
       <tr>
          <th>Aktionen</th>
@@ -34,14 +53,28 @@
 <form method="POST" action="{{ url_for('update_participant_list', { 'tournamentId': tournament.id }) }}" id="participant_list_form">
    {{ form.submit('Speichern') }}
 </form>
+</div>
 
+<div class="form-box">
 <h2>Teilnehmer hinzufügen</h2>
 <form method="POST" action="{{ url_for('import_participants', { 'tournamentId': tournament.id }) }}" id="participant_add_form">
-   {{ form.textarea('participants', 'Teilnehmerliste', prev.participants ?? '',  errors.participants, attributes={'rows':10, 'cols': 30}, required=true) }}
-   {% for category in categories %}
-   {{ form.checkbox('categories[]', category.name, category.id in prev.categories, '', attributes={'value': category.id}) }}
-   {% endfor %}
-   {{ form.submit('Hinzufügen') }}
-</form>
+    
+    	<label for="participants">Teilnehmerliste</label>
+    	{{ form.textarea('participants', '', prev.participants ?? '', errors.participants, attributes={'rows':10, 'cols': 50, 'id':'participants', 'placeholder':'Vorname Nachname pro Zeile'}) }}
+	
+    <fieldset class="category-fieldset">
+      <legend>Kategorien auswählen</legend>
+      <div class="category-checkboxes">
+        {% for category in categories %}
+          <label class="category-label">
+            {{ form.checkbox('categories[]', category.name, category.id in prev.categories, '', attributes={'value': category.id}) }}
+          </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    {{ form.submit('Hinzufügen', attributes={'class':'form-btn'}) }}
+  </form>
+</div>
 
 {% endblock %}
