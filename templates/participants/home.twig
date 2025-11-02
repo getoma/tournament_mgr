@@ -7,13 +7,14 @@
     <ul class="submenu">
       <li>
         <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
-          Turnierleitung
+        Turnierleitung
         </a>
-      </li>
       <ul class="submenu-2">
-          <li class="active">Anmeldungen</li>
+        <li class="active">Anmeldungen</li>
       </ul>
+      </li>
     </ul>
+
   {% endif %}
 {% endblock %}
 
