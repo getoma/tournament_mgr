@@ -110,7 +110,7 @@ class ParticipantRepository
          unset($row['slot_name']);
 
          $participant = $this->getParticipantInstance($row);
-         if( empty($slot_name) || $result->has($slot_name) )
+         if( empty($slot_name) || $result->keyExists($slot_name) )
          {
             $result->addUnslotted($participant);
          }

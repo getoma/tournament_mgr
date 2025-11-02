@@ -19,7 +19,7 @@ class Participant extends \Tournament\Model\Base\DbItem
    }
 
    /* get the validation rules for the participant */
-   public static function validationRules(string $context = 'update'): array
+   public static function validationRules(): array
    {
       return [
          'lastname' => v::stringType()->notEmpty()->length(1, max: 255),

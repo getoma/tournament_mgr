@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Model\TournamentStructure;
+namespace Tournament\Model\TournamentStructure\Pool;
 
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
@@ -127,7 +127,7 @@ class Pool
    {
       foreach ($this->matches as $match)
       {
-         if ($matchRecords->has($match->name))
+         if ($matchRecords->keyExists($match->name))
          {
             $match->setMatchRecord($matchRecords[$match->name]);
          }

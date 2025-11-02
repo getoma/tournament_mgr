@@ -7,7 +7,7 @@ use Tournament\Model\MatchRecord\MatchPoint;
 use Tournament\Model\MatchRecord\MatchPointCollection;
 use Tournament\Model\Participant\Participant;
 
-final class Kendo implements MatchPointHandler
+final class KendoMatchPointHandler implements MatchPointHandler
 {
    private const POINTS = [
       'Men'     => 'M',

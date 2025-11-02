@@ -18,27 +18,6 @@
 {%-endif%}
 {% endmacro %}
 
-{% macro printPools(pools, route_param) %}
-<ul class="pool_list">
-  {% for pool in pools %}
-  <li>
-    <p class="pool_name">Pool {{pool.getName()}}</p>
-    <ul class="participant_list">
-      {% for slot in pool.participants %}
-      <li>{{slot.lastname}}, {{slot.firstname}}</li>
-      {% endfor %}
-    </ul>
-    <p class="fight_list">Kämpfe:</p>
-    <ul class="fight_list">
-      {% for match in pool.getMatchList() %}
-      <li>{{ _self.printMatch(match) }}</li>
-      {% endfor %}
-    </ul>
-  </li>
-  {% endfor %}
-</ul>
-{% endmacro %}
-
 {% macro printKo(ko, chunks, route_param) %}
 <ul class="fight_tree">
   {%- if chunks is defined %}

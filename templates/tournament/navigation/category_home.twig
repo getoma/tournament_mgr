@@ -1,6 +1,6 @@
 {% extends 'base/layout.twig' %}
 {% import 'base/form.twig' as form %}
-{% import 'category/partials.twig' as part %}
+{% import 'base/match.twig' as part %}
 
 {% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id } %}
 
@@ -29,7 +29,24 @@
 {% if pools is not empty %}
 <section>
 <h3>Pools</h3>
-{{ part.printPools(pools, route_parameters) }}
+<ul class="pool_list">
+  {% for pool in pools %}
+  <li>
+    <p class="pool_name">Pool {{pool.getName()}}</p>
+    <ul class="participant_list">
+      {% for slot in pool.participants %}
+      <li>{{slot.lastname}}, {{slot.firstname}}</li>
+      {% endfor %}
+    </ul>
+    <p class="fight_list">Kämpfe:</p>
+    <ul class="fight_list">
+      {% for match in pool.getMatchList() %}
+      <li>{{ part.printMatch(match) }}</li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
 </section>
 {% endif %}
 
@@ -54,6 +71,12 @@
 <form action="{{url_for('reset_category_results', route_parameters)}}" method="post">
   <button type="submit">Ergebnisse löschen</button>
 </form>
+
+{% if policy.isActionAllowed('ManageSetup') %}
+<form action="{{url_for('repopulate_category', route_parameters)}}" method="post">
+  <button type="submit">Teilnehmer neu verteilen</button>
+</form>
+{% endif %}
 
 </section>
 {% endblock %}

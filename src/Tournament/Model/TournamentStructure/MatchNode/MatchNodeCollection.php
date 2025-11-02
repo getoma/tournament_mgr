@@ -11,15 +11,6 @@ class MatchNodeCollection extends ObjectCollection
       return MatchNode::class;
    }
 
-   public function __construct(iterable $data = [])
-   {
-      /* need to duplicate parent constructor, because we disallow offsetSet in this class */
-      foreach ($data as $value)
-      {
-         parent::offsetSet(null, $value);
-      }
-   }
-
    public function getIterator(): MatchNodeIterator
    {
       return new MatchNodeIterator($this);
@@ -30,15 +21,5 @@ class MatchNodeCollection extends ObjectCollection
       $result = $this->getIterator();
       $result->goto($name);
       return $result;
-   }
-
-   public function offsetSet($offset, $value): void
-   {
-      throw new \LogicException("attempt to modify a MatchNodeCollection");
-   }
-
-   public function offsetUnset($offset): void
-   {
-      throw new \LogicException("attempt to modify a MatchNodeCollection");
    }
 }

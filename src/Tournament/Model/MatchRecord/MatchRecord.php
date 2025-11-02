@@ -38,7 +38,7 @@ class MatchRecord extends \Tournament\Model\Base\DbItem
       $this->id = $id;
    }
 
-   public static function validationRules(string $context = 'update'): array
+   public static function validationRules(): array
    {
       throw new \LogicException("attempt to get validation rules for a match record");
    }

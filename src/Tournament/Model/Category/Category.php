@@ -3,7 +3,6 @@
 namespace Tournament\Model\Category;
 
 use Respect\Validation\Validator as v;
-use Tournament\Model\MatchPointHandler\MatchPointHandler;
 
 class Category extends \Tournament\Model\Base\DbItem
 {
@@ -48,9 +47,9 @@ class Category extends \Tournament\Model\Base\DbItem
     * as it might depend on specific Category-wide configurations
     * (e.g. whether Hansokus cause Ippons)
     */
-   public function getMatchPointHandler(): MatchPointHandler
+   public function getMatchPointHandler(): \Tournament\Model\MatchPointHandler\MatchPointHandler
    {
-      return new \Tournament\Model\MatchPointHandler\Kendo();
+      return new \Tournament\Model\MatchPointHandler\KendoMatchPointHandler();
    }
 }
 
