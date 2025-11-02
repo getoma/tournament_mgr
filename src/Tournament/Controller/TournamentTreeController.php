@@ -286,7 +286,7 @@ class TournamentTreeController
 
             if ($data['action'] === 'tie')
             {
-               if (!$node->isResultModifiable())
+               if (!$node->isModifiable())
                {
                   $error = 'Gewinner kann nicht mehr neu gesetzt werden';
                }
@@ -307,7 +307,7 @@ class TournamentTreeController
 
                if( $data['action'] === 'winner' )
                {
-                  if( $node->isResultModifiable() )
+                  if( $node->isModifiable() )
                   {
                      $record->winner = $participant;
                      $record->finalized_at = new \DateTime();
@@ -318,7 +318,7 @@ class TournamentTreeController
                      $error = 'Gewinner kann nicht mehr neu gesetzt werden';
                   }
                }
-               else if( !$node->isResultModifiable() )
+               else if( !$node->isModifiable() )
                {
                   $error = "Punkt-Änderungen nicht (mehr) erlaubt.";
                }

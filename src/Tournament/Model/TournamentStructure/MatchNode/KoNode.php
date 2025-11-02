@@ -23,30 +23,15 @@ class KoNode extends MatchNode
                                 MatchSlot $slotRed,
                                 MatchSlot $slotWhite,
                                 ?Area $area = null,
-                                ?MatchRecord $matchRecord = null,
-                                private bool $result_fixed = false)
+                                ?MatchRecord $matchRecord = null)
    {
       parent::__construct($name, $slotRed, $slotWhite, $area, false, $matchRecord);
-   }
-
-   /* Match results may not be modified anymore */
-   public function isResultFixed(): bool
-   {
-      return parent::isResultFixed() || $this->result_fixed;
    }
 
    /* KO matches always need a winner to be completed */
    public function tiesAllowed(): bool
    {
       return false;
-   }
-
-   /**
-    * fix result only, but still allow modifications to points
-    */
-   public function freezeResult(): void
-   {
-      $this->result_fixed = true;
    }
 
    /**

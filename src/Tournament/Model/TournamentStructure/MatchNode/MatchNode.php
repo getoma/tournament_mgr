@@ -193,21 +193,6 @@ class MatchNode
       return $this->isDetermined() && !$this->isFrozen();
    }
 
-   /* Match result may not be modified anymore
-    * Per default, result is only fixed when fully frozen,
-    * but this may not be the case for specialized nodes
-    */
-   public function isResultFixed(): bool
-   {
-      return $this->isFrozen();
-   }
-
-   /* Match results may be modified - if we have determined the participants, and it is not fixed, yet */
-   public function isResultModifiable(): bool
-   {
-      return $this->isDetermined() && !$this->isResultFixed();
-   }
-
    /**
     * return participants - matchRecord has precedence
     */

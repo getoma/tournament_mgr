@@ -28,6 +28,6 @@ class MatchWinnerSlot extends MatchSlot
 
    public function freezeResult(): void
    {
-      $this->matchNode->freezeResult();
+      $this->matchNode->frozen = true;
    }
 }
