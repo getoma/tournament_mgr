@@ -450,54 +450,38 @@ class TournamentStructure
    private function assignKoAreas(AreaCollection $areas, ?int $cluster): void
    {
       $numAreas          = $areas->count();
-
-      if( $numAreas === 1 )
-      {
-         /* trivial case, we only have one area anyway */
-         foreach ($this->ko->getMatchList() as $m)
-         {
-            $m->area = $areas->front();
-         }
-         return;
-      }
-
       $numClusters       = $numAreas * ($cluster ?? 1);
       $rounds            = $this->ko->getRounds();
       $finale_rounds_cnt = ceil(log($numClusters, 2));
-      $first_finale_idx  = $rounds->count() - $finale_rounds_cnt;
+      $cluster_root_idx  = $rounds->count() - $finale_rounds_cnt - 1;
 
       $areas_i = $areas->values();
 
       /**
        * split and assign the tree to the defined clusters
-       * @var MatchNode $node
        */
-      if( $first_finale_idx > 0 )
+      if($cluster_root_idx >= 0 )
       {
-         foreach ($rounds[$first_finale_idx] as $i => $node)
+         /** @var KoNode $node */
+         foreach ($rounds[$cluster_root_idx] as $match_idx => $node)
          {
-            /** @var MatchWinnerSlot $slot */
-            foreach( [$node->slotRed, $node->slotWhite] as $j => $slot )
-            {
-               $match_idx = 2*$i + $j;
-               $area_idx  = $match_idx % $numAreas; // index of the area cluster, starting at 0
-               $area_chunk_idx  = intdiv($match_idx, $numAreas); // start at 1, so we can use it as a suffix
-               $area_chunk_id   = ($area_idx + 1) . "-" . ($area_chunk_idx + 1); // do NOT use area.name, or renaming areas will destroy the slot mapping
-               $area = $areas_i[$area_idx];
+            $area_idx       = $match_idx % $numAreas; // index of the area cluster, starting at 0
+            $area_chunk_idx = intdiv($match_idx, $numAreas); // start at 1, so we can use it as a suffix
+            $area_chunk_id  = ($area_idx + 1) . "-" . ($area_chunk_idx + 1); // do NOT use area.name, or renaming areas will destroy the slot mapping
+            $area           = $areas_i[$area_idx];
 
-               /* if chunks are explicitly requested, split it now accordingly
-                * otherwise, keep the tree in one big chunk, and only assign areas as if there was one cluster for each area
-                */
-               if( $cluster !== null )
+            /* if chunks are explicitly requested, split it now accordingly
+             * otherwise, keep the tree in one big chunk, and only assign areas as if there was one cluster for each area
+             */
+            if( $cluster !== null )
+            {
+               $this->chunks[$area_chunk_id] = new KoChunk($node, $area_chunk_id, $area);
+            }
+            else
+            {
+               foreach( $node->getMatchList() as $m )
                {
-                  $this->chunks[$area_chunk_id] = new KoChunk($slot->matchNode, $area_chunk_id, $area);
-               }
-               else
-               {
-                  foreach( $slot->matchNode->getMatchList() as $m )
-                  {
-                     $m->area = $area;
-                  }
+                  $m->area = $area;
                }
             }
          }
@@ -512,10 +496,10 @@ class TournamentStructure
        * assign the finale rounds to the areas.
        */
       $area_usage = array_fill(0, $numAreas, 0); // track usage of each area
-      $final_matches = $rounds->slice(-$finale_rounds_cnt)->flatten(); // get all final matches from the last rounds into a single list
+      $final_rounds = $rounds->slice(-$finale_rounds_cnt); // get all final matches from the last rounds into a single list
 
       /** @var KoNode $node */
-      foreach ($final_matches as $node)
+      foreach ($final_rounds->flatten() as $node)
       {
          /* find all areas with the least usage, and select one area that is also used in the previous matches, if possible */
          $min_usage = min($area_usage);
