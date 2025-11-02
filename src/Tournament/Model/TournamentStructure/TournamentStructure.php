@@ -427,9 +427,6 @@ class TournamentStructure
     * Assign the areas to the pools.
     * The areas are assigned in a round-robin fashion, so that each pool gets a
     * different area assigned.
-    * The$nodeName of the pool is set to the area$nodeName + "-" + pool index
-    * (e.g. "Area-1-1", "Area-2-1", "Area-1-2", "Area-2-2", ...)
-    * This way, the pools can be easily identified by their area assignment.
     */
    private function assignPoolAreas(AreaCollection $areas): void
    {
@@ -438,7 +435,7 @@ class TournamentStructure
       $areas_i = $areas->values(); // turn into indexed list
       for ($i = 0; $i < $numPools; $i++)
       {
-         $area = $areas_i[intdiv($i,$numAreas)];
+         $area = $areas_i[$i%$numAreas];
          $this->pools[$i]->setArea($area);
       }
    }
@@ -453,6 +450,17 @@ class TournamentStructure
    private function assignKoAreas(AreaCollection $areas, ?int $cluster): void
    {
       $numAreas          = $areas->count();
+
+      if( $numAreas === 1 )
+      {
+         /* trivial case, we only have one area anyway */
+         foreach ($this->ko->getMatchList() as $m)
+         {
+            $m->area = $areas->front();
+         }
+         return;
+      }
+
       $numClusters       = $numAreas * ($cluster ?? 1);
       $rounds            = $this->ko->getRounds();
       $finale_rounds_cnt = ceil(log($numClusters, 2));
@@ -462,7 +470,7 @@ class TournamentStructure
 
       /**
        * split and assign the tree to the defined clusters
-       * @var SoloMatch $node
+       * @var MatchNode $node
        */
       if( $first_finale_idx > 0 )
       {
