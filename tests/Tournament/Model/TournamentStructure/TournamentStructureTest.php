@@ -2,9 +2,13 @@
 
 use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\Participant;
+use Tournament\Model\Category\CategoryConfiguration;
 use Tournament\Model\TournamentStructure\TournamentStructure;
 
 use PHPUnit\Framework\TestCase;
+use Tournament\Model\Area\AreaCollection;
+use Tournament\Model\Category\CategoryMode;
+use Tournament\Model\Participant\ParticipantCollection;
 
 class TournamentStructureTest extends TestCase
 {
@@ -15,7 +19,7 @@ class TournamentStructureTest extends TestCase
          tournament_id: 0,
          name: "ko_test",
          mode: 'ko',
-         config: ['num_rounds' => $rounds]
+         config: new CategoryConfiguration(num_rounds: $rounds)
       );
    }
 
@@ -26,18 +30,19 @@ class TournamentStructureTest extends TestCase
          tournament_id: 0,
          name: "combined_test",
          mode: 'combined',
-         config: ['num_rounds' => $rounds, 'pool_winners' => $winners]
+         config: new CategoryConfiguration(num_rounds: $rounds, pool_winners: $winners)
       );
    }
 
-   private function participantList($num): array
+   private function participantList($num): ParticipantCollection
    {
-      return array_map( fn($i) => new Participant($i, 0, "firstname_".$i, "lastname_".$i), range(1,$num) );
+      return new ParticipantCollection( array_map( fn($i) => new Participant($i, 0, "firstname_".$i, "lastname_".$i), range(1,$num) ) );
    }
 
    public function testBuildKnockOutTree()
    {
-      $structure = new TournamentStructure($this->koCategory(3));
+      $structure = new TournamentStructure();
+      $structure->generateStructure(CategoryMode::KO, 3, AreaCollection::new());
       $this->assertNotNull($structure->ko);
       $this->assertEmpty($structure->pools);
 
@@ -50,7 +55,8 @@ class TournamentStructureTest extends TestCase
 
    public function testBYEDistributionKO()
    {
-      $structure = new TournamentStructure($this->koCategory(3));
+      $structure = new TournamentStructure();
+      $structure->generateStructure(CategoryMode::KO, 3, AreaCollection::new());
       $structure->shuffleParticipants($this->participantList(4));
       $rounds = $structure->ko->getRounds();
       $this->assertCount(4, $rounds[0]); // 4 matches in the first round
@@ -58,17 +64,18 @@ class TournamentStructureTest extends TestCase
       // All BYEs should have ended up in the white slots
       foreach ($rounds[0] as $match)
       {
-         $this->assertFalse($match->slotRed->is_bye());
-         $this->assertTrue($match->slotWhite->is_bye());
+         $this->assertFalse($match->slotRed->isBye());
+         $this->assertTrue($match->slotWhite->isBye());
       }
    }
 
    public function testBuildCombined()
    {
       /**
-       * test with 3 rounds, and 2 winners per pool --> 4 pools
+       * test with 3 rounds, and default/null(=2) winners per pool --> 4 pools
        */
-      $structure = new TournamentStructure($this->combinedCategory(3, 2));
+      $structure = new TournamentStructure();
+      $structure->generateStructure(CategoryMode::Combined, 3, AreaCollection::new(), null);
       $this->assertNotNull($structure->ko);
       $this->assertNotEmpty($structure->pools);
 
@@ -84,7 +91,8 @@ class TournamentStructureTest extends TestCase
       /**
        * test with 4 rounds, and 3 winners per pool --> 4 pools
        */
-      $structure = new TournamentStructure($this->combinedCategory(4, 3));
+      $structure = new TournamentStructure();
+      $structure->generateStructure(CategoryMode::Combined, 4, AreaCollection::new(), 3);
       $this->assertNotNull($structure->ko);
       $this->assertNotEmpty($structure->pools);
 
@@ -102,30 +110,31 @@ class TournamentStructureTest extends TestCase
    public function testCombinedParticipantDistribution()
    {
       $participants = $this->participantList(18);
-      $structure = new TournamentStructure($this->combinedCategory(3, 2));
+      $structure = new TournamentStructure();
+      $structure->generateStructure(CategoryMode::Combined, 3, AreaCollection::new(), 2);
       $assignment = $structure->shuffleParticipants($participants);
 
-      $assigned = array_map( fn($p) => $p->id, $assignment );
-      $given = array_map( fn($p) => $p->id, $participants );
+      $assigned = array_map( fn($p) => $p->id, $assignment->values() );
+      $given = array_map( fn($p) => $p->id, $participants->values() );
       $this->assertEqualsCanonicalizing($assigned, $given);
 
       // 4 pools
       $this->assertCount(4, $structure->pools);
-      $this->assertCount(5, $structure->pools[0]->participants);
-      $this->assertCount(5, $structure->pools[1]->participants);
-      $this->assertCount(4, $structure->pools[2]->participants);
-      $this->assertCount(4, $structure->pools[3]->participants);
-
-
+      $this->assertCount(5, $structure->pools[0]->getParticipantList());
+      $this->assertCount(5, $structure->pools[1]->getParticipantList());
+      $this->assertCount(4, $structure->pools[2]->getParticipantList());
+      $this->assertCount(4, $structure->pools[3]->getParticipantList());
    }
 
    public function testReproducability()
    {
-      $category = $this->combinedCategory(3, 2);
-      $structure = new TournamentStructure($category);
+      $structure = new TournamentStructure();
+      $structure->generateStructure(CategoryMode::Combined, 3, AreaCollection::new(), 2);
       $participants = $structure->shuffleParticipants($this->participantList(20));
 
-      $structure2 = new TournamentStructure($category, $participants);
+      $structure2 = new TournamentStructure();
+      $structure2->generateStructure(CategoryMode::Combined, 3, AreaCollection::new(), 2);
+      $structure2->loadParticipants($participants);
 
       $this->assertEquals($structure, $structure2);
    }

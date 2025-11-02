@@ -69,20 +69,23 @@ class TournamentStructure
       elseif ($mode === CategoryMode::Combined)
       {
          $this->pools = $this->createAutoPools($num_rounds, $pool_winners);
-         $this->ko = static::fillKO( static::createPoolKoFirstRound($this->pools) );
+         $this->ko = static::fillKO( static::createPoolKoFirstRound($this->pools, $pool_winners) );
       }
       else
       {
          throw new \DomainException('Unknown tournament mode: ' . $mode->value);
       }
 
-      if ($this->ko)
+      if( !$areas->empty() )
       {
-         $this->assignKoAreas($areas, $cluster);
-      }
-      if (!$this->pools->empty())
-      {
-         $this->assignPoolAreas($areas);
+         if ($this->ko)
+         {
+            $this->assignKoAreas($areas, $cluster);
+         }
+         if (!$this->pools->empty())
+         {
+            $this->assignPoolAreas($areas);
+         }
       }
    }
 
@@ -154,8 +157,9 @@ class TournamentStructure
     * This is done by iteratively halving the pool winner lists into smaller chunks, with a conflict resolution
     * algorithm that determines the best canditates to add to each smaller chunk via some sort of cost analysis.
     */
-   private static function createPoolKoFirstRound(PoolCollection $pools, int $winnersPerPool = 2): MatchNodeCollection
+   private static function createPoolKoFirstRound(PoolCollection $pools, ?int $winnersPerPool = null): MatchNodeCollection
    {
+      $winnersPerPool ??= 2;
       $poolsPerPlace = [array_fill(0, $winnersPerPool, $pools->keys())];
       $splitTarget = $winnersPerPool * $pools->count(); // target for splitting the pool winners into two halves
       while ($splitTarget >= 4)
@@ -409,9 +413,10 @@ class TournamentStructure
          for ($j = 0; $j < $slice_size; $j++)
          {
             $slotId = $i . "." . $j;
-            $this->pools[$i]->participants[] = $p_slice[$j];
+            $this->pools[$i]->participants[$j] = $p_slice[$j];
             $newMapping[$slotId] = $p_slice[$j];
          }
+         $this->pools[$i]->generateMatches();
          $offset += $slice_size;
       }
 
