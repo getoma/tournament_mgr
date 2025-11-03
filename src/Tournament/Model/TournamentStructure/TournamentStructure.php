@@ -69,20 +69,23 @@ class TournamentStructure
       elseif ($mode === CategoryMode::Combined)
       {
          $this->pools = $this->createAutoPools($num_rounds, $pool_winners);
-         $this->ko = static::fillKO( static::createPoolKoFirstRound($this->pools) );
+         $this->ko = static::fillKO( static::createPoolKoFirstRound($this->pools, $pool_winners) );
       }
       else
       {
          throw new \DomainException('Unknown tournament mode: ' . $mode->value);
       }
 
-      if ($this->ko)
+      if( !$areas->empty() )
       {
-         $this->assignKoAreas($areas, $cluster);
-      }
-      if (!$this->pools->empty())
-      {
-         $this->assignPoolAreas($areas);
+         if ($this->ko)
+         {
+            $this->assignKoAreas($areas, $cluster);
+         }
+         if (!$this->pools->empty())
+         {
+            $this->assignPoolAreas($areas);
+         }
       }
    }
 
@@ -154,8 +157,9 @@ class TournamentStructure
     * This is done by iteratively halving the pool winner lists into smaller chunks, with a conflict resolution
     * algorithm that determines the best canditates to add to each smaller chunk via some sort of cost analysis.
     */
-   private static function createPoolKoFirstRound(PoolCollection $pools, int $winnersPerPool = 2): MatchNodeCollection
+   private static function createPoolKoFirstRound(PoolCollection $pools, ?int $winnersPerPool = null): MatchNodeCollection
    {
+      $winnersPerPool ??= 2;
       $poolsPerPlace = [array_fill(0, $winnersPerPool, $pools->keys())];
       $splitTarget = $winnersPerPool * $pools->count(); // target for splitting the pool winners into two halves
       while ($splitTarget >= 4)
@@ -409,9 +413,10 @@ class TournamentStructure
          for ($j = 0; $j < $slice_size; $j++)
          {
             $slotId = $i . "." . $j;
-            $this->pools[$i]->participants[] = $p_slice[$j];
+            $this->pools[$i]->participants[$j] = $p_slice[$j];
             $newMapping[$slotId] = $p_slice[$j];
          }
+         $this->pools[$i]->generateMatches();
          $offset += $slice_size;
       }
 
@@ -422,9 +427,6 @@ class TournamentStructure
     * Assign the areas to the pools.
     * The areas are assigned in a round-robin fashion, so that each pool gets a
     * different area assigned.
-    * The$nodeName of the pool is set to the area$nodeName + "-" + pool index
-    * (e.g. "Area-1-1", "Area-2-1", "Area-1-2", "Area-2-2", ...)
-    * This way, the pools can be easily identified by their area assignment.
     */
    private function assignPoolAreas(AreaCollection $areas): void
    {
@@ -433,7 +435,7 @@ class TournamentStructure
       $areas_i = $areas->values(); // turn into indexed list
       for ($i = 0; $i < $numPools; $i++)
       {
-         $area = $areas_i[intdiv($i,$numAreas)];
+         $area = $areas_i[$i%$numAreas];
          $this->pools[$i]->setArea($area);
       }
    }
@@ -451,40 +453,35 @@ class TournamentStructure
       $numClusters       = $numAreas * ($cluster ?? 1);
       $rounds            = $this->ko->getRounds();
       $finale_rounds_cnt = ceil(log($numClusters, 2));
-      $first_finale_idx  = $rounds->count() - $finale_rounds_cnt;
+      $cluster_root_idx  = $rounds->count() - $finale_rounds_cnt - 1;
 
       $areas_i = $areas->values();
 
       /**
        * split and assign the tree to the defined clusters
-       * @var SoloMatch $node
        */
-      if( $first_finale_idx > 0 )
+      if($cluster_root_idx >= 0 )
       {
-         foreach ($rounds[$first_finale_idx] as $i => $node)
+         /** @var KoNode $node */
+         foreach ($rounds[$cluster_root_idx] as $match_idx => $node)
          {
-            /** @var MatchWinnerSlot $slot */
-            foreach( [$node->slotRed, $node->slotWhite] as $j => $slot )
-            {
-               $match_idx = 2*$i + $j;
-               $area_idx  = $match_idx % $numAreas; // index of the area cluster, starting at 0
-               $area_chunk_idx  = intdiv($match_idx, $numAreas); // start at 1, so we can use it as a suffix
-               $area_chunk_id   = ($area_idx + 1) . "-" . ($area_chunk_idx + 1); // do NOT use area.name, or renaming areas will destroy the slot mapping
-               $area = $areas_i[$area_idx];
+            $area_idx       = $match_idx % $numAreas; // index of the area cluster, starting at 0
+            $area_chunk_idx = intdiv($match_idx, $numAreas); // start at 1, so we can use it as a suffix
+            $area_chunk_id  = ($area_idx + 1) . "-" . ($area_chunk_idx + 1); // do NOT use area.name, or renaming areas will destroy the slot mapping
+            $area           = $areas_i[$area_idx];
 
-               /* if chunks are explicitly requested, split it now accordingly
-                * otherwise, keep the tree in one big chunk, and only assign areas as if there was one cluster for each area
-                */
-               if( $cluster !== null )
+            /* if chunks are explicitly requested, split it now accordingly
+             * otherwise, keep the tree in one big chunk, and only assign areas as if there was one cluster for each area
+             */
+            if( $cluster !== null )
+            {
+               $this->chunks[$area_chunk_id] = new KoChunk($node, $area_chunk_id, $area);
+            }
+            else
+            {
+               foreach( $node->getMatchList() as $m )
                {
-                  $this->chunks[$area_chunk_id] = new KoChunk($slot->matchNode, $area_chunk_id, $area);
-               }
-               else
-               {
-                  foreach( $slot->matchNode->getMatchList() as $m )
-                  {
-                     $m->area = $area;
-                  }
+                  $m->area = $area;
                }
             }
          }
@@ -499,10 +496,10 @@ class TournamentStructure
        * assign the finale rounds to the areas.
        */
       $area_usage = array_fill(0, $numAreas, 0); // track usage of each area
-      $final_matches = $rounds->slice(-$finale_rounds_cnt)->flatten(); // get all final matches from the last rounds into a single list
+      $final_rounds = $rounds->slice(-$finale_rounds_cnt); // get all final matches from the last rounds into a single list
 
       /** @var KoNode $node */
-      foreach ($final_matches as $node)
+      foreach ($final_rounds->flatten() as $node)
       {
          /* find all areas with the least usage, and select one area that is also used in the previous matches, if possible */
          $min_usage = min($area_usage);
