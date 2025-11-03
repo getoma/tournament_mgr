@@ -21,26 +21,46 @@
 
     <nav class="nav-actions">
       {% if current_user -%}
-        <a href="{{url_for('logout')}}">Logout</a>
-        <a href="{{url_for('user_account')}}">Account</a>
+    	<div class="user-menu">
+		<button class="user-menu-btn">
+        	👤 {{ current_user.username }} ▼
+      		</button>
+	
+      		<div class="user-menu-dropdown">
+			<a href="{{url_for('user_account')}}">Account</a>
+        		<a href="{{url_for('logout')}}">Logout</a>        		
+      		</div>
+    	</div>
       {%-else%}
-        <a href="{{url_for('login')}}">Login</a>
+        <a href="{{url_for('login')}}" class="btn-login">Login</a>
       {%-endif%}
     </nav>
   </div>
   </header>
 
   <!-- Main Content -->
-  <main>
 
-    <aside>
+<main class="main-content">
+
+      {% if current_user -%}
+  <aside>
       <nav class="tournament">
-        {% block nav_extension %}{% endblock -%}
-        {% if return_to is not empty %}<a href="{{url_for(return_to, route_args)}}">&lt;&lt;Zurück</a>{%endif%}
-        {% if tournament is defined %}<a href="{{ url_for('show_tournament', {'tournamentId': tournament.id}) }}">Turnier-Hauptseite</a>{%endif%}
-        <a href="{{url_for('home')}}">Turniere Übersicht</a>
-      </nav>
+  <ul>
+    {% if return_to is not empty %}
+      <li><a href="{{ url_for(return_to, route_args) }}">&laquo; Zurück</a></li>
+    {% endif %}
+
+    <li><a href="{{ url_for('home') }}">Turniere Übersicht</a></li>
+
+    {% if tournament is defined %}
+      <li><a href="{{ url_for('show_tournament', {'tournamentId': tournament.id}) }}">Turnierkategorien</a></li>
+    {% endif %}
+
+    {% block nav_extension %}{% endblock %}
+  </ul>
+</nav>
     </aside>
+ {%-endif%}
 
     <section id="content">
       {% block content %}{% endblock %}

@@ -1,23 +1,39 @@
 {% extends 'base/layout.twig' %}
 
+{% block nav_extension %}
+  <ul class="submenu">
+    <li><a href="{{ url_for('new_tournament_form') }}">Neues Turnier anlegen</a></li>
+  </ul>
+{% endblock %}
+
 {% block content %}
 <ul class="tournament_list_by_state">
   {% for status, tournaments in tournaments_by_state %}
-  <li>
+  <li class="status-box">
     <h2>{{status}}</h2>
-    <ul>
+    <table>
+  <thead>
+    <tr>
+      <th class="left-align">Datum</th>
+      <th class="left-align">Turnier</th>
+    </tr>
+  </thead>
+  <tbody>
       {% for tournament in tournaments %}
-      <li>
-        <a href="{{ url_for('show_tournament', { tournamentId: tournament.id }) }}">{{ tournament.name }} - {{
-          tournament.date }}</a>
-      </li>
+      <tr>
+        <td>{{ tournament.date }}</td>
+        <td>
+          <a href="{{ url_for('show_tournament', { tournamentId: tournament.id }) }}">
+            {{ tournament.name }}
+          </a>
+        </td>
+      </tr>
       {% endfor %}
-    </ul>
-  </li>
+    </tbody>
+</table>
   {%endfor%}
-  <li><a href="{{ url_for('new_tournament_form') }}">Neues Turnier anlegen</a></li>
-</ul>
 
+</ul>
 {%- if test_interfaces %}
 <p class="debug_stuff">
   <a href="{{url_for('show_db_migrate')}}">DB-Migration</a>
