@@ -417,13 +417,14 @@ class TournamentStructure
       {
          $slice_size = $minCount + (int)($i < $extra);
          $p_slice = array_slice($participants, $offset, $slice_size);
+         $pool_participants = new ParticipantCollection();
          for ($j = 0; $j < $slice_size; $j++)
          {
             $slotId = $i . "." . $j;
-            $this->pools[$i]->participants[$j] = $p_slice[$j];
+            $pool_participants[] = $p_slice[$j];
             $newMapping[$slotId] = $p_slice[$j];
          }
-         $this->pools[$i]->generateMatches();
+         $this->pools[$i]->setParticipants($pool_participants);
          $offset += $slice_size;
       }
 
