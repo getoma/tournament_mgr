@@ -157,12 +157,22 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 
    public function any(callable $callback): bool
    {
-      return array_any($this->elements, $callback);
+      /* array_any only available from php8.4, and we need to be 8.3-compatible for now */
+      foreach ($this->elements as $k => $e)
+      {
+         if ($callback($e, $k)) return true;
+      }
+      return false;
    }
 
    public function all(callable $callback): bool
    {
-      return array_all($this->elements, $callback);
+      /* array_all only available from php8.4, and we need to be 8.3-compatible for now */
+      foreach( $this->elements as $k => $e)
+      {
+         if( !$callback($e, $k) ) return false;
+      }
+      return true;
    }
 
    // support empty() on object
