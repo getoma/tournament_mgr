@@ -51,5 +51,13 @@ class Category extends \Tournament\Model\Base\DbItem
    {
       return new \Tournament\Model\MatchPointHandler\KendoMatchPointHandler();
    }
+
+   /**
+    * same for PoolRankHandler
+    */
+   public function getPoolRankHandler(): \Tournament\Model\PoolRankHandler\PoolRankHandler
+   {
+      return new \Tournament\Model\PoolRankHandler\GenericPoolRankHandler($this->getMatchPointHandler());
+   }
 }
 

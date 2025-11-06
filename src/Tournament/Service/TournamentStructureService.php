@@ -58,6 +58,7 @@ class TournamentStructureService
          $category->mode,
          $category->config->num_rounds,
          $areas,
+         $category->getPoolRankHandler(),
          $category->config->pool_winners,
          $category->config->area_cluster
       );
