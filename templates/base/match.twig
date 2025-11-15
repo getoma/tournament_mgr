@@ -31,7 +31,7 @@
     {% for match in matchList -%}
     <tr>
       <td class="match_name"><a
-          href="{{url_for(route_name, route_parameters|merge({'matchName': match.name}))}}">{{match.name}}</a></td>
+          href="{{url_for(route_name, route_parameters|merge({'matchName': match.name}))}}">{{match.getLocalId()}}</a></td>
       <td class="participant_name redside">{{_self.printSlot(match.slotRed, match.getWinner())}}</td>
       <td class="participant_name whiteside">{{_self.printSlot(match.slotWhite, match.getWinner())}}</td>
     </tr>

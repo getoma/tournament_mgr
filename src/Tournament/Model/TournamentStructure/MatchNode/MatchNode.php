@@ -35,6 +35,15 @@ class MatchNode
    }
 
    /**
+    * extract the "local fight number" from the name
+    * This is supposed to be the number at the end of the name
+    */
+   public function getLocalId(): ?int
+   {
+      return preg_match('/\d+$/', $this->name, $matches)? $matches[0] : null;
+   }
+
+   /**
     * set the match record associated with this match node
     * verify that the match record is consistent with this node
     * @param MatchRecord|null $matchRecord

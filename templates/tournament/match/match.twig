@@ -51,7 +51,10 @@
 </nav>
 {%- endif %}
 
-<h2>Kampf {{node.name}}</h2>
+<h2>
+  {%- if pool is not empty %}Pool {{pool}} - {%endif-%}
+  Kampf {{node.getLocalId()}}
+</h2>
 <table class="match_table">
   <thead>
     <tr>
@@ -95,6 +98,12 @@
   {% endif -%}
   </tbody>
 </table>
+
+{% if pool is not empty and node.isTieBreak() and not node.isFrozen() -%}
+<form method="post" action="{{url_for('delete_pool_tiebreak', route_parameters)}}">
+  <p><button {%- if not node.getMatchRecord().points.empty()%} disabled{%endif%}>Kampf löschen</button></p>
+</form>
+{% endif -%}
 
 {% if error is not empty %}
 <p class="error">{{error}}</p>

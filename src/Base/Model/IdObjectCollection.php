@@ -8,32 +8,39 @@ namespace Base\Model;
  */
 abstract class IdObjectCollection extends ObjectCollection
 {
+   static protected function get_id($value): mixed
+   {
+      return $value->id;
+   }
+
    public function offsetSet($offset, $value): void
    {
-      if ($offset === null || (int)$offset === $value->id)
+      $value_id = static::get_id($value);
+      if ( ($offset === null) || ($offset == $value_id) )
       {
-         parent::offsetSet($value->id, $value);
+         parent::offsetSet($value_id, $value);
       }
       else
       {
-         throw new \OutOfBoundsException("invalid offset: must be identical to object id, got " . $offset . " vs " . $value->id);
+         throw new \OutOfBoundsException("invalid offset: must be identical to object id, got " . $offset . " vs " . $value_id);
       }
    }
 
    public function search($value): mixed
    {
-      $found = $this->elements[$value->id] ?? null;
-      return $value === $found? $value->id : false;
+      $value_id = static::get_id($value);
+      $found = $this->elements[$value_id] ?? null;
+      return $value === $found? $value_id : false;
    }
 
    public function contains($value): bool
    {
-      return $value === ($this->elements[$value->id]??null);
+      return $value === ($this->elements[static::get_id($value)]??null);
    }
 
    public function unshift($value): void
    {
-      $this->elements = [$value->id => $value] + $this->elements;
+      $this->elements = [static::get_id($value) => $value] + $this->elements;
    }
 
    public function reverse(): static

@@ -135,6 +135,54 @@ class TournamentTreeController
    }
 
    /**
+    * remove a pool tie break match again
+    */
+   public function deletePoolTieBreak(Request $request, Response $response, array $args): Response
+   {
+      /* load the structure and find the current node/match */
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+
+      /** @var Pool $pool */
+      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
+      /* get the ordered list of matches in the current pool */
+      $nav_match_list = $pool->getMatchList();
+      /* get the current match node */
+      $node = $nav_match_list->find($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+
+      /* delete match record data, only if this is a tie break match, pool is not frozen, and there are no points registered, yet */
+      if( $node->isTieBreak() && !$node->isFrozen() && $node->getMatchRecord()->points->empty() )
+      {
+         if( !$this->m_repo->deleteMatchRecordById($node->getMatchRecord()->id) )
+         {
+            $error = "match data deletion failed!";
+         }
+      }
+      else
+      {
+         $error = "Kampf kann nicht gelöscht werden - " . match (false)
+         {
+            $node->isTieBreak() => "Kein Entscheidungskampf",
+            !$node->isFrozen()  => "Pool-Ergebnisse bereits eingefroren",
+            $node->getMatchRecord()->points->empty() => "Es wurden bereits Punkte erfasst",
+            default => "UNBEKANNTER GRUND"
+         };
+      }
+
+      /* forward to output page */
+      if ($error)
+      {
+         return $this->showMatch($request, $response, $args, $structure, $error);
+      }
+      else
+      {
+         return $response->withHeader(
+            'Location',
+            RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_pool', $args)
+         )->withStatus(302);
+      }
+   }
+
+   /**
     * RESET all match records for a specific category - TEMPORARY, FOR TESTING PURPOSES ONLY
     */
    public function resetMatchRecords(Request $request, Response $response, array $args): Response

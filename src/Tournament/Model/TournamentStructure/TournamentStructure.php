@@ -148,7 +148,7 @@ class TournamentStructure
       $winnersPerPool ??= 2;
       $numSlots = pow(2, $numRounds);
       $numPools = pow(2, floor(log($numSlots / $winnersPerPool, 2))); // number of pools, must be a power of 2, rest filled up with BYEs
-      return PoolCollection::new( array_map(fn($i) => new Pool($i, $poolRankHdl), range(0, $numPools - 1)) );
+      return PoolCollection::new( array_map(fn($i) => new Pool($i+1, $poolRankHdl), range(0, $numPools - 1)) );
    }
 
    /**
@@ -413,18 +413,19 @@ class TournamentStructure
       $newMapping = new SlottedParticipantCollection();
       shuffle($participants);
       $offset = 0;
-      for ($i = 0; $i < $poolCount; $i++)
+      $slice_idx = 0;
+      foreach ($this->pools as $pool)
       {
-         $slice_size = $minCount + (int)($i < $extra);
+         $slice_size = $minCount + (int)($slice_idx++ < $extra);
          $p_slice = array_slice($participants, $offset, $slice_size);
          $pool_participants = new ParticipantCollection();
          for ($j = 0; $j < $slice_size; $j++)
          {
-            $slotId = $i . "." . $j;
+            $slotId = $pool->getName() . "." . $j;
             $pool_participants[] = $p_slice[$j];
             $newMapping[$slotId] = $p_slice[$j];
          }
-         $this->pools[$i]->setParticipants($pool_participants);
+         $pool->setParticipants($pool_participants);
          $offset += $slice_size;
       }
 
@@ -439,12 +440,12 @@ class TournamentStructure
    private function assignPoolAreas(AreaCollection $areas): void
    {
       $numAreas = $areas->count();
-      $numPools = $this->pools->count();
-      $areas_i = $areas->values(); // turn into indexed list
-      for ($i = 0; $i < $numPools; $i++)
+      $areas_i  = $areas->values(); // turn into indexed list
+      $area_idx = 0;
+      foreach ($this->pools as $pool)
       {
-         $area = $areas_i[$i%$numAreas];
-         $this->pools[$i]->setArea($area);
+         $area = $areas_i[$area_idx++ % $numAreas];
+         $pool->setArea($area);
       }
    }
 

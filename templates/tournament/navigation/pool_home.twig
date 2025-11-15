@@ -13,7 +13,7 @@
 {% block content %}
 
 <section class="pool_match_list">
-  <h2>Kämpfe</h2>
+  <h2>Kämpfe - Pool {{pool.getName()}}</h2>
   <nav id="pool_match_nav" class="match_nav">
     {{part.printMatchLinks(pool.getMatchList(), route_parameters, 'show_pool_match')}}
   </nav>

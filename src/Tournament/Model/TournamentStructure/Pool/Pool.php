@@ -265,6 +265,6 @@ class Pool
     */
    private function nameFor(int $matchId): string
    {
-      return $this->name . "." . $matchId;
+      return $this->name . "." . ($matchId+1);
    }
 }

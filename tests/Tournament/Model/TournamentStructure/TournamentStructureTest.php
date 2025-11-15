@@ -122,10 +122,10 @@ class TournamentStructureTest extends TestCase
 
       // 4 pools
       $this->assertCount(4, $structure->pools);
-      $this->assertCount(5, $structure->pools[0]->getParticipants());
-      $this->assertCount(5, $structure->pools[1]->getParticipants());
-      $this->assertCount(4, $structure->pools[2]->getParticipants());
-      $this->assertCount(4, $structure->pools[3]->getParticipants());
+      $this->assertCount(5, $structure->pools['1']->getParticipants());
+      $this->assertCount(5, $structure->pools['2']->getParticipants());
+      $this->assertCount(4, $structure->pools['3']->getParticipants());
+      $this->assertCount(4, $structure->pools['4']->getParticipants());
    }
 
    /**
@@ -142,10 +142,11 @@ class TournamentStructureTest extends TestCase
          $structure->shuffleParticipants($this->participantList(20));
 
          /* pools: are assigned alternating */
-         foreach( $structure->pools as $i => $pool )
+         $i = 0;
+         foreach( $structure->pools as $pool )
          {
             /** @var Pool $pool */
-            $area = $areas_i[$i%$numAreas];
+            $area = $areas_i[$i++%$numAreas];
             $this->assertSame($area, $pool->getArea());
             foreach ($pool->getMatchList() as $node)
             {
