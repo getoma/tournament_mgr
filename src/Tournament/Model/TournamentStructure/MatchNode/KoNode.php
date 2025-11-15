@@ -8,6 +8,8 @@ use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
 
+use Tournament\Model\MatchPointHandler\MatchPointHandler;
+
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
@@ -22,10 +24,11 @@ class KoNode extends MatchNode
    public function __construct( string $name,
                                 MatchSlot $slotRed,
                                 MatchSlot $slotWhite,
+                                MatchPointHandler $mpHdl, // MatchPoint Handler to parse match points
                                 ?Area $area = null,
                                 ?MatchRecord $matchRecord = null)
    {
-      parent::__construct($name, $slotRed, $slotWhite, $area, false, $matchRecord);
+      parent::__construct($name, $slotRed, $slotWhite, $mpHdl, $area, false, $matchRecord);
    }
 
    /* KO matches always need a winner to be completed */

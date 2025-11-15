@@ -17,7 +17,7 @@ class KoNodeTest extends MatchNodeTest
    protected function setUp(): void
    {
       parent::setUp();
-      $this->node = new KoNode("test", $this->redSlot, $this->whiteSlot);
+      $this->node = new KoNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl);
    }
 
       /**
@@ -30,7 +30,7 @@ class KoNodeTest extends MatchNodeTest
       $this->redSet = true;
       $this->whiteSet = true;
 
-      $normal = new KoNode("test", $this->redSlot, $this->whiteSlot);
+      $normal = new KoNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl);
       $this->assertFalse($normal->tiesAllowed());
 
       $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),

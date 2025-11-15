@@ -52,16 +52,9 @@ class TournamentStructureService
     */
    private function initialize(Category $category): TournamentStructure
    {
-      $struc = new TournamentStructure();
       $areas = $this->tournamentRepo->getAreasByTournamentId($category->tournament_id);
-      $struc->generateStructure(
-         $category->mode,
-         $category->config->num_rounds,
-         $areas,
-         $category->getPoolRankHandler(),
-         $category->config->pool_winners,
-         $category->config->area_cluster
-      );
+      $struc = new TournamentStructure($category, $areas);
+      $struc->generateStructure();
       return $struc;
    }
 

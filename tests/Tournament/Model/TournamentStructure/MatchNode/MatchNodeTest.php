@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
+use Tournament\Model\MatchPointHandler\MatchPointHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
@@ -30,6 +31,9 @@ class MatchNodeTest extends TestCase
    /* the actual module-under-test */
    protected MatchNode $node;
 
+   /* match point handler for the match node */
+   protected MatchPointHandler $mpHdl;
+
    protected function setUp(): void
    {
       $this->redParticipant = $this->createStub(Participant::class);
@@ -45,7 +49,9 @@ class MatchNodeTest extends TestCase
       $this->whiteSlot->method('isBye')->WillReturnCallback(fn() => $this->whiteBye);
       $this->whiteSlot->method('getParticipant')->willReturnCallback(fn() => $this->whiteSet ? $this->whiteParticipant : null);
 
-      $this->node = new MatchNode("test", $this->redSlot, $this->whiteSlot);
+      $this->mpHdl = $this->createStub(MatchPointHandler::class);
+
+      $this->node = new MatchNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl);
    }
 
    private function generateTruthTable(int $num): \Generator
@@ -225,7 +231,7 @@ class MatchNodeTest extends TestCase
       $this->redSet = true;
       $this->whiteSet = true;
 
-      $normal = new MatchNode("test", $this->redSlot, $this->whiteSlot, tie_break: false);
+      $normal = new MatchNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl, tie_break: false);
       $this->assertTrue($normal->tiesAllowed());
 
       $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
@@ -234,7 +240,7 @@ class MatchNodeTest extends TestCase
       $normal->setMatchRecord($record);
       $this->assertFalse($normal->tiesAllowed());
 
-      $tie_break = new MatchNode("test", $this->redSlot, $this->whiteSlot, tie_break: true);
+      $tie_break = new MatchNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl, tie_break: true);
       $this->assertFalse($tie_break->tiesAllowed());
       $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
                      $this->redParticipant, $this->whiteParticipant,

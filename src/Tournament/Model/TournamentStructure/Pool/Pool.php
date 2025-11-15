@@ -12,6 +12,7 @@ use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\PoolRankHandler\PoolRankCollection;
 use Tournament\Model\PoolRankHandler\PoolRankHandler;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
+use Tournament\Model\TournamentStructure\TournamentStructureFactory;
 
 class Pool
 {
@@ -22,8 +23,9 @@ class Pool
    public function __construct(
       private string $name,
       private PoolRankHandler $rankHandler,
+      private TournamentStructureFactory $nodeFactory,
       private int $num_winners = 2,
-      private ?Area $area = null
+      private ?Area $area = null,
    )
    {
       $this->matches = MatchNodeCollection::new();
@@ -167,7 +169,7 @@ class Pool
       $red     = new ParticipantSlot($red->participant);
       $white   = new ParticipantSlot($white->participant);
       $matchId = $this->matches->count();
-      $node = new MatchNode($this->nameFor($matchId), $red, $white, $this->area, true);
+      $node = $this->nodeFactory->createMatchNode($this->nameFor($matchId), $red, $white, $this->area, true);
       $this->matches[] = $node;
       return $node;
    }
@@ -199,7 +201,7 @@ class Pool
                $red     = new ParticipantSlot($p_red);
                $white   = new ParticipantSlot($p_white);
                $matchId = $this->matches->count();
-               $this->matches[] = new MatchNode($this->nameFor($matchId), $red, $white, $this->area);
+               $this->matches[] = $this->nodeFactory->createMatchNode($this->nameFor($matchId), $red, $white, $this->area);
             }
          }
 
@@ -238,7 +240,7 @@ class Pool
          {
             $red     = new ParticipantSlot($p_red);
             $white   = new ParticipantSlot($p_white);
-            $newNode = new MatchNode($matchName, $red, $white, $this->area);
+            $newNode = $this->nodeFactory->createMatchNode($matchName, $red, $white, $this->area);
             $newNode->setMatchRecord($record);
             $this->matches[] = $newNode;
          }

@@ -6,6 +6,7 @@ use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\MatchRecord\MatchRecord;
+use Tournament\Model\MatchPointHandler\MatchPointHandler;
 
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 
@@ -20,10 +21,11 @@ class MatchNode
       public string $name,
       public readonly MatchSlot $slotRed,    // slot contents may be modified, but the slot itself is fixed
       public readonly MatchSlot $slotWhite,  // slot contents may be modified, but the slot itself is fixed
+      protected readonly MatchPointHandler $mpHdl, // MatchPoint Handler to parse match points
       public  ?Area $area = null,
       private bool $tie_break = false,
       private ?MatchRecord $matchRecord = null,
-      public bool $frozen = false           // wether match record data is frozen for this node or not
+      public bool $frozen = false            // whether match record data is frozen for this node or not
    )
    {
       if( $this->slotRed === $this->slotWhite )
