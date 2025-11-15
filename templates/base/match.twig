@@ -23,8 +23,8 @@
   <thead>
     <tr>
       <th>Kampf</th>
-      <th class="redside">Kämpfer Rot</th>
-      <th class="whiteside">Kämpfer Weiß</th>
+      <th class="redside" colspan="2">Kämpfer Rot</th>
+      <th class="whiteside" colspan="2">Kämpfer Weiß</th>
     </tr>
   </thead>
   <tbody>
@@ -33,6 +33,8 @@
       <td class="match_name"><a
           href="{{url_for(route_name, route_parameters|merge({'matchName': match.name}))}}">{{match.getLocalId()}}</a></td>
       <td class="participant_name redside">{{_self.printSlot(match.slotRed, match.getWinner())}}</td>
+      <td class="score redside">{{match.getRedPoints()}}</td>
+      <td class="score whiteside">{{match.getWhitePoints()}}</td>
       <td class="participant_name whiteside">{{_self.printSlot(match.slotWhite, match.getWinner())}}</td>
     </tr>
     {% endfor -%}

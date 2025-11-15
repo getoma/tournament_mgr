@@ -220,6 +220,28 @@ class MatchNode
       return $this->matchRecord?->whiteParticipant ?: $this->slotWhite->getParticipant();
    }
 
+   /**
+    * get number of points for the red participant
+    * @return null if match not started, yet
+    * @return int  number of points this participant has if match was started already
+    */
+   public function getRedPoints(): ?int
+   {
+      if( !$this->matchRecord ) return null;
+      return $this->mpHdl->getPoints($this->matchRecord->points)->for($this->matchRecord->redParticipant)->count();
+   }
+
+   /**
+    * get number of points for the white participant
+    * @return null if match not started, yet
+    * @return int  number of points this participant has if match was started already
+    */
+   public function getWhitePoints(): ?int
+   {
+      if (!$this->matchRecord) return null;
+      return $this->mpHdl->getPoints($this->matchRecord->points)->for($this->matchRecord->whiteParticipant)->count();
+   }
+
 
    /**
     * get the winner of this match, or null if not decided, yet
