@@ -1,54 +1,80 @@
 ul.pool_list {
-   padding: 10px;
-   display: flex;
-   flex-wrap: wrap;
+    padding: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+ul.pool_list > li {
+    list-style-type: none;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #d3d3d3;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    padding: 15px;
+    width: 320px;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+        "name"
+        "participants"
+        "fights";
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 ul.pool_list p.pool_name {
-   grid-area: name
+    grid-area: name;
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+    padding-bottom: 5px;
+    text-align: center;
+    border-bottom: 2px solid #3e8ed0;
+    color: #3e8ed0;
 }
 
 ul.pool_list ul.participant_list {
-   grid-area: participants
+    grid-area: participants;
+    padding: 0;
+    margin: 0 0 15px 0;
+    list-style: none;
+    border-right: none;
+}
+
+ul.pool_list ul.participant_list li {
+    background: #f4faff;
+    border: 1px solid #dbe9f5;
+    padding: 6px 10px;
+    margin-bottom: 5px;
+    border-radius: 6px;
 }
 
 ul.pool_list p.fight_list {
-   grid-area: fights_h;
-   display: none
+    grid-area: fights_h;
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #444;
 }
 
 ul.pool_list ul.fight_list {
-   grid-area: fights
+    grid-area: fights;
+    padding: 0;
+    margin: 0;
+    list-style: none;
 }
 
-ul.pool_list>li {
-   margin: 5px;
-   list-style-type: none;
-   border: 1px solid black;
-   padding: 5px;
-   display: grid;
-   grid-template-columns: auto auto;
-   grid-template-areas:
-      'name name'
-      'participants fights'
-}
-
-ul.pool_list p
-
-   {
-   margin: 5px;
-   text-align: center;
-   border-bottom: 1px solid black;
-}
-
-ul.pool_list ul {
-   padding: 0 5px;
-   margin: none;
-   list-style-type: none;
-}
-
-ul.pool_list ul.participant_list {
-   border-right: 1px solid black
+ul.pool_list ul.fight_list li {
+    background: #fff8f4;
+    border: 1px solid #f1d7c7;
+    padding: 6px 10px;
+    margin-bottom: 5px;
+    border-radius: 6px;
 }
 
 ul.fight_tree {
@@ -87,9 +113,14 @@ ul.fight_round {
 }
 
 ul.fight_round li {
-   margin: 5px 0;
-   padding: 0.5ex;
-   border: 1px solid black;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #d3d3d3;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    padding: 12px;
+    min-width: 180px;
+    text-align: center;
+    margin: 10px 0;
 }
 
 .fight_participant em

@@ -153,7 +153,7 @@
 {% else -%}
 <ul id="category_list">
   {% for category in categories -%}
-  <li><a href="{{url_for('show_category', {'tournamentId': tournament.id, 'categoryId': category.id})}}">{{category.name}} ({{category.mode.value}})</a></li>
+  <li><a href="{{url_for('show_category_home', {'tournamentId': tournament.id, 'categoryId': category.id})}}">{{category.name}} ({{category.mode.value}})</a></li>
   {% endfor -%}
 </ul>
 {% endif -%}
