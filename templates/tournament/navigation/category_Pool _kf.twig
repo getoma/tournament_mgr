@@ -8,7 +8,6 @@
   {% if tournament is defined %}
     <!-- Untermenü für die "Turnier-Hauptseite" -->
     <ul class="submenu">
-      <li class="active">{{category.name}}</li>
       <li>
         <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
           Turnierleitung
@@ -25,18 +24,32 @@
 
 
 {% block content %}
-<div class="nav-cards">
+<section>
+<h2>{{ category.name }} </h2>
 {% if pools is not empty %}
-  <a href="{{ url_for('show_category_pools', { 'tournamentId': tournament.id, 'categoryId': category.id }) }}" class="card">
-    <h3>Pools</h3>
-  </a>
+<section>
+<h3>Pools</h3>
+
+<ul class="pool_list">
+  {% for pool in pools %}
   
+     {% set firstMatch = pool.matches|first %}
+    {% if firstMatch is not null %}
+        Area: {{ firstMatch.area.name }}
+    {% endif %}
+  <li>
+    <p class="pool_name">Pool {{pool.getName()}}</p>
+    <ul class="participant_list">
+      {% for slot in pool.participants %}
+      <li>{{slot.lastname}}, {{slot.firstname}}</li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
+</section>
 {% endif %}
-{% if ko is defined %}
-  <a href="{{ url_for('show_category_ko', { 'tournamentId': tournament.id, 'categoryId': category.id }) }}" class="card">
-    <h3>KO-Baum</h3>
-  </a>
-  {% endif %}
-</div>
+
+</section>
 {% endblock %}
 

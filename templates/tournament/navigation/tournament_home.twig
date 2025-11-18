@@ -19,7 +19,7 @@
 
 <div class="nav-cards">
   {% for category in categories %}
-    <a href="{{ url_for('show_category', {'tournamentId': tournament.id, 'categoryId': category.id}) }}" class="card">
+    <a href="{{ url_for('show_category_home', {'tournamentId': tournament.id, 'categoryId': category.id}) }}" class="card">
       <h3>{{ category.name }}</h3>
       <p>Turnier ansehen</p>
     </a>

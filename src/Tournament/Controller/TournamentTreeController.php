@@ -37,9 +37,45 @@ class TournamentTreeController
    }
 
    /**
-    * Show a specific category
+    * Show a specific category Pool
     */
-   public function showCategoryTree(Request $request, Response $response, array $args): Response
+   public function showCategoryPool(Request $request, Response $response, array $args): Response
+   {
+      // Load the tournament structure for this category
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+
+      return $this->view->render($response, 'tournament/navigation/category_Pool.twig', [
+         'pools'      => $structure->pools,
+         'unmapped_participants' => $structure->unmapped_participants,
+      ]);
+   }
+
+   /**
+    * Show a specific category KO
+    */
+   public function showCategorytree(Request $request, Response $response, array $args): Response
+   {
+      // Load the tournament structure for this category
+      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+
+      /* filter pool/ko display if we have a very large structure */
+      if ($structure->ko)
+      {
+         $ko = $structure->ko->getRounds(- ($structure->finale_rounds_cnt ?? 0));
+      }
+
+      return $this->view->render($response, 'tournament/navigation/category_KO.twig', [
+         'pools'      => $structure->pools,
+         'ko'         => $ko,
+         'chunks'     => $structure->chunks,
+         'unmapped_participants' => $structure->unmapped_participants,
+      ]);
+   }
+
+   /**
+    * Show a specific category home
+    */
+   public function showCategoryHome(Request $request, Response $response, array $args): Response
    {
       // Load the tournament structure for this category
       $structure = $this->structureLoadService->load($request->getAttribute('category'));
@@ -82,7 +118,7 @@ class TournamentTreeController
       $this->structureLoadService->resetMatchRecords($category);
       return $response->withHeader(
          'Location',
-         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
+         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category_home', $args)
       )->withStatus(302);
    }
 
@@ -95,7 +131,7 @@ class TournamentTreeController
       $this->structureLoadService->populate($category);
       return $response->withHeader(
          'Location',
-         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
+         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category_home', $args)
       )->withStatus(302);
    }
 

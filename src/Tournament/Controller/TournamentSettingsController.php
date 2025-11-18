@@ -286,7 +286,7 @@ class TournamentSettingsController
          'config' => $category->config,
          'errors' => $errors,
          'prev' => $prev,
-         'return_to' => $data['return_to'] ?? 'show_category',
+         'return_to' => $data['return_to'] ?? 'show_category_home',
          'category_modes' => CategoryMode::cases(),
       ]);
    }

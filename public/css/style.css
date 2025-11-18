@@ -561,3 +561,16 @@ input[type="checkbox"] {
   background: #e0e0e0;
 }
 
+.area-btn {
+    padding: 10px 18px;
+    margin: 5px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.area-btn:hover {
+    background-color: #005ec4;
+}

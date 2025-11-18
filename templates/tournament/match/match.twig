@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{{url_for('home')}}css/match.css">
 {% endblock -%}
 
-{% block nav_extension %}<a href="{{url_for('show_category', route_parameters)}}">Zurück...</a>{% endblock %}
+{% block nav_extension %}<a href="{{url_for('show_category_home', route_parameters)}}">Zurück...</a>{% endblock %}
 
 {% macro printControls(node,participant,possible_pts,undo,route_parameters) -%}
 <form method="post" action="{{url_for('update_ko_match', route_parameters)}}" class="match_control">

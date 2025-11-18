@@ -1,0 +1,79 @@
+{% extends 'base/layout.twig' %}
+{% import 'base/form.twig' as form %}
+{% import 'base/match.twig' as part %}
+
+{% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id } %}
+
+{% block nav_extension %}
+  {% if tournament is defined %}
+    <!-- Untermenü für die "Turnier-Hauptseite" -->
+    <ul class="submenu">
+      <li class="active">{{category.name}}</li>
+      <ul class="submenu">
+      <li class="active">Pools</li>
+      </ul>
+      <li>
+        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
+          Turnierleitung
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('show_category_cfg', route_parameters) }}">
+          Kategorie konfigurieren
+        </a>
+      </li>
+    </ul>
+  {% endif %}
+{% endblock %}
+
+
+{% block content %}
+<section>
+<h2>{{ category.name }} </h2>
+{% if pools is not empty %}
+<section>
+<h3>Pools</h3>
+
+<section class="area_buttons">
+    {% set seenAreaIds = [] %} {# Array für bereits ausgegebene Area-IDs #}
+
+    {% for pool in pools %}
+        {% for match in pool.matches %}
+            {% if match.area is defined %}
+                {% set areaId = match.area.id %}
+                {% set areaName = match.area.name|trim %}
+
+                {# Nur ausgeben, wenn die ID noch nicht im Array ist #}
+                {% if areaId not in seenAreaIds %}
+                    <button class="area-btn">{{ areaName }}</button>
+
+                    {# ID als gesehen markieren #}
+                    {% set seenAreaIds = seenAreaIds | merge([areaId]) %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+</section>
+
+<ul class="pool_list">
+  {% for pool in pools %}
+  
+      {% if pool.area is not empty %}
+        Area: {{ pool.area.name }}
+      {% endif %}
+  <li>
+    <p class="pool_name">Pool {{pool.getName()}}</p>
+    <ul class="participant_list">
+      {% for slot in pool.participants %}
+      <li>{{slot.lastname}}, {{slot.firstname}}</li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
+</section>
+{% endif %}
+
+</section>
+{% endblock %}
+
