@@ -29,6 +29,9 @@
   </thead>
   <tbody>
     {% for match in matchList -%}
+    {% if match.isTieBreak() -%}
+    <tr class="label_row"><td colspan="5">Entscheidungskampf</td></tr>
+    {%- endif %}
     <tr>
       <td class="match_name"><a
           href="{{url_for(route_name, route_parameters|merge({'matchName': match.name}))}}">{{match.getLocalId()}}</a></td>
