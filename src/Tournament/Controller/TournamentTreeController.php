@@ -109,12 +109,16 @@ class TournamentTreeController
       }
       else
       {
-         /* generate the new tie break match and register it in the database */
-         $new_node = $pool->addTieBreakMatch();
-         $args['matchName'] = $new_node->name;
-         if (!$this->m_repo->saveMatchRecord($new_node->provideMatchRecord($category)))
+         /* generate the new tie break matches and register them in the database */
+         $nodes = $pool->addDecisionMatches();
+         foreach( $nodes as $node )
          {
-            $error = 'Match-Generierung ist fehlgeschlagen :-(';
+            $record = $node->provideMatchRecord($category);
+            $record->tie_break = $nodes->count() === 1; // if only a single decision match - make it a tie break match.
+            if (!$this->m_repo->saveMatchRecord($record))
+            {
+               $error = 'Match-Generierung ist fehlgeschlagen :-(';
+            }
          }
       }
 
@@ -129,7 +133,7 @@ class TournamentTreeController
       {
          return $response->withHeader(
             'Location',
-            RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_pool_match', $args)
+            RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_pool', $args)
          )->withStatus(302);
       }
    }

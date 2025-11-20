@@ -2,6 +2,8 @@
 
 namespace Tournament\Model\TournamentStructure\Pool;
 
+use LogicException;
+use RuntimeException;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\Participant\Participant;
@@ -10,6 +12,7 @@ use Tournament\Model\MatchPairingHandler\MatchPairingHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\PoolRankHandler\PoolRank;
 use Tournament\Model\PoolRankHandler\PoolRankCollection;
 use Tournament\Model\PoolRankHandler\PoolRankHandler;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
@@ -84,7 +87,8 @@ class Pool
    public function setParticipants(ParticipantCollection $p): void
    {
       $this->participants = $p;
-      $this->generateMatches();
+      $this->matches = MatchNodeCollection::new();
+      $this->addNewMatchesFor($p);
    }
 
    public function getMatchList(): MatchNodeCollection
@@ -145,50 +149,44 @@ class Pool
    /**
     * add a tie break match
     */
-   public function addTieBreakMatch(): MatchNode
+   public function addDecisionMatches(): MatchNodeCollection
    {
-      /* deduct the participants that will need a tie break - the first two participants with the same current rank */
-      list($red, $white) = [null,null];
+      if( !$this->needsTieBreakMatch() ) throw new RuntimeException("no tie break matches needed right now, refusing");
+
+      /** @var ParticipantCollection[] $per_rank - all participants sorted by rank into collections */
+      $per_rank = [];
+      /** @var PoolRank $rank_entry */
       foreach( $this->getRanking() as $rank_entry )
       {
-         if( !isset($red) || $red->rank !== $rank_entry->rank )
-         {
-            $red = $rank_entry;
-         }
-         else
-         {
-            $white = $rank_entry;
-            break;
-         }
+         $per_rank[$rank_entry->rank] ??= ParticipantCollection::new();
+         $per_rank[$rank_entry->rank][] = $rank_entry->participant;
       }
 
-      if( !isset($white) )
-      {
-         throw new \RuntimeException("no tie break participants could be identified.");
-      }
+      /* find which rank currently has more than one participant */
+      $col = array_find($per_rank, fn($c) => $c->count() > 1 );
 
-      /* create a new MatchNode for them */
-      $red     = new ParticipantSlot($red->participant);
-      $white   = new ParticipantSlot($white->participant);
-      $matchId = $this->matches->count();
-      $node = $this->nodeFactory->createMatchNode($this->nameFor($matchId), $red, $white, $this->area, true);
-      $this->matches[] = $node;
-      return $node;
+      /* because of the above "needsTieBreakMatch" check, we should always have identified a list here
+       * if due to some implementation bug this is not the case, just throw an exception. */
+      if( !$col ) throw new LogicException("could not identifiy any needed matches...");
+
+      return $this->addNewMatchesFor($col);
    }
 
 
    /**
     * generate the matches in this Pool.
     */
-   private function generateMatches(): void
+   private function addNewMatchesFor(ParticipantCollection $p): MatchNodeCollection
    {
-      $this->matches = $this->pairingHandler->generate($this->participants, $this->nodeFactory);
-      $matchId = 0;
-      foreach( $this->matches as $match )
+      $report  = $this->pairingHandler->generate($p, $this->nodeFactory);
+      $matchId = $this->matches->count();
+      foreach( $report as $match )
       {
          $match->name = $this->nameFor($matchId++);
          $match->area = $this->area;
+         $this->matches[] = $match;
       }
+      return $report;
    }
 
    /**
