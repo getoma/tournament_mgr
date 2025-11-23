@@ -60,7 +60,7 @@ class AuthController
                $db_update_output = $this->dbUpdService->update();
 
                /* after migration happened, show the output as an intermediate step */
-               return $this->twig->render($response, 'special_pages/db_migration.twig', [
+               return $this->twig->render($response, 'special_pages/db_migration_message.twig', [
                   'redirect' => $redirect,
                   'message'  => $db_update_output
                ]);
