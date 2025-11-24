@@ -59,5 +59,13 @@ class Category extends \Tournament\Model\Base\DbItem
    {
       return new \Tournament\Model\PoolRankHandler\GenericPoolRankHandler($this->getMatchPointHandler());
    }
+
+   /**
+    * same same for PairingHandler
+    */
+   public function getMatchPairingHandler(): \Tournament\Model\MatchPairingHandler\MatchPairingHandler
+   {
+      return new \Tournament\Model\MatchPairingHandler\GenericMatchPairingHandler();
+   }
 }
 

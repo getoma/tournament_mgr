@@ -6,6 +6,7 @@ use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
+use Tournament\Model\MatchPairingHandler\MatchPairingHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
@@ -24,6 +25,7 @@ class Pool
       private string $name,
       private PoolRankHandler $rankHandler,
       private TournamentStructureFactory $nodeFactory,
+      private MatchPairingHandler $pairingHandler,
       private int $num_winners = 2,
       private ?Area $area = null,
    )
@@ -180,37 +182,12 @@ class Pool
     */
    private function generateMatches(): void
    {
-      /* https://de.wikipedia.org/wiki/Jeder-gegen-jeden-Turnier#Rutschsystem */
-      $this->matches = MatchNodeCollection::new();
-
-      $players = $this->participants->values();
-      if( count($players) % 2 ) $players[] = null; // fill up to an even number of participants with one BYE slot if needed
-
-      $numPlayers = count($players);
-      $rounds = $numPlayers - 1;
-
-      for ($r = 0; $r < $rounds; $r++)
+      $this->matches = $this->pairingHandler->generate($this->participants, $this->nodeFactory);
+      $matchId = 0;
+      foreach( $this->matches as $match )
       {
-         // generate matches for each participant
-         for ($i = 0; $i < $numPlayers / 2; $i++)
-         {
-            $p_red   = $players[$i];
-            $p_white = $players[$numPlayers - 1 - $i];
-            if ($p_red && $p_white) // no BYE
-            {
-               $red     = new ParticipantSlot($p_red);
-               $white   = new ParticipantSlot($p_white);
-               $matchId = $this->matches->count();
-               $this->matches[] = $this->nodeFactory->createMatchNode($this->nameFor($matchId), $red, $white, $this->area);
-            }
-         }
-
-         // rotate participant pool
-         $players = array_merge(
-            [$players[0]],                // fix position of first participant
-            [$players[$numPlayers-1]],    // move last participant to first position
-            array_slice($players,  1, -1) // keep rest of the list
-         );
+         $match->name = $this->nameFor($matchId++);
+         $match->area = $this->area;
       }
    }
 

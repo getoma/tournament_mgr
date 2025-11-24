@@ -54,7 +54,10 @@ class TournamentStructure
    {
       $this->pools = PoolCollection::new();
       $this->unmapped_participants = ParticipantCollection::new();
-      $this->factory = new TournamentStructureFactory($category->getMatchPointHandler(), $category->getPoolRankHandler());
+      $this->factory = new TournamentStructureFactory(
+         $category->getMatchPointHandler(),
+         $category->getPoolRankHandler(),
+         $category->getMatchPairingHandler() );
    }
 
    public function generateStructure()
