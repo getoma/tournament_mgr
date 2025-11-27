@@ -2,7 +2,7 @@
 {% import 'base/form.twig' as form %}
 {% import 'base/match.twig' as part %}
 
-{% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id, 'pool': pool.getName() } %}
+{% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id, 'pool': pool.getName(), 'decision_round': pool.currentDecisionRound() } %}
 
 {% block special_links -%}
 <link rel="stylesheet" href="{{url_for('home')}}css/match.css">
@@ -17,9 +17,18 @@
   <nav id="pool_match_nav" class="match_nav">
     {{part.printMatchLinks(pool.getMatchList(), route_parameters, 'show_pool_match')}}
   </nav>
-  {% if pool.needsTieBreakMatch() -%}
-  <form method="post" action="{{url_for('add_pool_tiebreak', route_parameters)}}" class="pool_control" id="tie_break_match_adder">
-    <button>Entscheidungskampf hinzufügen</button>
+  {% if error -%}
+  <p class="error">{{ error }}</p>
+  {%- endif %}
+  {% if pool.needsDecisionRound() -%}
+  <form method="post" action="{{url_for('add_pool_tiebreak', route_parameters)}}" class="pool_control" id="tie_break_match_add">
+    <button>Entscheidungsrunde hinzufügen</button>
+  </form>
+  {% endif %}
+  {% if pool.currentDecisionRound() -%}
+  <form method="post" action="{{url_for('delete_pool_tiebreak', route_parameters)}}" class="pool_control"
+    id="tie_break_match_delete">
+    <button>Letzte Entscheidungsrunde löschen</button>
   </form>
   {% endif %}
 </section>

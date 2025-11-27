@@ -77,15 +77,16 @@ class TournamentTreeController
    /**
     * Show the overview of a single pool
     */
-   public function showPool(Request $request, Response $response, array $args): Response
+   public function showPool(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error = null): Response
    {
       // Load the tournament structure for this category and fetch the specific chunk
-      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+      $structure ??= $this->structureLoadService->load($request->getAttribute('category'));
       /** @var Pool $pool */
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found');
 
       return $this->view->render($response, 'tournament/navigation/pool_home.twig', [
          'pool' => $pool,
+         'error' => $error,
       ]);
    }
 
@@ -103,14 +104,14 @@ class TournamentTreeController
       /** @var Pool $pool */
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
 
-      if( !$pool->needsTieBreakMatch() )
+      if( !$pool->needsDecisionRound() )
       {
          $error = 'no tie break needed';
       }
       else
       {
          /* generate the new tie break matches and register them in the database */
-         $nodes = $pool->addDecisionMatches();
+         $nodes = $pool->addDecisionRound();
          foreach( $nodes as $node )
          {
             $record = $node->provideMatchRecord($category);
@@ -141,33 +142,38 @@ class TournamentTreeController
    /**
     * remove a pool tie break match again
     */
-   public function deletePoolTieBreak(Request $request, Response $response, array $args): Response
+   public function deletePoolDecisionRound(Request $request, Response $response, array $args): Response
    {
       /* load the structure and find the current node/match */
       $structure = $this->structureLoadService->load($request->getAttribute('category'));
 
       /** @var Pool $pool */
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
-      /* get the ordered list of matches in the current pool */
-      $nav_match_list = $pool->getMatchList();
-      /* get the current match node */
-      $node = $nav_match_list->find($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+      /* get the list of current decision matches */
+      $matches = $pool->getDecisionMatches($args['decision_round']);
+
+      /* check if we can delete them - only if no points are currently assigned and not frozen */
+      $is_frozen  = $matches->any(fn($n) => $n->isFrozen());
+      $has_points = $matches->any(fn($n) => !$n->getMatchRecord()->points->empty());
 
       /* delete match record data, only if this is a tie break match, pool is not frozen, and there are no points registered, yet */
-      if( $node->isTieBreak() && !$node->isFrozen() && $node->getMatchRecord()->points->empty() )
+      if( !$matches->empty() && !$is_frozen && !$has_points )
       {
-         if( !$this->m_repo->deleteMatchRecordById($node->getMatchRecord()->id) )
+         foreach( $matches as $node )
          {
-            $error = "match data deletion failed!";
+            if( !$this->m_repo->deleteMatchRecordById($node->getMatchRecord()->id) )
+            {
+               $error = "match data deletion failed!";
+            }
          }
       }
       else
       {
-         $error = "Kampf kann nicht gelöscht werden - " . match (false)
+         $error = "Entscheidungsrunde kann nicht gelöscht werden - " . match (true)
          {
-            $node->isTieBreak() => "Kein Entscheidungskampf",
-            !$node->isFrozen()  => "Pool-Ergebnisse bereits eingefroren",
-            $node->getMatchRecord()->points->empty() => "Es wurden bereits Punkte erfasst",
+            $matches->empty() => "Keine Entscheidungsrunde gefunden",
+            $is_frozen        => "Pool-Ergebnisse bereits eingefroren",
+            $has_points       => "Es wurden bereits Punkte erfasst",
             default => "UNBEKANNTER GRUND"
          };
       }
@@ -175,7 +181,7 @@ class TournamentTreeController
       /* forward to output page */
       if ($error)
       {
-         return $this->showMatch($request, $response, $args, $structure, $error);
+         return $this->showPool($request, $response, $args, $structure, $error);
       }
       else
       {

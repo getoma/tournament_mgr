@@ -148,7 +148,7 @@ return function (\Slim\App $app)
 
             $cgrp->post('/pool/{pool}/addTieBreak', [TournamentTreeController::class, 'addPoolTieBreak'])->setName('add_pool_tiebreak')
                ->add($statusGuardMW->for(TournamentAction::RecordResults));
-            $cgrp->post('/pool/{pool}/delete/{matchName}', [TournamentTreeController::class, 'deletePoolTieBreak'])->setName('delete_pool_tiebreak')
+            $cgrp->post('/pool/{pool}/delete/{decision_round}', [TournamentTreeController::class, 'deletePoolDecisionRound'])->setName('delete_pool_tiebreak')
                ->add($statusGuardMW->for(TournamentAction::RecordResults));
 
             $cgrp->post('resetResults', [TournamentTreeController::class, 'resetMatchRecords'])->setName('reset_category_results')

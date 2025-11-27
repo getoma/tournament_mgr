@@ -24,6 +24,8 @@ class Pool
    private ParticipantCollection $participants;
    private PoolRankCollection $ranking;
 
+   private int $current_extension = 0;
+
    public function __construct(
       private string $name,
       private PoolRankHandler $rankHandler,
@@ -56,7 +58,8 @@ class Pool
       /** @var MatchNode $node */
       foreach ($this->matches as $node)
       {
-         $node->name = $this->nameFor($local_match_idx++);
+         $extId = $this->getExtensionId($node->name);
+         $node->name = $this->nameFor($local_match_idx++, $extId);
       }
    }
 
@@ -138,20 +141,20 @@ class Pool
    }
 
    /**
-    * check whether an additional tie break match is needed
+    * check whether additional tie break matches are needed
     */
-   public function needsTieBreakMatch(): bool
+   public function needsDecisionRound(): bool
    {
       if (!$this->isConducted()) return false;
       return $this->num_winners !== $this->getRanking()->filter(fn($r) => $r->rank <= $this->num_winners)->count();
    }
 
    /**
-    * add a tie break match
+    * add tie break matches if needed
     */
-   public function addDecisionMatches(): MatchNodeCollection
+   public function addDecisionRound(): MatchNodeCollection
    {
-      if( !$this->needsTieBreakMatch() ) throw new RuntimeException("no tie break matches needed right now, refusing");
+      if( !$this->needsDecisionRound() ) throw new RuntimeException("no tie break matches needed right now, refusing");
 
       /** @var ParticipantCollection[] $per_rank - all participants sorted by rank into collections */
       $per_rank = [];
@@ -169,9 +172,27 @@ class Pool
        * if due to some implementation bug this is not the case, just throw an exception. */
       if( !$col ) throw new LogicException("could not identifiy any needed matches...");
 
+      $this->current_extension += 1;
       return $this->addNewMatchesFor($col);
    }
 
+   /**
+    * get current active decision round id
+    */
+   public function currentDecisionRound(): ?int
+   {
+      return $this->current_extension ?: null;
+   }
+
+   /**
+    * get the list of decision matches for a specific round
+    */
+   public function getDecisionMatches(?int $roundId = null): MatchNodeCollection
+   {
+      $roundId ??= $this->currentDecisionRound();
+      if(!$roundId) return MatchNodeCollection::new();
+      return $this->matches->filter(fn($node) => ($this->getExtensionId($node->name) === $roundId ));
+   }
 
    /**
     * generate the matches in this Pool.
@@ -182,7 +203,7 @@ class Pool
       $matchId = $this->matches->count();
       foreach( $report as $match )
       {
-         $match->name = $this->nameFor($matchId++);
+         $match->name = $this->nameFor($matchId++, $this->current_extension);
          $match->area = $this->area;
          $this->matches[] = $match;
       }
@@ -204,7 +225,9 @@ class Pool
 
       /* check if there are further records for this pool for additional matches (-> decision matches) */
       $matchId = $this->matches->count()-1;
-      while ($matchRecords->keyExists($matchName = $this->nameFor(++$matchId)))
+      $extId = 0;
+      while ( $matchRecords->keyExists($matchName = $this->nameFor(++$matchId, $extId))
+            ||$matchRecords->keyExists($matchName = $this->nameFor($matchId, ++$extId)))
       {
          /** @var MatchRecord $record - fetch this additional record from the provided ones */
          $record = $matchRecords[$matchName];
@@ -224,6 +247,7 @@ class Pool
             throw new \DomainException("Invalid Match record for Pool " . $this->name . ": participants do not match");
          }
       }
+      $this->current_extension = $extId - 1; # $extId is one beyond the last found
    }
 
    /**
@@ -240,8 +264,16 @@ class Pool
    /**
     * match name constructor
     */
-   private function nameFor(int $matchId): string
+   private function nameFor(int $matchId, ?int $extension_id = 0): string
    {
-      return $this->name . "." . ($matchId+1);
+      return $this->name . ($extension_id? ".e".$extension_id : '') . "." . ($matchId+1);
+   }
+
+   /**
+    * extract the extension id from a match name
+    */
+   private function getExtensionId(string $name): ?int
+   {
+      return (preg_match('/^\d+(?:\.e(\d+))\.\d+$/', $name, $matches) && isset($matches[1]))? (int)$matches[1] : null;
    }
 }
