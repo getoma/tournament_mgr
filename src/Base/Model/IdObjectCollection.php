@@ -10,30 +10,36 @@ abstract class IdObjectCollection extends ObjectCollection
 {
    public function offsetSet($offset, $value): void
    {
-      if ($offset === null || (int)$offset === $value->id)
+      if( $offset !== null && $offset !== $value->id )
       {
-         parent::offsetSet($value->id, $value);
+         throw new \OutOfBoundsException("invalid offset: must be identical to object id, got " . $offset . " vs " . $value->id);
+      }
+
+      if( $value->id === null )
+      {
+         parent::offsetSet(spl_object_hash($value), $value);
       }
       else
       {
-         throw new \OutOfBoundsException("invalid offset: must be identical to object id, got " . $offset . " vs " . $value->id);
+         parent::offsetSet($value->id, $value);
       }
    }
 
    public function search($value): mixed
    {
-      $found = $this->elements[$value->id] ?? null;
-      return $value === $found? $value->id : false;
+      $found = $this->elements[$id = $value->id] ?? $this->elements[$id = spl_object_hash($value)] ?? null;
+      return $value === $found? $id : false;
    }
 
    public function contains($value): bool
    {
-      return $value === ($this->elements[$value->id]??null);
+      return $this->search($value) !== false;
    }
 
    public function unshift($value): void
    {
-      $this->elements = [$value->id => $value] + $this->elements;
+      $id = $value->id ?? spl_object_hash($value);
+      $this->elements = [$id => $value] + $this->elements;
    }
 
    public function reverse(): static
