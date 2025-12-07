@@ -7,7 +7,6 @@ use Tournament\Model\Area\AreaCollection;
 use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
-use Tournament\Model\PoolRankHandler\PoolRankHandler;
 use Tournament\Model\TournamentStructure\TournamentStructure;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
