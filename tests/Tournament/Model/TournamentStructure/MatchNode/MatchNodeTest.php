@@ -15,12 +15,22 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 class MatchNodeTest extends TestCase
 {
    /* stub objects for each MatchSlot */
+   /** @var MatchSlot $redSlot */
    protected $redSlot;
+   /** @var MatchSlot $whiteSlot */
    protected $whiteSlot;
 
    /* stub objects for participants */
+   /** @var Participant $redParticipant */
    protected $redParticipant;
+   /** @var Participant $whiteParticipant */
    protected $whiteParticipant;
+
+   /* stub objects for category/area */
+   /** @var Category $category */
+   protected $category;
+   /** @var Area $area */
+   protected $area;
 
    /* stub callback configurations */
    protected bool $redBye;   // whether red slot is a BYE slot
@@ -36,22 +46,25 @@ class MatchNodeTest extends TestCase
 
    protected function setUp(): void
    {
-      $this->redParticipant = $this->createStub(Participant::class);
-      $this->redParticipant->id = 1;
-      $this->whiteParticipant = $this->createStub(Participant::class);
-      $this->whiteParticipant->id = 2;
+      $this->redParticipant   = new Participant(1, 1, '', '');
+      $this->whiteParticipant = new Participant(2, 1, '', '');
 
-      $this->redSlot = $this->createStub(MatchSlot::class);
-      $this->redSlot->method('isBye')->WillReturnCallback(fn() => $this->redBye);
-      $this->redSlot->method('getParticipant')->willReturnCallback(fn() => $this->redSet? $this->redParticipant : null);
+      $redSlot = $this->createStub(MatchSlot::class);
+      $redSlot->method('isBye')->WillReturnCallback(fn() => $this->redBye);
+      $redSlot->method('getParticipant')->willReturnCallback(fn() => $this->redSet? $this->redParticipant : null);
+      $this->redSlot = $redSlot;
 
-      $this->whiteSlot = $this->createStub(MatchSlot::class);
-      $this->whiteSlot->method('isBye')->WillReturnCallback(fn() => $this->whiteBye);
-      $this->whiteSlot->method('getParticipant')->willReturnCallback(fn() => $this->whiteSet ? $this->whiteParticipant : null);
+      $whiteSlot = $this->createStub(MatchSlot::class);
+      $whiteSlot->method('isBye')->WillReturnCallback(fn() => $this->whiteBye);
+      $whiteSlot->method('getParticipant')->willReturnCallback(fn() => $this->whiteSet ? $this->whiteParticipant : null);
+      $this->whiteSlot = $whiteSlot;
 
       $this->mpHdl = $this->createStub(MatchPointHandler::class);
 
       $this->node = new MatchNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl);
+
+      $this->category = $this->createStub(Category::class);
+      $this->area = $this->createStub(Area::class);
    }
 
    private function generateTruthTable(int $num): \Generator
@@ -132,7 +145,7 @@ class MatchNodeTest extends TestCase
       $this->redSet = true;
       $this->whiteSet = true;
 
-      $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
+      $record = new MatchRecord(1, "test", $this->category, $this->area,
                                 $this->redParticipant, $this->whiteParticipant, null, false);
 
       $this->node->setMatchRecord($record);
@@ -164,7 +177,7 @@ class MatchNodeTest extends TestCase
       $this->redSet = true;
       $this->whiteSet = true;
 
-      $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
+      $record = new MatchRecord(1, "test", $this->category, $this->area,
                                 $this->redParticipant, $this->whiteParticipant, $this->redParticipant, false,
                                 finalized_at: new \DateTime() );
 
@@ -185,6 +198,69 @@ class MatchNodeTest extends TestCase
       $this->assertTrue($this->node->isModifiable());
       $this->assertSame($this->redParticipant, $this->node->getRedParticipant());
       $this->assertSame($this->whiteParticipant, $this->node->getWhiteParticipant());
+   }
+
+   /**
+    * matchRecord added to non-real match
+    */
+   public function testMatchRecordNonReal()
+   {
+      $this->redBye = true;
+      $this->whiteBye = false;
+      $this->redSet = false;
+      $this->whiteSet = true;
+
+      $record = new MatchRecord(
+         1, "test", $this->category, $this->area,
+         $this->redParticipant, $this->whiteParticipant,
+         null, false, finalized_at: new \DateTime()
+      );
+
+      $this->expectException(\LogicException::class);
+      $this->node->setMatchRecord($record);
+   }
+
+   /**
+    * matchRecord added with wrong match node name
+    */
+   public function testSetWrongMatchRecord()
+   {
+      $this->redBye = false;
+      $this->whiteBye = false;
+      $this->whiteSet = true;
+      $this->redSet = true;
+
+      $record = new MatchRecord(
+         1, "test_wrong", $this->category, $this->area,
+         $this->redParticipant, $this->whiteParticipant,
+         null, false, finalized_at: new \DateTime()
+      );
+
+      $this->expectException(\DomainException::class);
+      $this->node->setMatchRecord($record);
+   }
+
+   /**
+    * matchRecord added with unfitting participants
+    */
+   public function testMatchRecordParticipantsOverride()
+   {
+      $this->redBye = false;
+      $this->whiteBye = false;
+      $this->redSet = true;
+      $this->whiteSet = true;
+
+      /** @var Participant $newRedParticipant */
+      $newRedParticipant = $this->createStub(Participant::class);
+
+      $record = new MatchRecord(
+         1, "test", $this->category, $this->area,
+         $newRedParticipant, $this->whiteParticipant,
+         null, false, finalized_at: new \DateTime()
+      );
+
+      $this->expectException(\DomainException::class);
+      $this->node->setMatchRecord($record);
    }
 
    /**
@@ -231,21 +307,22 @@ class MatchNodeTest extends TestCase
       $this->redSet = true;
       $this->whiteSet = true;
 
-      $normal = new MatchNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl, tie_break: false);
-      $this->assertTrue($normal->tiesAllowed());
+      $this->assertTrue($this->node->tiesAllowed());
 
       $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
                            $this->redParticipant, $this->whiteParticipant,
                            tie_break: true );
-      $normal->setMatchRecord($record);
-      $this->assertFalse($normal->tiesAllowed());
+      $this->node->setMatchRecord($record);
+      $this->assertFalse($this->node->tiesAllowed());
 
-      $tie_break = new MatchNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl, tie_break: true);
-      $this->assertFalse($tie_break->tiesAllowed());
+      /* also test with setting this property at creation */
+      $node_class = get_class($this->node);
+      $tie_break_node = new $node_class("test", $this->redSlot, $this->whiteSlot, $this->mpHdl, tie_break: true);
+      $this->assertFalse($tie_break_node->tiesAllowed());
       $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
                      $this->redParticipant, $this->whiteParticipant,
                      tie_break: false );
-      $tie_break->setMatchRecord($record);
-      $this->assertTrue($tie_break->tiesAllowed());
+      $tie_break_node->setMatchRecord($record);
+      $this->assertTrue($tie_break_node->tiesAllowed());
    }
 }

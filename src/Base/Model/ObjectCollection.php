@@ -111,7 +111,7 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 
    public function drop($value): bool
    {
-      $offset = array_search($value, $this->elements, true);
+      $offset = $this->search($value);
       if ($offset === false) return false;
       $this->offsetUnset($offset);
       return true;

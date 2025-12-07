@@ -256,25 +256,19 @@ class TournamentStructure
    private function fillKO(MatchNodeCollection $currentRound): KoNode
    {
       $nextMatchId = $currentRound->count()+1; // next match ID, starting after the last match in the first round
-      $rounds = [$currentRound];
-
-      // now create the subsequent rounds until we reach the final match
+      // use the current round to create the next round until we reach the finale
       while (count($currentRound) > 1)
       {
-         $previousRound = $currentRound; // get the last round
+         $previousRound = $currentRound;
          $currentRound = MatchNodeCollection::new();
-         // create the next round of matches, using the winners of the previous round
          for ($i = 0; $i < count($previousRound); $i += 2)
          {
             $slotRed   = new MatchWinnerSlot($previousRound[$i]);
             $slotWhite = new MatchWinnerSlot($previousRound[$i + 1]);
             $currentRound[] = $this->factory->createKoNode($nextMatchId++, slotRed: $slotRed, slotWhite: $slotWhite);
          }
-         $rounds[] = $currentRound;
       }
-
-      // now store the final match as the KO structure
-      return $currentRound[0]; // the last match is the final match
+      return $currentRound->front();
    }
 
    /**

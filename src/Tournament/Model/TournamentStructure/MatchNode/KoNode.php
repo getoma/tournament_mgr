@@ -52,16 +52,15 @@ class KoNode extends MatchNode
       {
          $rounds->unshift($currentRound);
          $nextRound = MatchNodeCollection::new();
+         /** @var KoNode $match */
          foreach ($currentRound as $match)
          {
             if ($match->slotRed instanceof MatchWinnerSlot)
             {
-               /** @var MatchWinnerSlot $match->slotRed */
                $nextRound[] = $match->slotRed->matchNode;
             }
             if ($match->slotWhite instanceof MatchWinnerSlot)
             {
-               /** @var MatchWinnerSlot $match->slotWhite */
                $nextRound[] = $match->slotWhite->matchNode;
             }
          }
@@ -124,7 +123,7 @@ class KoNode extends MatchNode
 
    /**
     * get a participants of a specific rank (1=winner, 2=runner-up, 3=third place, ...)
-    * @return Participant[]
+    * @return ParticipantCollection
     */
    public function getRanked(int $rank): ParticipantCollection
    {
@@ -146,7 +145,7 @@ class KoNode extends MatchNode
          {
             if ($slot instanceof MatchWinnerSlot)
             {
-               $result = array_merge($result, $slot->matchNode->getRanked($rank - 1));
+               $result = array_merge($result, $slot->matchNode->getRanked($rank - 1)->values());
             }
          }
       }
@@ -166,6 +165,7 @@ class KoNode extends MatchNode
     */
    public function setMatchRecords(MatchRecordCollection $matchRecords): void
    {
+      /** @var KoNode $match */
       foreach ($this->getMatchList() as $match)
       {
          if ($matchRecords->keyExists($match->name))

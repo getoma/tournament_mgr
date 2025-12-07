@@ -16,31 +16,37 @@ abstract class IdObjectCollection extends ObjectCollection
    public function offsetSet($offset, $value): void
    {
       $value_id = static::get_id($value);
-      if ( ($offset === null) || ($offset == $value_id) )
+      if( $offset !== null && $offset !== $value_id )
       {
-         parent::offsetSet($value_id, $value);
+         throw new \OutOfBoundsException("invalid offset: must be identical to object id, got " . $offset . " vs " . $value_id);
+      }
+
+      if( $value_id === null )
+      {
+         parent::offsetSet(spl_object_hash($value), $value);
       }
       else
       {
-         throw new \OutOfBoundsException("invalid offset: must be identical to object id, got " . $offset . " vs " . $value_id);
+         parent::offsetSet($value_id, $value);
       }
    }
 
    public function search($value): mixed
    {
       $value_id = static::get_id($value);
-      $found = $this->elements[$value_id] ?? null;
-      return $value === $found? $value_id : false;
+      $found = $this->elements[$id = $value_id] ?? $this->elements[$id = spl_object_hash($value)] ?? null;
+      return $value === $found? $id : false;
    }
 
    public function contains($value): bool
    {
-      return $value === ($this->elements[static::get_id($value)]??null);
+      return $this->search($value) !== false;
    }
 
    public function unshift($value): void
    {
-      $this->elements = [static::get_id($value) => $value] + $this->elements;
+      $id = static::get_id($value) ?? spl_object_hash($value);
+      $this->elements = [$id => $value] + $this->elements;
    }
 
    public function reverse(): static
