@@ -128,20 +128,23 @@ class TournamentTreeController
       $mphdl = $category->getMatchPointHandler();
 
       /* load the list of points per participant */
-      $record = $node->getMatchRecord()?->points ?? new MatchPointCollection();
-
-      $pts = [];
-      $redP = $node->getRedParticipant();
-      $whiteP = $node->getWhiteParticipant();
-      foreach( ['red'   => isset($redP)?   $record->for($redP) : $record->new(),
-                'white' => isset($whiteP)? $record->for($whiteP) : $record->new()]
-             as $color => $pt_list)
+      if( $record = $node->getMatchRecord() )
       {
-         $pts[$color] = [
-            'points'  => $mphdl->getPoints($pt_list),
-            'penalty' => $mphdl->getActivePenalties($pt_list),
-            'undo'    => $pt_list->filter(fn($p) => $p->isSolitary())->back()
-         ];
+         $pts = [];
+         foreach( ['red'   => $node->getRedParticipant(),
+                  'white' => $node->getWhiteParticipant()]
+               as $color => $participant)
+         {
+            $pts[$color] = [
+               'points'  => $mphdl->getPoints($record)->for($participant),
+               'penalty' => $mphdl->getActivePenalties($record)->for($participant),
+               'undo'    => $record->points->for($participant)->filter(fn($p) => $p->isSolitary())->back()
+            ];
+         }
+      }
+      else
+      {
+         $pts = ['red' => null, 'white' => null ];
       }
 
       return $this->view->render($response, 'tournament/match/match.twig',[

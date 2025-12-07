@@ -56,11 +56,11 @@ interface MatchPointHandler
     * returns a list of active penalties that did not yet result
     * in any further consequences according the specific rules applied
     */
-   function getActivePenalties(MatchPointCollection $col): MatchPointCollection;
+   function getActivePenalties(MatchRecord $match): MatchPointCollection;
 
    /**
     * extract real, actual points
     */
-   function getPoints(MatchPointCollection $col): MatchPointCollection;
+   function getPoints(MatchRecord $match): MatchPointCollection;
 
 }
