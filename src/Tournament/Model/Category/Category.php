@@ -63,9 +63,9 @@ class Category extends \Tournament\Model\Base\DbItem
    /**
     * same same for PairingHandler
     */
-   public function getMatchPairingHandler(): \Tournament\Model\MatchPairingHandler\MatchPairingHandler
+   public function getMatchCreationHandler(): \Tournament\Model\MatchCreationHandler\MatchCreationHandler
    {
-      return new \Tournament\Model\MatchPairingHandler\GenericMatchPairingHandler();
+      return new \Tournament\Model\MatchCreationHandler\GenericMatchCreationHandler();
    }
 }
 

@@ -3,7 +3,7 @@
 namespace Tournament\Model\TournamentStructure;
 
 use Tournament\Model\Area\Area;
-use Tournament\Model\MatchPairingHandler\MatchPairingHandler;
+use Tournament\Model\MatchCreationHandler\MatchCreationHandler;
 use Tournament\Model\MatchPointHandler\MatchPointHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\PoolRankHandler\PoolRankHandler;
@@ -12,11 +12,11 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
-final class TournamentStructureFactory
+class TournamentStructureFactory
 {
    public function __construct(private readonly MatchPointHandler $mpHdl,
                                private readonly PoolRankHandler $rankHdl,
-                               private readonly MatchPairingHandler $pairingHdl)
+                               private readonly MatchCreationHandler $pairingHdl)
    {}
 
    public function createMatchNode(

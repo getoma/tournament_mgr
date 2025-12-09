@@ -57,7 +57,7 @@ class TournamentStructure
       $this->factory = new TournamentStructureFactory(
          $category->getMatchPointHandler(),
          $category->getPoolRankHandler(),
-         $category->getMatchPairingHandler() );
+         $category->getMatchCreationHandler() );
    }
 
    public function generateStructure()

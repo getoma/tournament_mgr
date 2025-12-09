@@ -1,18 +1,14 @@
 <?php
 
-namespace Tournament\Model\MatchPairingHandler;
+namespace Tournament\Model\MatchCreationHandler;
 
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\TournamentStructureFactory;
 
-class GenericMatchPairingHandler implements MatchPairingHandler
+class GenericMatchCreationHandler implements MatchCreationHandler
 {
-   public function __construct()
-   {
-   }
-
    public function generate(ParticipantCollection $participants, TournamentStructureFactory $nodeFactory): MatchNodeCollection
    {
       $p = $participants->values();

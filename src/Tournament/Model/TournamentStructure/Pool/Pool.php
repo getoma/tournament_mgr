@@ -8,7 +8,7 @@ use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
-use Tournament\Model\MatchPairingHandler\MatchPairingHandler;
+use Tournament\Model\MatchCreationHandler\MatchCreationHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
@@ -30,7 +30,7 @@ class Pool
       private string $name,
       private PoolRankHandler $rankHandler,
       private TournamentStructureFactory $nodeFactory,
-      private MatchPairingHandler $pairingHandler,
+      private MatchCreationHandler $pairingHandler,
       private int $num_winners = 2,
       private ?Area $area = null,
    )

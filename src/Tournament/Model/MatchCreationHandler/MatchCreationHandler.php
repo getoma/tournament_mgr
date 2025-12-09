@@ -1,12 +1,12 @@
 <?php
 
-namespace Tournament\Model\MatchPairingHandler;
+namespace Tournament\Model\MatchCreationHandler;
 
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\TournamentStructureFactory;
 
-interface MatchPairingHandler
+interface MatchCreationHandler
 {
    function generate(ParticipantCollection $participants, TournamentStructureFactory $nodeFactory): MatchNodeCollection;
 }
