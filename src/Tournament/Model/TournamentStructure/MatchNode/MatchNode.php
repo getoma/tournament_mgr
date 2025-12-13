@@ -228,7 +228,7 @@ class MatchNode
    public function getRedPoints(): ?int
    {
       if( !$this->matchRecord ) return null;
-      return $this->mpHdl->getPoints($this->matchRecord->points)->for($this->matchRecord->redParticipant)->count();
+      return $this->mpHdl->getPoints($this->matchRecord)->for($this->matchRecord->redParticipant)->count();
    }
 
    /**
@@ -239,7 +239,7 @@ class MatchNode
    public function getWhitePoints(): ?int
    {
       if (!$this->matchRecord) return null;
-      return $this->mpHdl->getPoints($this->matchRecord->points)->for($this->matchRecord->whiteParticipant)->count();
+      return $this->mpHdl->getPoints($this->matchRecord)->for($this->matchRecord->whiteParticipant)->count();
    }
 
 

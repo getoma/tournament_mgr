@@ -47,7 +47,7 @@ class GenericPoolRankHandler implements PoolRankHandler
             }
 
             /* increase point counters, (only count points from non-tie-break matches) */
-            $points = $this->mpHdl->getPoints($match_record->points);
+            $points = $this->mpHdl->getPoints($match_record);
             $ranks[$redP->id]->points += $points->for($redP)->count();
             $ranks[$whiteP->id]->points += $points->for($whiteP)->count();
          }
