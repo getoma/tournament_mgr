@@ -32,7 +32,7 @@
 <ul class="pool_list">
   {% for pool in pools %}
   <li>
-    <p class="pool_name">Pool {{pool.getName()}}</p>
+    <p class="pool_name"><a href="{{ url_for('show_pool', route_parameters|merge({pool: pool.getName})) }}">Pool {{pool.getName()}}</a></p>
     <ul class="participant_list">
       {% for slot in pool.participants %}
       <li>{{slot.lastname}}, {{slot.firstname}}</li>

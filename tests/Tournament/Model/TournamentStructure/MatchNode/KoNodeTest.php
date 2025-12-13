@@ -12,6 +12,7 @@ use Tournament\Model\Participant\Participant;
 use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
+use Tournament\Model\MatchPointHandler\MatchPointHandler;
 
 /**
  * test all additional functionalities of KoNode (compared to MatchNode)
@@ -27,11 +28,16 @@ class KoNodeTest extends TestCase
    /** @var Stub[] list of all starting slots (ParticipantSlots, basically) */
    protected array $start_slots;
 
+   /* match point handler for the match node */
+   protected MatchPointHandler $mpHdl;
+
    /**
     * create a KoNode tree with ROUNDS rounds, and fill up above member variables
     */
    protected function setUp(): void
    {
+      $this->mpHdl = $this->createStub(MatchPointHandler::class);
+
       /* for testing, set up a KO tree according ROUNDS config */
       $round1_cnt = pow(2, self::ROUNDS - 1); // e.g. 3 ROUNDS -> 2**(3-1) = 4 matches in round 1
       $currentRound = array_map(
@@ -41,7 +47,7 @@ class KoNodeTest extends TestCase
             $this->start_slots[] = $a = $this->createStub(ParticipantSlot::class);
             /** @var ParticipantSlot $b */
             $this->start_slots[] = $b = $this->createStub(ParticipantSlot::class);
-            return new KoNode("test_".$i, $a, $b);
+            return new KoNode("test_".$i, $a, $b, $this->mpHdl);
          }
          , range(1, $round1_cnt) );
 
@@ -57,7 +63,7 @@ class KoNodeTest extends TestCase
          {
             $slotRed   = new MatchWinnerSlot($previousRound[$i]);
             $slotWhite = new MatchWinnerSlot($previousRound[$i + 1]);
-            $node = new KoNode("test_" . $nextMatchId++, slotRed: $slotRed, slotWhite: $slotWhite);
+            $node = new KoNode("test_" . $nextMatchId++, slotRed: $slotRed, slotWhite: $slotWhite, mpHdl: $this->mpHdl);
             $currentRound[] = $node;
             $this->node_list[] = $node;
          }

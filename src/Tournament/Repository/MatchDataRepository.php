@@ -219,4 +219,10 @@ class MatchDataRepository
       $stmt = $this->pdo->prepare('DELETE FROM matches WHERE category_id = :category');
       return $stmt->execute(['category' => $categoryId]);
    }
+
+   public function deleteMatchRecordById(int $matchId): bool
+   {
+      $stmt = $this->pdo->prepare('DELETE FROM matches WHERE id = :matchId');
+      return $stmt->execute(['matchId' => $matchId]);
+   }
 }
