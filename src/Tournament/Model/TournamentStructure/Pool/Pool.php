@@ -125,7 +125,7 @@ class Pool
     */
    public function isConducted(): bool
    {
-      return $this->matches->all(fn($m, $k) => $m->isCompleted() );
+      return !$this->matches->empty() && $this->matches->all(fn($m, $k) => $m->isCompleted() );
    }
 
    /**
@@ -152,7 +152,7 @@ class Pool
    /**
     * add tie break matches if needed
     */
-   public function addDecisionRound(): MatchNodeCollection
+   public function createDecisionRound(): MatchNodeCollection
    {
       if( !$this->needsDecisionRound() ) throw new RuntimeException("no tie break matches needed right now, refusing");
 
@@ -179,7 +179,7 @@ class Pool
    /**
     * get current active decision round id
     */
-   public function currentDecisionRound(): ?int
+   public function getCurrentDecisionRound(): ?int
    {
       return $this->current_extension ?: null;
    }
@@ -189,25 +189,9 @@ class Pool
     */
    public function getDecisionMatches(?int $roundId = null): MatchNodeCollection
    {
-      $roundId ??= $this->currentDecisionRound();
+      $roundId ??= $this->getCurrentDecisionRound();
       if(!$roundId) return MatchNodeCollection::new();
       return $this->matches->filter(fn($node) => ($this->getExtensionId($node->name) === $roundId ));
-   }
-
-   /**
-    * generate the matches in this Pool.
-    */
-   private function addNewMatchesFor(ParticipantCollection $p): MatchNodeCollection
-   {
-      $report  = $this->pairingHandler->generate($p, $this->nodeFactory);
-      $matchId = $this->matches->count();
-      foreach( $report as $match )
-      {
-         $match->name = $this->nameFor($matchId++, $this->current_extension);
-         $match->area = $this->area;
-         $this->matches[] = $match;
-      }
-      return $report;
    }
 
    /**
@@ -253,12 +237,28 @@ class Pool
    /**
     * freeze all results, to not allow any further modifications of points or winners
     */
-   public function freezeResults()
+   public function freezeResults(): void
    {
       foreach ($this->matches as $match)
       {
          $match->frozen = true;
       }
+   }
+
+   /**
+    * generate the matches in this Pool.
+    */
+   private function addNewMatchesFor(ParticipantCollection $p): MatchNodeCollection
+   {
+      $report  = $this->pairingHandler->generate($p, $this->nodeFactory);
+      $matchId = $this->matches->count();
+      foreach ($report as $match)
+      {
+         $match->name = $this->nameFor($matchId++, $this->current_extension);
+         $match->area = $this->area;
+         $this->matches[] = $match;
+      }
+      return $report;
    }
 
    /**
@@ -274,6 +274,6 @@ class Pool
     */
    private function getExtensionId(string $name): ?int
    {
-      return (preg_match('/^\d+(?:\.e(\d+))\.\d+$/', $name, $matches) && isset($matches[1]))? (int)$matches[1] : null;
+      return (preg_match('/^.+(?:\.e(\d+))\.\d+$/', $name, $matches) && isset($matches[1]))? (int)$matches[1] : null;
    }
 }

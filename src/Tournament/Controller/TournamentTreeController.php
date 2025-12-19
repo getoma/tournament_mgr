@@ -111,7 +111,7 @@ class TournamentTreeController
       else
       {
          /* generate the new tie break matches and register them in the database */
-         $nodes = $pool->addDecisionRound();
+         $nodes = $pool->createDecisionRound();
          foreach( $nodes as $node )
          {
             $record = $node->provideMatchRecord($category);

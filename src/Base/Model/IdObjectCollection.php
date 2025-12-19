@@ -33,7 +33,7 @@ abstract class IdObjectCollection extends ObjectCollection
 
    public function search($value): mixed
    {
-      $value_id = static::get_id($value);
+      $value_id = static::get_id($value) ?? spl_object_hash($value);
       $found = $this->elements[$id = $value_id] ?? $this->elements[$id = spl_object_hash($value)] ?? null;
       return $value === $found? $id : false;
    }
