@@ -165,8 +165,16 @@ class Pool
          $per_rank[$rank_entry->rank][] = $rank_entry->participant;
       }
 
-      /* find which rank currently has more than one participant */
-      $col = array_find($per_rank, fn($c) => $c->count() > 1 );
+      /* find which rank currently has more than one participant (array_find available from php8.4, only) */
+      $col = null;
+      foreach( $per_rank as $c )
+      {
+         if( $c->count() > 1 )
+         {
+            $col = $c;
+            break;
+         }
+      }
 
       /* because of the above "needsTieBreakMatch" check, we should always have identified a list here
        * if due to some implementation bug this is not the case, just throw an exception. */
