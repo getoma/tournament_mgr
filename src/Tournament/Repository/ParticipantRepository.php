@@ -11,16 +11,18 @@ use PDO;
 
 class ParticipantRepository
 {
-   /* buffer all participant instances, to make sure that each participant is
+   /** @var ParticipantCollection $participants
+    * buffer all participant instances, to make sure that each participant is
     * represented by a unique instance
     */
-   private $participants = [];
+   private $participants;
 
    /* buffer error messages */
    private $errors = [];
 
    public function __construct(private PDO $pdo, private TournamentRepository $tournamentRepo)
    {
+      $this->participants = ParticipantCollection::new();
    }
 
    public function getLastErrors(): array
@@ -302,22 +304,23 @@ class ParticipantRepository
    }
 
    /**
-    * import list of participants
+    * import list of participants, ignore any duplicate additions
     */
    public function importParticipants(ParticipantCollection $participants): bool
    {
       $this->errors = [];
       $this->pdo->beginTransaction();
-      $stmt_p = $this->pdo->prepare( "INSERT INTO participants (tournament_id, lastname, firstname, club) "
+      $stmt_p = $this->pdo->prepare( "INSERT IGNORE INTO participants (tournament_id, lastname, firstname, club) "
                                    . "VALUES (:tournament_id, :lastname, :firstname, :club)");
-      $stmt_c = $this->pdo->prepare("INSERT INTO participants_categories (participant_id, category_id) VALUES (?,?)");
+      $stmt_c = $this->pdo->prepare("INSERT IGNORE INTO participants_categories (participant_id, category_id) VALUES (?,?)");
 
       /** @var Participant $p */
       foreach ($participants as $p)
       {
          if( $stmt_p->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club'])) )
          {
-            $p->id = $this->pdo->lastInsertId();
+            $new_id = $this->pdo->lastInsertId();
+            if( $new_id ) $p->id = $this->pdo->lastInsertId();
             foreach( $p->categories as $c )
             {
                $stmt_c->execute([$p->id, $c->category->id]); // cannot fail
