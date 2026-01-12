@@ -16,7 +16,7 @@ abstract class IdObjectCollection extends ObjectCollection
    public function offsetSet($offset, $value): void
    {
       $value_id = static::get_id($value);
-      if( $offset !== null && $offset !== $value_id )
+      if( $offset !== null && $offset != $value_id ) // do not require typ match on value_id
       {
          throw new \OutOfBoundsException("invalid offset: must be identical to object id, got " . $offset . " vs " . $value_id);
       }
