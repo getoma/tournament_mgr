@@ -15,8 +15,16 @@ class ParticipantRepository
     */
    private $participants = [];
 
+   /* buffer error messages */
+   private $errors = [];
+
    public function __construct(private PDO $pdo, private TournamentRepository $tournamentRepo)
    {
+   }
+
+   public function getLastErrors(): array
+   {
+      return $this->errors;
    }
 
    /**
@@ -185,80 +193,78 @@ class ParticipantRepository
       return $participant;
    }
 
-   public function addParticipant(int $tournament_id, string $lastname, string $firstname, array $categories = []): ?int
+   public function saveParticipant(Participant $p): bool
    {
-      $stmt = $this->pdo->prepare("INSERT IGNORE INTO participants (tournament_id, lastname, firstname) VALUES (:tournament_id, :lastname, :firstname)");
-      if ($stmt->execute(["tournament_id" => $tournament_id, "lastname" => $lastname, "firstname" => $firstname]))
-      {
-         $participantId = (int) $this->pdo->lastInsertId();
-         // Set categories for the new participant
-         if (!empty($categories))
-         {
-            $this->setParticipantCategories($participantId, $categories);
-         }
-         return $participantId;
-      }
-      return null;
-   }
+      $result = false;
+      $this->pdo->beginTransaction();
 
-   public function updateParticipant(int $id, array $data): bool
-   {
-      $stmt = $this->pdo->prepare("UPDATE participants SET lastname = :lastname, firstname = :firstname WHERE id = :id");
-      if ($stmt->execute(["id" => $id, "lastname" => $data['lastname'], "firstname" => $data['firstname']]))
+      if ($p->id)
       {
-         // Set categories for the new participant
-         if (!empty($data['categories']))
-         {
-            $this->setParticipantCategories($id, $data['categories']);
-         }
-         return true;
+         $stmt = $this->pdo->prepare("UPDATE participants SET lastname = :lastname, firstname = :firstname, club = :club, separation_flag = :separation_flag WHERE id = :id");
+         $result = $stmt->execute($p->asArray(['id', 'lastname', 'firstname', 'club', 'separation_flag']));
       }
-      return false;
+      else
+      {
+         $stmt = $this->pdo->prepare( "INSERT INTO participants (tournament_id, lastname, firstname, club, separation_flag) "
+                                    . "VALUES (:tournament_id, :lastname, :firstname, :club, :separation_flag)");
+         $result = $stmt->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club', 'separation_flag']));
+         if ($result)
+         {
+            $p->id = $this->pdo->lastInsertId();
+            $this->participants[$p->id] = $p;
+         }
+      }
+
+      if( $result ) // also update participant categories
+      {
+         if ($p->categories->empty())
+         {
+            $sql = "DELETE FROM participants_categories WHERE participant_id = ?";
+            $params = [$p->id];
+            $stmt = $this->pdo->prepare($sql);
+            $result = $stmt->execute($params);
+         }
+         else
+         {
+            // First, delete existing categories for the participant, preserving only those in $categoryIds
+            $categoryIds = $p->categories->column('id');
+            $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
+            $sql = "DELETE FROM participants_categories WHERE participant_id = ? AND category_id NOT IN ($placeholders)";
+            $params = array_merge([$p->id], $categoryIds);
+            $stmt = $this->pdo->prepare($sql);
+            $result = $stmt->execute($params);
+
+            // then add all linked category ids
+            $values = [];
+            $params = [];
+            foreach ($categoryIds as $categoryId)
+            {
+               $values[] = "(?,?)";
+               $params[] = $p->id;
+               $params[] = $categoryId;
+            }
+            $sql = "INSERT IGNORE INTO participants_categories (participant_id, category_id) VALUES " . implode(',', $values);
+            $stmt = $this->pdo->prepare($sql);
+            $result = $stmt->execute($params) && $result;
+         }
+      }
+
+      if ($result)
+      {
+         $this->pdo->commit();
+      }
+      else
+      {
+         $this->pdo->rollBack();
+      }
+
+      return $result;
    }
 
    public function deleteParticipant(int $id): bool
    {
       $stmt = $this->pdo->prepare("DELETE FROM participants WHERE id = :id");
       return $stmt->execute(['id' => $id]);
-   }
-
-   public function setParticipantCategories(int $participantId, array $categoryIds): bool
-   {
-      $this->pdo->beginTransaction();
-      // First, delete existing categories for the participant, preserving only those in $categoryIds
-      if (!empty($categoryIds))
-      {
-         $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
-         $sql = "DELETE FROM participants_categories WHERE participant_id = ? AND category_id NOT IN ($placeholders)";
-         $params = array_merge([$participantId], $categoryIds);
-      }
-      else
-      {
-         $sql = "DELETE FROM participants_categories WHERE participant_id = ?";
-         $params = [$participantId];
-      }
-      $stmt = $this->pdo->prepare($sql);
-      $stmt->execute($params);
-
-      // Then, insert new categories
-      if (empty($categoryIds))
-      {
-         return true; // No categories to set
-      }
-
-      $values = [];
-      $params = [];
-      foreach ($categoryIds as $categoryId)
-      {
-         $values[] = "(?,?)";
-         $params[] = $participantId;
-         $params[] = $categoryId;
-      }
-      $sql = "INSERT IGNORE INTO participants_categories (participant_id, category_id) VALUES " . implode(',', $values);
-      $stmt = $this->pdo->prepare($sql);
-      $result = $stmt->execute($params);
-      $this->pdo->commit();
-      return $result;
    }
 
    public function setCategoryParticipants(int $categoryId, array $participantIds): bool
@@ -297,70 +303,34 @@ class ParticipantRepository
       return true;
    }
 
-   public function importParticipants(int $tournamentId, array $participants, array $categories): array
+   /**
+    * import list of participants
+    */
+   public function importParticipants(ParticipantCollection $participants): bool
    {
-      /* TODO: duplicate decection for already existing participants (same firstname, lastname) */
-      // Chunk insert participants (no need for duplicate detection, INSERT IGNORE handles it)
-      $values = [];
-      $params = [];
+      $this->errors = [];
+      $this->pdo->beginTransaction();
+      $stmt_p = $this->pdo->prepare( "INSERT INTO participants (tournament_id, lastname, firstname, club, separation_flag) "
+                                   . "VALUES (:tournament_id, :lastname, :firstname, :club, :separation_flag)");
+      $stmt_c = $this->pdo->prepare("INSERT INTO participants_categories (participant_id, category_id) VALUES (?,?)");
+
+      /** @var Participant $p */
       foreach ($participants as $p)
       {
-         if (isset($p['lastname'], $p['firstname']))
+         if( $stmt_p->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club', 'separation_flag'])) )
          {
-            $values[] = "(?,?,?)";
-            $params[] = $tournamentId;
-            $params[] = $p['lastname'];
-            $params[] = $p['firstname'];
-         }
-      }
-      if ($values)
-      {
-         $sql = "INSERT IGNORE INTO participants (tournament_id, lastname, firstname) VALUES " . implode(',', $values);
-         $stmt = $this->pdo->prepare($sql);
-         $stmt->execute($params);
-      }
-
-      // Fetch all participant ids
-      $getpkey = fn($participant) => strtolower(trim($participant['lastname'])) . '|' . strtolower(trim($participant['firstname']));
-      $stmt = $this->pdo->prepare("SELECT id, lastname, firstname FROM participants WHERE tournament_id = ?");
-      $stmt->execute([$tournamentId]);
-      $idMap = [];
-      foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
-      {
-         $idMap[$getpkey($row)] = $row['id'];
-      }
-
-      // Prepare chunk insert for participants_categories (all participants to all given categories) while fetching participant ids
-      $imported = [];
-      $catValues = [];
-      $catParams = [];
-      foreach ($participants as $p)
-      {
-         if (isset($p['lastname'], $p['firstname']))
-         {
-            $pid = $idMap[$getpkey($p)] ?? null;
-            if ($pid && !empty($categories))
+            $p->id = $this->pdo->lastInsertId();
+            foreach( $p->categories as $c )
             {
-               foreach ($categories as $catId)
-               {
-                  $catValues[] = "(?,?)";
-                  $catParams[] = $pid;
-                  $catParams[] = $catId;
-               }
-            }
-            if ($pid)
-            {
-               $imported[] = $pid;
+               $stmt_c->execute([$p->id, $c->id]); // cannot fail
             }
          }
+         else
+         {
+            $this->errors[] = $stmt_p->errorInfo()[2];
+         }
       }
-      if ($catValues)
-      {
-         $sql = "INSERT IGNORE INTO participants_categories (participant_id, category_id) VALUES " . implode(',', $catValues);
-         $stmt = $this->pdo->prepare($sql);
-         $stmt->execute($catParams);
-      }
-
-      return $imported;
+      $this->pdo->commit();
+      return true;
    }
 }
