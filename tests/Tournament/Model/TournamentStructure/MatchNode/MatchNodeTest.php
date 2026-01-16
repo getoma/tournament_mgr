@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
+use Tournament\Model\MatchPointHandler\MatchPointHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
@@ -40,6 +41,9 @@ class MatchNodeTest extends TestCase
    /* the actual module-under-test */
    protected MatchNode $node;
 
+   /* match point handler for the match node */
+   protected MatchPointHandler $mpHdl;
+
    protected function setUp(): void
    {
       $this->redParticipant   = new Participant(1, 1, '', '');
@@ -55,7 +59,9 @@ class MatchNodeTest extends TestCase
       $whiteSlot->method('getParticipant')->willReturnCallback(fn() => $this->whiteSet ? $this->whiteParticipant : null);
       $this->whiteSlot = $whiteSlot;
 
-      $this->node = new MatchNode("test", $this->redSlot, $this->whiteSlot);
+      $this->mpHdl = $this->createStub(MatchPointHandler::class);
+
+      $this->node = new MatchNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl);
 
       $this->category = $this->createStub(Category::class);
       $this->area = $this->createStub(Area::class);
@@ -80,6 +86,7 @@ class MatchNodeTest extends TestCase
          $this->whiteBye = $whiteBye;
          $this->redSet = $set_red;
          $this->whiteSet = $set_white;
+         $this->node->frozen = $frozen;
 
          /* MatchSlots are in responsiblity to keep a consistent state.
           * skip tests for inconsistent slot states: slot is BYE, but has a participant set
@@ -119,6 +126,10 @@ class MatchNodeTest extends TestCase
          $this->assertEquals($expected_decided, $this->node->isDecided());
          $this->assertSame($expected_winner, $this->node->getWinner());
 
+         /* for normal Nodes, any determined node is also modifiable, unless it is explicitly frozen */
+         $this->assertEquals($this->node->isDetermined() && !$frozen, $this->node->isModifiable());
+         $this->assertEquals($frozen, $this->node->isFrozen());
+
          $this->assertSame($set_red? $this->redParticipant : null, $this->node->getRedParticipant());
          $this->assertSame($set_white? $this->whiteParticipant : null, $this->node->getWhiteParticipant());
       }
@@ -150,6 +161,7 @@ class MatchNodeTest extends TestCase
       $this->assertFalse($this->node->isDecided());
       $this->assertSame(null, $this->node->getDefeated());
       $this->assertSame(null, $this->node->getWinner());
+      $this->assertFalse($this->node->isTied());
       $this->assertTrue($this->node->isModifiable());
       $this->assertSame($this->redParticipant, $this->node->getRedParticipant());
       $this->assertSame($this->whiteParticipant, $this->node->getWhiteParticipant());
@@ -180,6 +192,7 @@ class MatchNodeTest extends TestCase
       $this->assertFalse($this->node->isOngoing());
       $this->assertTrue($this->node->isCompleted());
       $this->assertTrue($this->node->isDecided());
+      $this->assertFalse($this->node->isTied());
       $this->assertSame($this->whiteParticipant, $this->node->getDefeated());
       $this->assertSame($this->redParticipant, $this->node->getWinner());
       $this->assertTrue($this->node->isModifiable());
@@ -248,5 +261,68 @@ class MatchNodeTest extends TestCase
 
       $this->expectException(\DomainException::class);
       $this->node->setMatchRecord($record);
+   }
+
+   /**
+    * MatchNode test with a valid MatchRecord, and a tie
+    */
+   public function testNodeValidMatchWithTie()
+   {
+      $this->redBye = false;
+      $this->whiteBye = false;
+      $this->redSet = true;
+      $this->whiteSet = true;
+
+      $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
+                                $this->redParticipant, $this->whiteParticipant, null, false,
+                                finalized_at: new \DateTime() );
+
+
+      $this->node->setMatchRecord($record);
+
+      $this->assertFalse($this->node->isObsolete());
+      $this->assertFalse($this->node->isBye());
+      $this->assertTrue($this->node->isReal());
+      $this->assertTrue($this->node->isDetermined());
+      $this->assertFalse($this->node->isPending());
+      $this->assertTrue($this->node->isEstablished());
+      $this->assertFalse($this->node->isOngoing());
+      $this->assertTrue($this->node->isCompleted());
+      $this->assertFalse($this->node->isDecided());
+      $this->assertTrue($this->node->isTied());
+      $this->assertSame(null, $this->node->getDefeated());
+      $this->assertSame(null, $this->node->getWinner());
+      $this->assertTrue($this->node->isModifiable());
+      $this->assertSame($this->redParticipant, $this->node->getRedParticipant());
+      $this->assertSame($this->whiteParticipant, $this->node->getWhiteParticipant());
+   }
+
+   /**
+    * tie break test
+    */
+   public function testTiesAllowed()
+   {
+      $this->redBye = false;
+      $this->whiteBye = false;
+      $this->redSet = true;
+      $this->whiteSet = true;
+
+      $this->assertTrue($this->node->tiesAllowed());
+
+      $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
+                           $this->redParticipant, $this->whiteParticipant,
+                           tie_break: true );
+      $this->node->setMatchRecord($record);
+      $this->assertFalse($this->node->tiesAllowed());
+
+      /* also test with setting this property at creation */
+      $node_class = get_class($this->node);
+      $tie_break_node = new $node_class("test", $this->redSlot, $this->whiteSlot, $this->mpHdl, tie_break: true);
+      $this->assertFalse($tie_break_node->tiesAllowed());
+      $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
+                     $this->redParticipant, $this->whiteParticipant,
+                     tie_break: false );
+      $tie_break_node->setMatchRecord($record);
+      $this->assertTrue($tie_break_node->tiesAllowed());
    }
 }

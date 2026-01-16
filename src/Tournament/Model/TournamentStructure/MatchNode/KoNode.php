@@ -8,6 +8,8 @@ use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
 
+use Tournament\Model\MatchPointHandler\MatchPointHandler;
+
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
@@ -18,26 +20,21 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
  */
 class KoNode extends MatchNode
 {
-   // link to the parent node inside the tree
-   public ?KoNode $parentNode = null;
-
    // use constructor to forward parentNode links to child nodes
-   public function __construct(string $name, MatchSlot $slotRed, MatchSlot $slotWhite, ?Area $area = null, ?MatchRecord $matchRecord = null)
+   public function __construct( string $name,
+                                MatchSlot $slotRed,
+                                MatchSlot $slotWhite,
+                                MatchPointHandler $mpHdl, // MatchPoint Handler to parse match points
+                                ?Area $area = null,
+                                ?MatchRecord $matchRecord = null)
    {
-      parent::__construct($name, $slotRed, $slotWhite, $area, $matchRecord);
-      if( $slotRed instanceof MatchWinnerSlot ) $slotRed->matchNode->parentNode = $this;
-      if( $slotWhite instanceof MatchWinnerSlot ) $slotWhite->matchNode->parentNode = $this;
+      parent::__construct($name, $slotRed, $slotWhite, $mpHdl, $area, false, $matchRecord);
    }
 
-   /* Match results may not be modified anymore
-    * For a KO tree node, the result may not be modified anymore
-    * if a follow-up match is already established, which means the winner
-    * of the current match is already employed in the next match.
-    * Also, take over any fixed result state from the parent node.
-    */
-   public function isResultFixed(): bool
+   /* KO matches always need a winner to be completed */
+   public function tiesAllowed(): bool
    {
-      return parent::isResultFixed() || ($this->parentNode?->isEstablished() ?? false);
+      return false;
    }
 
    /**
@@ -128,7 +125,7 @@ class KoNode extends MatchNode
     * get a participants of a specific rank (1=winner, 2=runner-up, 3=third place, ...)
     * @return ParticipantCollection
     */
-   public function getRanked($rank = 1): ParticipantCollection
+   public function getRanked(int $rank): ParticipantCollection
    {
       $result = [];
       if ($rank === 1)

@@ -22,4 +22,9 @@ class MatchNodeCollection extends ObjectCollection
       $result->goto($name);
       return $result;
    }
+
+   public function find(string $name): ?MatchNode
+   {
+      return $this->getIteratorAt($name)?->current();
+   }
 }

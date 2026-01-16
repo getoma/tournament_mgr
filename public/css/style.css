@@ -39,37 +39,37 @@ body {
 main {
   display: flex;
   width: 100%;
-  max-width: 1200px;   
+  max-width: 1200px;
   gap: 2rem;
 }
 
 /* Sidebar */
 aside {
-  min-width: 220px;               
-  background-color: #f0f4f8; 
+  min-width: 220px;
+  background-color: #f0f4f8;
   padding: 1rem;
   box-shadow: 2px 0 8px rgba(0,0,0,0.1);
-  border-right: 1px solid #ccc;   
+  border-right: 1px solid #ccc;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  height: auto; 
+  height: auto;
 }
 
 /* Hauptmenü */
 nav.tournament ul {
-  list-style: none;           
+  list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
-  flex-direction: column;     
+  flex-direction: column;
   gap: 0.25rem;
 }
 
 nav.tournament a {
   display: block;
-  padding: 0.5rem 0.9rem;     
+  padding: 0.5rem 0.9rem;
   text-decoration: none;
   color: #333;
   border-radius: 0.4rem;
@@ -84,18 +84,18 @@ nav.tournament a.active {
 
 /* Submenü */
 nav.tournament .submenu {
-  list-style: none;           
-  margin: 0.2rem 0 0 1rem;    
+  list-style: none;
+  margin: 0.2rem 0 0 1rem;
   padding: 0;
 }
 
 nav.tournament .submenu li {
-  margin: 0;                  
+  margin: 0;
 }
 
 nav.tournament .submenu a {
   display: block;
-  padding: 0.35rem 0.9rem;    
+  padding: 0.35rem 0.9rem;
   font-size: 0.9rem;
   color: #555;
   border-radius: 0.3rem;
@@ -103,18 +103,18 @@ nav.tournament .submenu a {
 }
 
 nav.tournament .submenu a:hover {
-  background-color: #e0f0ff;  
+  background-color: #e0f0ff;
   color: #0077cc;
 }
 
 nav.tournament .submenu li.active {
   display: block;
-  padding: 0.35rem 0.9rem;   
+  padding: 0.35rem 0.9rem;
   font-size: 0.9rem;
-  color: #0077cc;   
-  font-weight: bold;  
+  color: #0077cc;
+  font-weight: bold;
   border-radius: 0.3rem;
-  background-color: #e0f0ff; 
+  background-color: #e0f0ff;
 }
 
 /* Sub-Submenü als dritte Ebene */
@@ -138,7 +138,7 @@ nav.tournament .submenu-2 a {
 }
 
 nav.tournament .submenu-2 a:hover {
-  background-color: #e0f0ff;  
+  background-color: #e0f0ff;
   color: #0077cc;
 }
 
@@ -440,7 +440,7 @@ input[type="checkbox"] {
   padding-bottom: 0.5rem;
 }
 
-.form-box input[type="submit"], 
+.form-box input[type="submit"],
 .form-box button {
   background-color: #f0f0f0;   /* neutral hellgrau */
   color: #333;                 /* dunkler Text */
@@ -451,7 +451,7 @@ input[type="checkbox"] {
   transition: background 0.2s, color 0.2s;
 }
 
-.form-box input[type="submit"]:hover, 
+.form-box input[type="submit"]:hover,
 .form-box button:hover {
   background-color: #e0e0e0;   /* etwas dunkler beim Hover */
   color: #111;
@@ -559,5 +559,13 @@ input[type="checkbox"] {
 
 .tournament-status input[type="submit"]:hover {
   background: #e0e0e0;
+}
+
+tr.label_row td
+{
+   border: none;
+   font-weight: bold;
+   font-size: 90%;
+   padding-bottom: 0;
 }
 
