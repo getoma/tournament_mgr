@@ -52,10 +52,10 @@ class ParticipantsDataController
 
          if( $struc->pools->empty() )
          {
-            foreach($struc->ko->getRounds(0, 1)[0] as $node)
+            foreach($struc->ko->getFirstRound() as $node)
             {
                /** @var KoNode $node */
-               $selection[$node->name] = $MATCH_PREFIX . ' ' . $node->name;
+               $selection[$node->getName()] = $MATCH_PREFIX . ' ' . $node->getName();
             }
          }
          else

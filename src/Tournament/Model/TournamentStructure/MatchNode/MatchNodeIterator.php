@@ -51,7 +51,7 @@ class MatchNodeIterator implements \SeekableIterator, \Base\Model\ChainableItera
    {
       for( $i = 0; $i < $this->matches->count(); ++$i) // do NOT use foreach loop, or this will spawn another MatchNodeIterator
       {
-         if ($this->matches[$i]->name === $name)
+         if ($this->matches[$i]->getName() === $name)
          {
             $this->position = $i;
             return;

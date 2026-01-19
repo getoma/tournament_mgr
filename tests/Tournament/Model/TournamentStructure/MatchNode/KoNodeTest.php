@@ -100,7 +100,7 @@ class KoNodeTest extends TestCase
    {
       foreach( $this->node_list as $node )
       {
-         $this->assertSame($node, $this->node->findByName($node->name));
+         $this->assertSame($node, $this->node->findByName($node->getName()));
       }
       $this->assertSame(null, $this->node->findByName("bla"));
    }
@@ -181,7 +181,7 @@ class KoNodeTest extends TestCase
          }
          /* create the match record */
          $records[] = new MatchRecord(
-            1, $node->name, $category, $area,
+            1, $node->getName(), $category, $area,
             $redParticipant, $whiteParticipant, $winner,
             tie_break: false, finalized_at: new \DateTime() );
 

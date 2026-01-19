@@ -8,8 +8,8 @@ class SlottedParticipantCollection extends \Base\Model\ObjectCollection
 
    function __construct(iterable $data = [])
    {
-      parent::__construct($data);
       $this->unslotted = ParticipantCollection::new();
+      parent::__construct($data);
    }
 
    protected static function elements_type(): string

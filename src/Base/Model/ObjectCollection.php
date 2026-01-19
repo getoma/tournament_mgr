@@ -22,6 +22,13 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       }
    }
 
+   public function copy(): static
+   {
+      $result = static::new();
+      $result->elements = $this->elements;
+      return $result;
+   }
+
    abstract static protected function elements_type(): string;
 
    public function keyExists(int|string $key): bool
@@ -127,7 +134,7 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return array_search($value, $this->elements, true);
    }
 
-   public function find($callback): mixed
+   public function find(callable $callback): mixed
    {
       return array_find($this->elements, $callback);
    }
@@ -214,15 +221,5 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       {
          if($replace || !$this->contains($v) ) $this[] = $v;
       }
-   }
-
-   // support empty() on object
-   public function __isset($name): bool
-   {
-      if ($name === '0')
-      {
-         return $this->count() > 0;
-      }
-      return false;
    }
 }
