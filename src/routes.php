@@ -12,6 +12,8 @@ use Tournament\Policy\TournamentAction;
 use Tournament\Exception\EntityNotFoundException;
 use Tournament\Middleware\EntityNotFoundHandler;
 
+use Base\Service\RedirectHandler;
+
 use Slim\Routing\RouteCollectorProxy;
 
 
@@ -111,8 +113,9 @@ return function (\Slim\App $app)
          )->add( $statusGuardMW->for(TournamentAction::ManageSetup) );
 
          /* participants */
-         $tgrp->get( '/participants', [ParticipantsDataController::class, 'showParticipantList'])->setName('show_participant_list');
+         $tgrp->get('/participants', [ParticipantsDataController::class, 'showParticipantList'])->setName('show_participant_list');
          $tgrp->get('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'showParticipant'])->setName('show_participant');
+         $tgrp->get('/participants/import', [RedirectHandler::class, 'show_participant_list']);
          $tgrp->group('', function (RouteCollectorProxy $pgrp)
          {
             $pgrp->post('/participants', [ParticipantsDataController::class, 'updateParticipantList'])->setName('update_participant_list');
