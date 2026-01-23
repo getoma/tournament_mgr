@@ -123,7 +123,7 @@ class ParticipantRepository
          $participant = $this->getParticipantInstance($row);
          if( empty($slot_name) || $result->keyExists($slot_name) )
          {
-            $result->addUnslotted($participant);
+            $result->unslotted[] = $participant;
          }
          else
          {
