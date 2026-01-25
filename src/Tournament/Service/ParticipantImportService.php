@@ -3,6 +3,8 @@
 namespace Tournament\Service;
 
 use Tournament\Model\Category\CategoryCollection;
+use Tournament\Model\Participant\CategoryAssignment;
+use Tournament\Model\Participant\CategoryAssignmentCollection;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Repository\ParticipantRepository;
@@ -22,7 +24,8 @@ class ParticipantImportService
       $report = $this->split_duplicates($parse_report['participants'], $this->repo->getParticipantsByTournamentId($tournamentId));
       $report['participants'] = $parse_report['participants'];
       /* step 3: attach categories to new participants */
-      $report['new']->walk(fn($p) => $p->categories = $categories);
+      $assignments = $categories->map(fn($c) => new CategoryAssignment($c));
+      $report['new']->walk(fn($p) => $p->categories = new CategoryAssignmentCollection($assignments));
       /* done */
       return $report;
    }

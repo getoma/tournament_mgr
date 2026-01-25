@@ -7,17 +7,27 @@
    {{ form.input('text', 'lastname', 'Nachname', prev.lastname ?? participant.lastname, errors.lastname, {'maxlength':100}, required=true) }}
    {{ form.input('text', 'firstname', 'Vorname', prev.firstname ?? participant.firstname, errors.firstname, {'maxlength':100}, required=true) }}
    {{ form.input('text', 'club', 'Verein/Verband', prev.club ?? participant.club, errors.club, {'maxlength':127})}}
-   {{ form.checkbox('separation_flag', 'Bei Auslosung separieren', prev.separation_flag??participant.separation_flag, '', {'value': 1}) }}
-   <fieldset>
-    <legend>Kategorien</legend>
-   {% for category in categories %}
-   {{ form.checkbox('categories[]', category.name,
-      (prev.categories is defined)?(category.id in prev.categories):(participant.categories[category.id]??false),
-   attributes={'value': category.id}) }}
-   {% endfor %}
-   {% if errors.categories %}<p class="error">{{errors.categories}}</p>{%endif%}
-   </fieldset>
+   <table>
+    <thead>
+      <tr><th>Kategorie</th><th>Teilnahme</th><th>Startslot</th></tr>
+    </thead>
+    <tbody>
+      {% for category in categories -%}
+      <tr>
+        <td>{{category.name}}
+          <input type="hidden" name="categories[]" value="{{category.id}}">
+        </td>
+        <td><input type="checkbox" name="category_selection[]" value="{{category.id}}" title="{{category.name}}"
+            {%- if prev.categories is defined?(category.id in prev.categories):(participant.categories[category.id]??false) %} checked{%endif%}>
+        </td>
+        <td>
+          {{ form.select_plain('pre_assign[]', starting_slots[category.id], prev.pre_assign??participant.categories[category.id].pre_assign ) }}
+        </td>
+      </tr>
+      {% endfor %}
+      {% if errors.categories %}<p class="error">{{errors.categories}}</p>{%endif%}
+    </tbody>
+   </table>
    {{ form.submit('Speichern') }}
 </form>
-
 {% endblock %}

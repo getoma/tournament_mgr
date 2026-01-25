@@ -50,7 +50,7 @@ class TournamentStructureService
    /**
     * initialize a new TournamentStructure for a category and assign areas.
     */
-   private function initialize(Category $category): TournamentStructure
+   public function initialize(Category $category): TournamentStructure
    {
       $areas = $this->tournamentRepo->getAreasByTournamentId($category->tournament_id);
       $struc = new TournamentStructure($category, $areas);
