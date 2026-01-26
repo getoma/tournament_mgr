@@ -7,7 +7,15 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
+use Tournament\Model\Category\CategoryCollection;
 use Tournament\Model\Participant\Participant;
+use Tournament\Model\Participant\CategoryAssignment;
+use Tournament\Model\Participant\CategoryAssignmentCollection;
+use Tournament\Model\TournamentStructure\MatchNode\KoNode;
+use Tournament\Model\TournamentStructure\Pool\Pool;
+
+use Tournament\Service\ParticipantImportService;
+use Tournament\Service\TournamentStructureService;
 
 use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\ParticipantRepository;
@@ -21,7 +29,62 @@ class ParticipantsDataController
       private Twig $view,
       private ParticipantRepository $repo,
       private TournamentRepository $tournamentRepo,
+      private ParticipantImportService $plistParser,
+      private TournamentStructureService $tournamentService,
    ) {
+   }
+
+   /**
+    * retrieve the start slots for a category, to enable pre-assignment of starting slots
+    * if Participant provided as well, further filter them down to the selection available to that one
+    */
+   private function getStartingSlotSelection(CategoryCollection $categories, ?Participant $participant = null): array
+   {
+      $MATCH_PREFIX = 'Kampf';
+      $POOL_PREFIX = 'Pool';
+      $RANDOM_VALUE = '?';
+
+      $result = [];
+      foreach( $categories as $category )
+      {
+         $struc = $this->tournamentService->initialize($category); // only initialize the basic structure, without loading any actual data
+         $selection = ['' => $RANDOM_VALUE];
+
+         if( $struc->pools->empty() )
+         {
+            foreach($struc->ko->getRounds(0, 1)[0] as $node)
+            {
+               /** @var KoNode $node */
+               $selection[$node->name] = $MATCH_PREFIX . ' ' . $node->name;
+            }
+         }
+         else
+         {
+            foreach ($struc->pools as $pool)
+            {
+               /** @var Pool $pool */
+               $selection[$pool->getName()] = $POOL_PREFIX . ' ' . $pool->getName();
+            }
+         }
+         $result[$category->id] = $selection;
+      }
+
+      if( $participant )
+      {
+         /* remove already taken starting slots from the selection */
+         foreach ($this->repo->getPreAssignmentsByTournamentId($participant->tournament_id) as $categoryId => $list)
+         {
+            foreach ($list as $pa)
+            {
+               if ($pa != $participant->categories[$categoryId]->pre_assign)
+               {
+                  unset($result[$categoryId][$pa]);
+               }
+            }
+         }
+      }
+
+      return $result;
    }
 
    /**
@@ -34,11 +97,12 @@ class ParticipantsDataController
       $participants = $this->repo->getParticipantsByTournamentId($tournament->id);
 
       return $this->view->render($response, 'tournament/participants/overview.twig', [
-         'tournament' => $tournament,
-         'categories' => $categories,
-         'participants' => $participants,
+         'tournament'     => $tournament,
+         'categories'     => $categories,
+         'starting_slots' => $this->getStartingSlotSelection($categories),
+         'participants'   => $participants,
          'errors' => $errors,
-         'prev' => $prev,
+         'prev'   => $prev,
       ]);
    }
 
@@ -66,11 +130,15 @@ class ParticipantsDataController
    {
       $tournament = $request->getAttribute('tournament');
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
+
       $validation_rules = [];
+      /* preprocess category input data */
       foreach ($categories as $category)
       {
-         $validation_rules['category_' . $category->id] = v::arrayType()->each(
-            v::numericVal()->intVal()->notEmpty()->min(0)
+         $form_name = 'category_' . $category->id;
+         $validation_rules[$form_name] = v::oneOf(
+            v::nullType(),
+            v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0))
          );
       }
 
@@ -102,73 +170,55 @@ class ParticipantsDataController
     */
    public function importParticipantList(Request $request, Response $response, array $args): Response
    {
+      $tournament = $request->getAttribute('tournament');
+      $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
+
       $data = $request->getParsedBody();
       $rules = [
-         'categories' => v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0)),
-         'participants' => v::stringType()->notEmpty()->length(1, max: 10000)->setTemplate('ungültige Länge')
+         'participants' => v::stringType()->notEmpty()->length(1, max: 10000)->setTemplate('ungültige Länge'),
+         'club' => v::stringType()->length(max:100),
+         'categories' => v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->in($categories->column('id')))->setTemplate('mindestens eine gültige Kategorie muss gewählt werden'),
       ];
       $errors = DataValidationService::validate($data, $rules);
 
-      /* parse the file content into an array - one participant per line, either as:
-         - "firstname lastname", or
-         - "lastname, firstname"
-      */
+      $p_categories = isset($errors['categories'])? CategoryCollection::new() : $categories->filter(fn($c) => in_array($c->id, $data['categories']));
 
-      $participants = [];
-      $parse_errors = [];
-
-      if (!array_key_exists('participants', $errors) && !empty($data['participants']))
+      if (!isset($errors['participants']))
       {
-         $lines = explode("\n", $data['participants'] ?? '');
-         foreach ($lines as $line)
+         $import_report = $this->plistParser->import($data['participants']??'', $tournament->id, $p_categories, $data['club']??null);
+         if (isset($import_report['errors']))
          {
-            $line = trim($line);
-            if (empty($line))
-               continue; // skip empty lines
-
-            // Split by comma if present, otherwise treat as "firstname lastname"
-            if (strpos($line, ',') !== false)
-            {
-               list($lastname, $firstname) = explode(',', $line, 2);
-            }
-            elseif (strpos($line, ' ') !== false)
-            {
-               list($firstname, $lastname) = explode(' ', $line, 2);
-            }
-            else
-            {
-               $parse_errors[] = "Kann Namen nicht erkennen (Nachname, Vorname nötig): '$line'";
-               continue; // skip invalid lines
-            }
-            $participants[] = ['firstname' => trim($firstname), 'lastname' => trim($lastname)];
+            $errors['participants'] = "Konnte folgende Zeilen nicht erkennen: \n" . join("\n", $import_report['errors']);
          }
-
-         if (count($parse_errors))
+         elseif(empty($import_report['participants']))
          {
-            $errors['participants'] = join("\n", $parse_errors);
+            $errors['participants'] = 'Keine Teilnehmer gefunden.';
          }
       }
 
-      if (count($participants) === 0 && count($errors) === 0)
-      {
-         $errors['participants'] = 'Keine Teilnehmer gefunden.';
-      }
-
-      if (count($errors) > 0)
+      if (!empty($errors))
       {
          // If there are errors, render the participant list with errors
+         $errors['input_error'] = true;
          return $this->renderParticipantList($request, $response, $args, $errors, $data);
       }
 
+      $import_ok = $this->repo->importParticipants($import_report['new']);
+
       // Process the uploaded file and import participants
-      $imported = $this->repo->importParticipants($request->getAttribute('tournament')->id, $participants, $data['categories'] ?? []);
-      if ($imported)
+      if ($import_ok && $import_report['duplicate']->empty())
       {
          return $this->sendToParticipantList($request, $response, $args);
       }
-
-      $response->getBody()->write('Failed to import participants');
-      return $response->withStatus(500);
+      else
+      {
+         // If there are errors, render the participant list with errors
+         $errors = [
+            'sql_error'  => $this->repo->getLastErrors(),
+            'duplicate' => $import_report['duplicate'],
+         ];
+         return $this->renderParticipantList($request, $response, $args, $errors, []);
+      }
    }
 
    /**
@@ -194,13 +244,17 @@ class ParticipantsDataController
    public function showParticipant(Request $request, Response $response, array $args): Response
    {
       $tournament = $request->getAttribute('tournament');
+      /** @var Participant $participant */
       $participant = $request->getAttribute('participant');
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
 
+      $starting_slots = $this->getStartingSlotSelection($categories, $participant);
+
       return $this->view->render($response, 'tournament/participants/details.twig', [
-         'tournament' => $tournament,
-         'categories' => $categories,
-         'participant' => $participant,
+         'tournament'     => $tournament,
+         'categories'     => $categories,
+         'starting_slots' => $starting_slots,
+         'participant'    => $participant,
       ]);
    }
 
@@ -211,32 +265,62 @@ class ParticipantsDataController
    public function updateParticipant(Request $request, Response $response, array $args): Response
    {
       $tournament = $request->getAttribute('tournament');
+      $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
+      /** @var Participant $participant */
       $participant = $request->getAttribute('participant');
 
+      $starting_slots = $this->getStartingSlotSelection($categories, $participant);
+
       $data = $request->getParsedBody();
+      $data['category_selection'] ??= [];
       $participant_rules = Participant::validationRules();
       $participant_rules['categories'] = v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0));
+      $participant_rules['category_selection'] = $participant_rules['categories'];
+      $participant_rules['pre_assign'] = v::arrayType();
       $errors = DataValidationService::validate($data, $participant_rules);
 
       // return form if there are errors
-      if (count($errors) > 0)
+      if (!count($errors))
       {
-         return $this->view->render($response, 'tournament/participants/details.twig', [
-            'tournament' => $tournament,
-            'categories' => $this->tournamentRepo->getCategoriesByTournamentId($tournament->id),
-            'participant' => $participant,
-            'errors' => $errors,
-            'prev' => $data,
-         ]);
+         // Update participant data
+         $participant->updateFromArray($data);
+
+         // take over category assignment
+         $participant->categories = CategoryAssignmentCollection::new(
+            array_map(fn($id) => new CategoryAssignment($this->tournamentRepo->getCategoryById($id)), $data['category_selection']??[])
+         );
+
+         // take over pre-assigned slots
+         for( $i = 0; $i < count($data['categories']); ++$i )
+         {
+            $categoryId = $data['categories'][$i];
+
+            if( $assignment = $participant->categories[$categoryId] ?? null )
+            {
+               if( isset($starting_slots[$categoryId][$data['pre_assign'][$i]]) )
+               {
+                  $assignment->pre_assign = $data['pre_assign'][$i] ?: null;
+               }
+            }
+         }
+
+         // try to save
+         if ($this->repo->saveParticipant($participant))
+         {
+            return $this->sendToParticipantList($request, $response, $args);
+         }
+         else
+         {
+            $errors['sql_error'] = $this->repo->getLastErrors();
+         }
       }
 
-      // Update participant data
-      if ($this->repo->updateParticipant($participant->id, $data))
-      {
-         return $this->sendToParticipantList($request, $response, $args);
-      }
-
-      $response->getBody()->write('Failed to update participant');
-      return $response->withStatus(400);
+      return $this->view->render($response, 'tournament/participants/details.twig', [
+         'tournament'  => $tournament,
+         'categories'  => $categories,
+         'participant' => $participant,
+         'errors'      => $errors,
+         'prev'        => $data,
+      ]);
    }
 }

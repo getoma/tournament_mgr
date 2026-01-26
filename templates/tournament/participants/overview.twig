@@ -18,8 +18,21 @@
   {% endif %}
 {% endblock %}
 
-
 {% block content %}
+{%- if errors %}
+<div class="form-box">
+  {% if errors.input_error %}<p class="form-error">Teilnehmer konnten nicht importiert werden, bitte Eingaben überprüfen</p>{% endif -%}
+  {% if errors.sql_error %}<p class="form-error">{{errors.sql_error}}</p>{% endif -%}
+  {% if errors.duplicate -%}
+  <p class="form-warning">Teilnehmer bereits erfasst und nicht neu importiert:</p>
+  <ul id="duplicate_participant_list">
+    {% for participant in errors.duplicate %}
+    <li>{{participant.lastname}}, {{participant.firstname}} {%if participant.club%}({{participant.club}}){%endif%}</li>
+    {% endfor %}
+  </ul>
+  {%-endif%}
+</div>
+{% endif -%}
 <div class="form-box">
 <h2>Teilnehmer</h2>
 <table class="participants-table">
@@ -27,6 +40,7 @@
       <tr>
          <th>Aktionen</th>
          <th>Teilnehmer</th>
+         <th title="Teilnehmer aus dem selben Verband oder Verein werden bei Auslosung möglichst weit voneinander entfernt platziert.">Verband/Verein</th>
          {% for category in categories -%}
          <th>{{ category.name }}</th>
          {% endfor -%}
@@ -42,9 +56,14 @@
             </form>
          </td>
          <td>{{ participant.lastname }}, {{ participant.firstname }}</td>
+         <td>{{ participant.club }} </td>
          {% for category in categories -%}
          <td><input type="checkbox" name="category_{{category.id}}[]" value="{{participant.id}}" title="{{category.name}}" form="participant_list_form"
-                {%- if participant.categories[category.id] is defined %} checked{%endif%}></td>
+                {%- if participant.categories[category.id] is defined %} checked{%endif%}>
+                {%- if participant.categories[category.id].pre_assign -%}
+                <span>{{starting_slots[category.id][participant.categories[category.id].pre_assign]}}</span>
+                {%- endif -%}
+         </td>
          {% endfor -%}
          </tr>
       {% endfor %}
@@ -58,18 +77,20 @@
 <div class="form-box">
 <h2>Teilnehmer hinzufügen</h2>
 <form method="POST" action="{{ url_for('import_participants', { 'tournamentId': tournament.id }) }}" id="participant_add_form">
-    
-    	<label for="participants">Teilnehmerliste</label>
-    	{{ form.textarea('participants', '', prev.participants ?? '', errors.participants, attributes={'rows':10, 'cols': 50, 'id':'participants', 'placeholder':'Vorname Nachname pro Zeile'}) }}
-	
+
+    {{ form.textarea('participants', 'Direkteingabe', prev.participants ?? '', errors.participants, attributes={'rows':10, 'cols': 50, 'id':'participants', 'placeholder':'Vorname Nachname pro Zeile'}) }}
+
+    {{ form.input('text', 'club', 'Verein/Verband', prev.club ?? '', errors.club, attributes={'maxlength':100}) }}
+
     <fieldset class="category-fieldset">
       <legend>Kategorien auswählen</legend>
       <div class="category-checkboxes">
-        {% for category in categories %}
-          <label class="category-label">
-            {{ form.checkbox('categories[]', category.name, category.id in prev.categories, '', attributes={'value': category.id}) }}
-          </label>
-        {% endfor %}
+        {% for category in categories -%}
+        {{ form.checkbox('categories[]', category.name, category.id in prev.categories, '', attributes={'value': category.id}) }}
+        {%- endfor %}
+        {%- if errors.categories %}
+        <p class="error">{{errors.categories}}</p>
+        {%endif-%}
       </div>
     </fieldset>
 

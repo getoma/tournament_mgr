@@ -95,7 +95,7 @@ class TournamentStructure
 
    public function loadParticipants(SlottedParticipantCollection $participants)
    {
-      $this->unmapped_participants = $participants->unslotted();
+      $this->unmapped_participants = $participants->unslotted;
 
       if(!$this->pools->empty())
       {

@@ -37,7 +37,11 @@ abstract class DbItem
 
          $value = $props[$key];
 
-         if( is_scalar($value) || $value === null )
+         if( is_bool($value) )
+         {
+            $result[$key] = $value? 1 : 0;
+         }
+         else if( is_scalar($value) || $value === null )
          {
             $result[$key] = $value;
          }
