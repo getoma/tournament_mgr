@@ -299,7 +299,7 @@ class ParticipantsDataController
             {
                if( isset($starting_slots[$categoryId][$data['pre_assign'][$i]]) )
                {
-                  $assignment->pre_assign = $data['pre_assign'][$i];
+                  $assignment->pre_assign = $data['pre_assign'][$i] ?: null;
                }
             }
          }
