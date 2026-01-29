@@ -9,7 +9,7 @@ use Base\Service\SessionService;
 use Base\Service\DbUpdateService;
 
 use Base\Repository\UserRepository;
-
+use Base\Service\TmpStorageService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Views\Twig;
@@ -25,7 +25,8 @@ class AuthController
       private MailService $mailService,
       private UserRepository $userRepository,
       private SessionService $session,
-      private DbUpdateService $dbUpdService
+      private DbUpdateService $dbUpdService,
+      private TmpStorageService $storageService,
    )
    {
    }
@@ -66,6 +67,9 @@ class AuthController
                ]);
             }
          }
+
+         /* also, clean-up any left-over import files of this user */
+         $this->storageService->cleanup($user->id);
 
          return $response
             ->withHeader('Location', $redirect)
