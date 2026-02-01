@@ -39,9 +39,9 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return array_values($this->elements);
    }
 
-   public function column(string $attr): array
+   public function column(string $attr, ?string $indexattr = null): array
    {
-      return array_column($this->elements, $attr);
+      return array_column($this->elements, $attr, $indexattr);
    }
 
    public function keys(): array
@@ -127,6 +127,11 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return array_search($value, $this->elements, true);
    }
 
+   public function find($callback): mixed
+   {
+      return array_find($this->elements, $callback);
+   }
+
    public function contains($value): bool
    {
       return $this->search($value) !== false;
@@ -191,6 +196,24 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
    public function walk(callable $callback, $arg = null): void
    {
       array_walk($this->elements, $callback, $arg);
+   }
+
+   public function merge(iterable $other): static
+   {
+      return static::new(array_merge($this->elements, $other));
+   }
+
+   /**
+    * merge $other into $this without creating a new copy
+    * @param $other   - the other collection to merge
+    * @param $replace - if true, any duplicate in $other will replace the object inside $this. if false, duplicates in $other will be dropped
+    */
+   public function mergeInPlace(iterable $other, bool $replace = true): void
+   {
+      foreach( $other as $v )
+      {
+         if($replace || !$this->contains($v) ) $this[] = $v;
+      }
    }
 
    // support empty() on object
