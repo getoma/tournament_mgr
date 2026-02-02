@@ -1,9 +1,11 @@
 {% extends 'base/layout.twig' %}
 
 {% block nav_extension %}
+  {%- if policy.isActionAllowed('CreateTournaments') %}
   <ul class="submenu">
     <li><a href="{{ url_for('new_tournament_form') }}">Neues Turnier anlegen</a></li>
   </ul>
+  {%- endif -%}
 {% endblock %}
 
 {% block content %}

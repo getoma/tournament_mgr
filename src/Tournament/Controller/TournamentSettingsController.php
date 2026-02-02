@@ -15,7 +15,6 @@ use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\Tournament\TournamentStatus;
 
-use Tournament\Policy\TournamentPolicy;
 use Tournament\Service\TournamentStructureService;
 
 
@@ -25,7 +24,6 @@ class TournamentSettingsController
       private Twig $view,
       private TournamentRepository $repo,
       private TournamentStructureService $structureLoadService,
-      private TournamentPolicy $policy,
    ) {
    }
 
@@ -146,7 +144,7 @@ class TournamentSettingsController
       /** @var Tournament $tournament */
       $tournament = $request->getAttribute('tournament');
 
-      if( $new_state && $this->policy->canTransition($tournament, $new_state) )
+      if( $new_state && $tournament->getStateHandler()->canTransition($new_state) )
       {
          $tournament->status = $new_state;
          $this->repo->saveTournament($tournament);

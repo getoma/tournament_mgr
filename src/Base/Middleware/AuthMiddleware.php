@@ -51,4 +51,22 @@ class AuthMiddleware implements MiddlewareInterface
          return $handler->handle($request);
       }
    }
+
+   /**
+    * factory method to create the middleware with dependencies from the container
+    */
+   static public function create(
+      \Slim\App $app,
+      string $loginRoute,
+      ?array $freeRoutes = [],
+      ?AuthService $authService = null,
+      ?SessionService $session = null,
+
+   ): self
+   {
+      $container = $app->getContainer();
+      if (!isset($authService)) $authService = $container->get(\Base\Service\AuthService::class);
+      if (!isset($session))     $session = $container->get(\Base\Service\SessionService::class);
+      return new self($authService, $session, $loginRoute, $freeRoutes);
+   }
 }
