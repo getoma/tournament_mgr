@@ -13,6 +13,7 @@ use Base\Service\PrgService;
 
 use Tournament\Exception\EntityNotFoundException;
 use Tournament\Model\User\Role;
+use Tournament\Model\User\RoleCollection;
 use Tournament\Repository\UserRepository;
 use Tournament\Model\User\User;
 use Tournament\Policy\TournamentPolicy;
@@ -170,7 +171,11 @@ class UserManagementController
 
       if( !$errors ) // if input valid, check policy
       {
-         /* TODO: check if current user is even allowed to modify this other user */
+         $newRoles = RoleCollection::new($data['roles']);
+         if( !$policy->canModifyUser($user, $newRoles) )
+         {
+            $errors['policy'] = 'Nutzeränderung nicht erlaubt';
+         }
       }
 
       if( $errors ) // if either input invalid or policy blocks, return with error

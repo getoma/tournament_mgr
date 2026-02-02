@@ -15,7 +15,6 @@ use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\Tournament\TournamentStatus;
 
-use Tournament\Policy\TournamentPolicy;
 use Tournament\Service\RouteArgsContext;
 use Tournament\Service\TournamentStructureService;
 
@@ -27,7 +26,6 @@ class TournamentSettingsController
       private Twig $view,
       private TournamentRepository $repo,
       private TournamentStructureService $structureLoadService,
-      private TournamentPolicy $policy,
       private PrgService $prgService,
    ) {
    }
@@ -145,7 +143,7 @@ class TournamentSettingsController
       $data = $request->getParsedBody();
       $new_state = TournamentStatus::tryFrom($data['status']);
 
-      if( $new_state && $this->policy->canTransition($ctx->tournament, $new_state) )
+      if( $new_state && $ctx->tournament->getStateHandler()->canTransition($new_state) )
       {
          $ctx->tournament->status = $new_state;
          $this->repo->saveTournament($ctx->tournament);

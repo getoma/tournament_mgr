@@ -41,4 +41,10 @@ class Tournament implements \Tournament\Model\Base\DbItem
          'notes'  => v::optional(v::stringType()->length(0, 500)),
       ];
    }
+
+   /* get the state handler */
+   public function getStateHandler()
+   {
+      return new TournamentStateHandler($this);
+   }
 }

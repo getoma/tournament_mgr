@@ -3,6 +3,8 @@
 namespace Tournament\Service;
 
 use Templates\Navigation;
+use Tournament\Model\User\AuthContext;
+use Tournament\Policy\TournamentPolicy;
 
 class NavigationStructureService
 {
@@ -12,9 +14,14 @@ class NavigationStructureService
    {
    }
 
-   public function build(?RouteArgsContext $ctx, string $active_route = ''): array
+   /**
+    * Service may be called from a place where the central TournamentPolicy object is not yet created via
+    * the corresponding middleware - therefore we create our own Policy object from AuthContext and RouteArgsContext
+    */
+   public function build(AuthContext $auth, ?RouteArgsContext $ctx, string $active_route = ''): array
    {
-      $structure = static::preprocess($this->nav->structure($ctx));
+      $policy = new TournamentPolicy($auth, $ctx);
+      $structure = static::preprocess($this->nav->structure($policy, $ctx));
       $args = $ctx?->args ?? [];
       $path = static::derivePath($structure, $active_route, $args);
       $active_routes = array_column($path, 'route');

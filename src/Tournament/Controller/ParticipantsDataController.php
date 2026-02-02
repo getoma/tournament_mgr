@@ -257,7 +257,7 @@ class ParticipantsDataController
             $parsed = $parsed[0];
 
             /* store it as json into the tmp directory */
-            $current_user = $request->getAttribute('current_user');
+            $current_user = $request->getAttribute('auth_context')->user;
             $this->storage->store($current_user->id, static::IMPORT_BUFFER_FILE, json_encode($parsed));
 
             return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
@@ -274,7 +274,7 @@ class ParticipantsDataController
     */
    public function confirmUpload(Request $request, Response $response, array $args)
    {
-      $current_user = $request->getAttribute('current_user');
+      $current_user = $request->getAttribute('auth_context')->user;
 
       /* try to read in the buffered import file */
       $json = $this->storage->load($current_user->id, static::IMPORT_BUFFER_FILE);
@@ -436,7 +436,7 @@ class ParticipantsDataController
     */
    public function abortUpload(Request $request, Response $response, array $args): Response
    {
-      $current_user = $request->getAttribute('current_user');
+      $current_user = $request->getAttribute('auth_context')->user;
       $this->storage->drop($current_user->id, static::IMPORT_BUFFER_FILE);
       return $this->prgService->redirect($request, $response, 'show_participant_list', $args, false);
    }

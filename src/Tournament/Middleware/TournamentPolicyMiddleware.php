@@ -6,10 +6,9 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Slim\Views\Twig;
-use Slim\Routing\RouteContext;
 
-use Tournament\Policy\CurrentTournamentPolicy;
+use Slim\Views\Twig;
+
 use Tournament\Policy\TournamentPolicy;
 
 /**
@@ -18,27 +17,31 @@ use Tournament\Policy\TournamentPolicy;
  */
 class TournamentPolicyMiddleware implements MiddlewareInterface
 {
-   public function __construct(private TournamentPolicy $tournamentPolicy, private Twig $twig)
+   public function __construct(private Twig $twig)
    {
    }
 
    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
    {
-      // acquire the current route
-      $route = RouteContext::fromRequest($request)->getRoute();
-      if (!$route)
+      // acquire the authorization context
+      $auth_context = $request->getAttribute('auth_context');
+      if (!$auth_context)
       {
-         throw new \DomainException("Route could not be determined from request. Is the RoutingMiddleware registered?");
+         throw new \DomainException('authorization context could not be acquired - is the AuthContextMiddleware registered?');
       }
 
-      /** @var RouteArgsContext $ctx acquire the routing context*/
-      $ctx = $request->getAttribute('route_context');
+      // acquire RouteArgsContext
+      $route_context = $request->getAttribute('route_context');
+      if (!$route_context)
+      {
+         throw new \DomainException('route context could not be acquired - is the RouteArgsResolverMiddleware registered?');
+      }
 
-      // extract the tournament from the route and spawn the policy handler for it
-      $policy = new CurrentTournamentPolicy($ctx->tournament, $this->tournamentPolicy);
+      // spawn the policy handler
+      $policy = new TournamentPolicy($auth_context, $route_context);
 
       // inject the policy handler
-      $this->twig->getEnvironment()->addGlobal('policy', $policy);
+      $this->twig?->getEnvironment()->addGlobal('policy', $policy);
       $request = $request->withAttribute('policy', $policy);
 
       // done
@@ -50,14 +53,11 @@ class TournamentPolicyMiddleware implements MiddlewareInterface
     */
    static public function create(
       \Slim\App $app,
-      ?\Tournament\Policy\TournamentPolicy $policy = null,
       ?\Slim\Views\Twig $twig = null
    ): self
    {
       $container = $app->getContainer();
-      if( !isset($policy) ) $policy = $container->get(\Tournament\Policy\TournamentPolicy::class);
-      if( !isset($twig) )   $twig = $container->get(\Slim\Views\Twig::class);
-
-      return new self($policy, $twig);
+      if (!isset($twig) && $container->has(Twig::class)) $twig = $container->get(Twig::class);
+      return new self($twig);
    }
 }

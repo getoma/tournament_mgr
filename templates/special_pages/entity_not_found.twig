@@ -1,7 +1,8 @@
-{% include 'base/header.twig' with {
-  'heading': 'Eintrag nicht gefunden.'
-}%}
+{% include 'base/header.twig' %}
 
-<p>Für diese Seite gibt es leider keinen Eintrag: <span class="error">{{message}}</span></p>
+<section>
+  <h2>Eintrag nicht gefunden</h2>
+  <p>Für diese Seite gibt es leider keinen Eintrag: <span class="error">{{message}}</span></p>
+</section>
 
 {% include 'base/footer.twig' %}
