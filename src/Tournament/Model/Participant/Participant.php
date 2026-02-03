@@ -4,17 +4,19 @@ namespace Tournament\Model\Participant;
 
 use Respect\Validation\Validator as v;
 
-class Participant extends \Tournament\Model\Base\DbItem
+class Participant implements \Tournament\Model\Base\DbItem
 {
+   use \Tournament\Model\Base\DbItemTrait;
+
    public function __construct(
-      ?int $id,                           // Unique identifier for the participant
+      public ?int $id,                    // Unique identifier for the participant
       public readonly int $tournament_id, // Identifier for the tournament this participant belongs to
       public string $lastname,            // Last name of the participant
       public string $firstname,           // First name of the participant
       public ?string $club = null,        // Club/Association of participant
       public CategoryAssignmentCollection $categories = new CategoryAssignmentCollection() // Categories the participant is registered in
-   ) {
-      $this->id = $id;
+   )
+   {
    }
 
    /* get the validation rules for the participant */

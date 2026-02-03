@@ -4,12 +4,14 @@ namespace Tournament\Model\Tournament;
 
 use Respect\Validation\Validator as v;
 
-class Tournament extends \Tournament\Model\Base\DbItem
+class Tournament implements \Tournament\Model\Base\DbItem
 {
+   use \Tournament\Model\Base\DbItemTrait;
+
    public TournamentStatus $status;
 
    public function __construct(
-      ?int $id,                     // Unique identifier for the tournament
+      public ?int $id,              // Unique identifier for the tournament
       public string $name,          // Name of the tournament
       public string $date,          // Date of the tournament
       public ?string $notes = null, // Additional notes about the tournament
@@ -17,7 +19,6 @@ class Tournament extends \Tournament\Model\Base\DbItem
    )
    {
       $this->status = $status instanceof TournamentStatus ? $status : TournamentStatus::from($status);
-      $this->id = $id;
    }
 
    public function updateFromArray(array $data): void
