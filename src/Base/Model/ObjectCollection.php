@@ -145,6 +145,19 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return $result;
    }
 
+   public function map_keys(callable $callback): self
+   {
+      $result = self::new();
+      $keys = array_map($callback, $this->elements);
+      $result->elements = array_combine($keys, $this->elements);
+      return $result;
+   }
+
+   public function map(callable $callback): array
+   {
+      return array_map($callback, $this->elements);
+   }
+
    public function slice(int $offset, ?int $length = null): static
    {
       return new static(array_slice($this->elements, $offset, $length));
@@ -173,6 +186,11 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
          if( !$callback($e, $k) ) return false;
       }
       return true;
+   }
+
+   public function walk(callable $callback, $arg = null): void
+   {
+      array_walk($this->elements, $callback, $arg);
    }
 
    // support empty() on object
