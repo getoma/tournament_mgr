@@ -233,7 +233,7 @@ class TournamentTreeController
          /* get the ordered list of matches in the current pool */
          $nav_match_list = $pool->getMatchList();
          /* get the current match node */
-         $node = $nav_match_list->find($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+         $node = $nav_match_list->findNode($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
       }
       else
       {
@@ -305,7 +305,7 @@ class TournamentTreeController
          /** @var Pool $pool */
          $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
          /* get the ordered list of matches in the current pool */
-         $node = $pool->getMatchList()->find($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+         $node = $pool->getMatchList()->findNode($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
       }
       else
       {

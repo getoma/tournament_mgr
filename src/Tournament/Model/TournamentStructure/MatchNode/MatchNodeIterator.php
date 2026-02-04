@@ -75,7 +75,7 @@ class MatchNodeIterator implements \SeekableIterator, \Base\Model\ChainableItera
       return new self($this->matches, $position);
    }
 
-   public function find(string $name): self
+   public function findNode(string $name): self
    {
       $new = new self($this->matches);
       $new->goto($name);
