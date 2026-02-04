@@ -251,7 +251,7 @@ class MatchNodeTest extends TestCase
       $this->whiteSet = true;
 
       /** @var Participant $newRedParticipant */
-      $newRedParticipant = $this->createStub(Participant::class);
+      $newRedParticipant = new Participant(100, 1, '', '');
 
       $record = new MatchRecord(
          1, "test", $this->category, $this->area,

@@ -6,10 +6,12 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\Participant;
 
-class MatchRecord extends \Tournament\Model\Base\DbItem
+class MatchRecord implements \Tournament\Model\Base\DbItem
 {
+   use \Tournament\Model\Base\DbItemTrait;
+
    public function __construct(
-      ?int $id,
+      public ?int $id,
       public readonly string $name,
       public readonly Category $category,
       public readonly Area $area,
@@ -34,8 +36,6 @@ class MatchRecord extends \Tournament\Model\Base\DbItem
       {
          throw new \UnexpectedValueException("invalid match: white and red participant must be different");
       }
-
-      $this->id = $id;
    }
 
    public static function validationRules(): array

@@ -49,9 +49,7 @@ class PoolTest extends TestCase
       $res = new ParticipantCollection();
       for( $i = 1; $i <= 3; ++$i )
       {
-         $p = $this->createStub(Participant::class);
-         $p->id = $i;
-         $res[] = $p;
+         $res[] = new Participant($i, 1, '', '');
       }
       return $res;
    }
