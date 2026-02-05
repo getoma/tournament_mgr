@@ -294,7 +294,7 @@ class ParticipantsDataController
       $category_value = fn($c) => 'category_' . $c->id;
       $category_keys  = $categories->map($category_value);
       $column_types = ["" => "---"]
-                    + array_map('array_first', ParticipantImportService::EXPECTED_COLUMN_NAMES)
+                    + array_map(fn($c) => $c[0], ParticipantImportService::EXPECTED_COLUMN_NAMES)
                     + array_combine($category_keys, $categories->column('name'));
 
       /* provide the category selection for the global category setting */
