@@ -26,4 +26,14 @@ abstract class MatchSlot
     * make sure the participant provided by this slot is no longer modified
     */
    abstract public function freezeResult(): void;
+
+   /**
+    * get the slot name for any slot that is a starting slot
+    * @return string name of the slot if this is a vialable starting slot
+    * @return null  if this is not a viable starting slot
+    */
+   public function getName(): ?string
+   {
+      return null;
+   }
 }

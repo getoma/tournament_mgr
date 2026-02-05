@@ -18,7 +18,7 @@ class MatchWinnerSlot extends MatchSlot
 
    public function str(): string
    {
-      return $this->isBye()? '--' : 'Winner match ' . $this->matchNode->name;
+      return $this->isBye()? '--' : 'Winner match ' . $this->matchNode->getName();
    }
 
    public function getParticipant(): ?Participant

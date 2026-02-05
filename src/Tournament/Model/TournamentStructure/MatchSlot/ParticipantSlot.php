@@ -6,7 +6,7 @@ use Tournament\Model\Participant\Participant;
 
 class ParticipantSlot extends MatchSlot
 {
-   public function __construct(public ?Participant $participant = null)
+   public function __construct(public ?Participant $participant = null, public ?string $slotName = null)
    {
    }
 
@@ -28,6 +28,15 @@ class ParticipantSlot extends MatchSlot
    public function freezeResult(): void
    {
       // nothing to do
+   }
+
+   /**
+    * get the slot name for any slot that is a starting slot
+    * @return string name of the slot: name of owning node + color
+    */
+   public function getName(): ?string
+   {
+      return $this->slotName;
    }
 
 }

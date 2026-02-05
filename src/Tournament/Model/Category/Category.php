@@ -69,5 +69,15 @@ class Category implements \Tournament\Model\Base\DbItem
    {
       return new \Tournament\Model\MatchCreationHandler\GenericMatchCreationHandler();
    }
+
+   /**
+    * PlacmentCostCalculator
+    */
+   public function getPlacementCostCalculator(): \Tournament\Model\PlacementCostCalculator\PlacementCostCalculator
+   {
+      $config = [];
+      if( $this->config->ignore_club ) $config['club_weight'] = 0;
+      return new \Tournament\Model\PlacementCostCalculator\GenericPlacementCostCalculator(...$config);
+   }
 }
 

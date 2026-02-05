@@ -5,13 +5,13 @@ namespace Tournament\Model\TournamentStructure\MatchNode;
 use Tournament\Model\Area\Area;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
-use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
 
 use Tournament\Model\MatchPointHandler\MatchPointHandler;
 
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
+use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
 
 /**
@@ -29,6 +29,15 @@ class KoNode extends MatchNode
                                 ?MatchRecord $matchRecord = null)
    {
       parent::__construct($name, $slotRed, $slotWhite, $mpHdl, $area, false, $matchRecord);
+   }
+
+   public function setName(string $name): void
+   {
+      parent::setName($name);
+
+      /* propagate slot names if needed */
+      if ($this->slotRed   instanceof ParticipantSlot) $this->slotRed->slotName   = $name . 'r';
+      if ($this->slotWhite instanceof ParticipantSlot) $this->slotWhite->slotName = $name . 'w';
    }
 
    /* KO matches always need a winner to be completed */
@@ -79,11 +88,19 @@ class KoNode extends MatchNode
    }
 
    /**
+    * explicitly return the first round of this KO tree
+    */
+   public function getFirstRound(): MatchNodeCollection
+   {
+      return $this->getRounds(0,1)->front();
+   }
+
+   /**
     * find a specific node by its name
     */
    public function findByName(string $name): ?KoNode
    {
-      if( $name === $this->name ) return $this;
+      if( $name === $this->getName() ) return $this;
       $node = null;
       foreach ([$this->slotRed, $this->slotWhite] as $slot)
       {
@@ -168,9 +185,9 @@ class KoNode extends MatchNode
       /** @var KoNode $match */
       foreach ($this->getMatchList() as $match)
       {
-         if ($matchRecords->keyExists($match->name))
+         if ($matchRecords->keyExists($match->getName()))
          {
-            $match->setMatchRecord($matchRecords[$match->name]);
+            $match->setMatchRecord($matchRecords[$match->getName()]);
          }
       }
    }

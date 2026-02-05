@@ -7,7 +7,6 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchPointHandler\MatchPointHandler;
-
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 
 /**
@@ -17,8 +16,10 @@ use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
  */
 class MatchNode
 {
+   private string $name;
+
    public function __construct(
-      public string $name,
+      string $node_name,
       public readonly MatchSlot $slotRed,    // slot contents may be modified, but the slot itself is fixed
       public readonly MatchSlot $slotWhite,  // slot contents may be modified, but the slot itself is fixed
       protected readonly MatchPointHandler $mpHdl, // MatchPoint Handler to parse match points
@@ -33,7 +34,18 @@ class MatchNode
          throw new \DomainException("invalid match: red and white slot must be different");
       }
 
+      $this->setName($node_name);
       $this->setMatchRecord($matchRecord);
+   }
+
+   public function setName(string $name): void
+   {
+      $this->name = $name;
+   }
+
+   public function getName(): string
+   {
+      return $this->name;
    }
 
    /**
