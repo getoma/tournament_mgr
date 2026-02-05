@@ -1,0 +1,15 @@
+{% block subject %}
+Willkommen auf {{ app_name }}!
+{% endblock %}
+
+{% block body_html %}
+<p>Hallo {{ username }},</p>
+
+<p>Für dich wurde ein Zugang auf {{ app_name }} erstellt!</p>
+
+<p>Bitte klicke auf folgenden Link um dein Passwort zu setzen. Anschließend kannst du dich mit deiner E-Mail und dem neuen Passwort einloggen.</p>
+
+<p><a href="{{ reset_url }}">{{ reset_url }}</a></p>
+
+<p>Willkommen!</p>
+{% endblock %}

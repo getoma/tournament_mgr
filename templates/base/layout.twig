@@ -23,12 +23,12 @@
       {% if current_user -%}
     	<div class="user-menu">
 		<button class="user-menu-btn">
-        	👤 {{ current_user.username }} ▼
-      		</button>
-	
+        	👤 {{ current_user.display_name }} ▼
+    </button>
+
       		<div class="user-menu-dropdown">
 			<a href="{{url_for('user_account')}}">Account</a>
-        		<a href="{{url_for('logout')}}">Logout</a>        		
+        		<a href="{{url_for('logout')}}">Logout</a>
       		</div>
     	</div>
       {%-else%}
@@ -55,6 +55,8 @@
     {% if tournament is defined %}
       <li><a href="{{ url_for('show_tournament', {'tournamentId': tournament.id}) }}">Turnierkategorien</a></li>
     {% endif %}
+
+    <li><a href="{{ url_for('list_users') }}">Benutzerverwaltung</a></li>
 
     {% block nav_extension %}{% endblock %}
   </ul>

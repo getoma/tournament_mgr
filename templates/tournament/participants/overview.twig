@@ -35,7 +35,7 @@
 {% endif -%}
 <div class="form-box">
 <h2>Teilnehmer</h2>
-<table class="participants-table">
+<table class="entry-list">
    <thead>
       <tr>
          <th>Aktionen</th>
@@ -77,21 +77,18 @@
 <div class="form-box">
 <h2>Teilnehmer hinzufügen</h2>
 <form method="POST" action="{{ url_for('import_participants', { 'tournamentId': tournament.id }) }}" id="participant_add_form">
-
     {{ form.textarea('participants', 'Direkteingabe', prev.participants ?? '', errors.participants, attributes={'rows':10, 'cols': 50, 'id':'participants', 'placeholder':'Vorname Nachname pro Zeile'}) }}
-
     {{ form.input('text', 'club', 'Verein/Verband', prev.club ?? '', errors.club, attributes={'maxlength':100}) }}
-
     <fieldset class="category-fieldset">
       <legend>Kategorien auswählen</legend>
       <div class="category-checkboxes">
         {% for category in categories -%}
-        {{ form.checkbox('categories[]', category.name, category.id in prev.categories, '', attributes={'value': category.id}) }}
+        {{ form.checkbox('categories[]', category.name, category.id, category.id in prev.categories) }}
         {%- endfor %}
-        {%- if errors.categories %}
-        <p class="error">{{errors.categories}}</p>
-        {%endif-%}
       </div>
+      {%- if errors.categories %}
+      <p class="error">{{errors.categories}}</p>
+      {%endif-%}
     </fieldset>
 
     {{ form.submit('Hinzufügen', attributes={'class':'form-btn'}) }}
