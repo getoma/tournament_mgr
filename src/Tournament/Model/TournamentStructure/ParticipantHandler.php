@@ -254,7 +254,7 @@ class ParticipantHandler
          // delete the first slot of each chunk (could also be the last, depends on taste)
          foreach ($slotStack as $chunk)
          {
-            $starting_slots->offsetUnset(array_first($chunk));
+            $starting_slots->offsetUnset($chunk[0]);
          }
       }
    }
