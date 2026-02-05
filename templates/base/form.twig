@@ -85,7 +85,7 @@
   {%- for attr, val in attributes %} {{ attr }}="{{ val }}"{% endfor -%}
   {%- if required %} required{% endif %}>
   {% for key, text in options %}
-  <option value="{{ key|e }}" {% if key==selected %}selected{% endif %}>{{ text|e }}</option>
+  <option value="{{ key|e }}"{% if key==selected %} selected{% endif %}>{{ text|e }}</option>
   {% endfor -%}
 </select>
 {%- if error is not empty %}

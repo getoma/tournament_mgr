@@ -1,0 +1,51 @@
+{% extends 'base/layout.twig' %}
+{% import 'base/form.twig' as form %}
+
+{% block special_links -%}
+<link rel="stylesheet" href="{{url_for('home')}}css/data_import_preview.css">
+{% endblock -%}
+
+{% block content %}
+<section class="form-box">
+<h2>Teilnehmer importieren - {{import.name}} - Vorschau</h2>
+<form method="POST" id="form_preview_attributes" action="{{ url_for('upload_participants_confirm_update', {'tournamentId': tournament.id}) }}">
+  {{ form.input('text', 'club', "Verband/Verein", club, errors.club, { 'maxlength': 100 }) }}
+  {{ form.select('category', 'Kategorie (global)', category_sel, category, errors.category) }}
+  {{ form.input('number', 'start_row', "Importieren ab Zeile", start_row, errors.start_row, {'min': 1, 'max': import.rows|length}, required=true)}}
+  {{ form.submit('Vorschau aktualisieren', 'action', 'update') }}
+  {{ form.submit('Importieren', 'action', 'import') }}
+  {{ form.submit('Abbrechen', 'action', 'abort')}}
+</form>
+<div class="scroll-frame">
+<table class="spreadsheet">
+  <thead>
+    <tr><th>#</th><th colspan="{{import.rows[0]|length}}">Inhalt</th></tr>
+{% for index,row in import.rows|slice(0,import.content_row,true) -%}
+    <tr>
+      <td>{{index+1}}</td>{%for column in row %}<td>{{column}}</td>{%endfor%}
+    </tr>
+{%- endfor %}
+{% if errors.column_map -%}
+    <tr class="form-row">
+      <td></td><td colspan="{{import.rows[0]|length}}"><span class="error">Fehler: {{errors.column_map}}</span></td>
+    </tr>
+{%- endif %}
+    <tr class="form-row">
+      <td></td>
+      {% for colindex,column in import.rows[import.content_row] -%}
+      <td>{{form.select_plain("column_map[]",column_types, column_map[colindex], attributes={'form': 'form_preview_attributes'})}}</td>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for index,row in import.rows|slice(import.content_row, null, true) -%}
+    <tr{%if index in data_rows%} class="highlight"{%endif%}>
+      <td>{{index+1}}</td>
+      {%-for column in row %}<td>{{column}}</td>{%endfor%}
+    </tr>
+    {% endfor -%}
+  </tbody>
+</table>
+</div>
+</section>
+{% endblock %}

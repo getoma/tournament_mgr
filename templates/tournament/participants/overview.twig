@@ -75,8 +75,16 @@
 </div>
 
 <div class="form-box">
+<h2>Teilnehmer importieren</h2>
+<form method="POST" action="{{ url_for('upload_participants', { 'tournamentId': tournament.id }) }}" id="participant_upload_form" enctype="multipart/form-data">
+  {{ form.input('file', 'participant_file', 'Datei (CSV oder Excel)', '', errors.file, attributes={'accept':".csv,.xlsx,.xls,.ods"}) }}
+  {{ form.submit('Importieren', attributes={'class':'form-btn'}) }}
+</form>
+</div>
+
+<div class="form-box">
 <h2>Teilnehmer hinzufügen</h2>
-<form method="POST" action="{{ url_for('import_participants', { 'tournamentId': tournament.id }) }}" id="participant_add_form">
+<form method="POST" action="{{ url_for('add_participants', { 'tournamentId': tournament.id }) }}" id="participant_add_form">
 
     {{ form.textarea('participants', 'Direkteingabe', prev.participants ?? '', errors.participants, attributes={'rows':10, 'cols': 50, 'id':'participants', 'placeholder':'Vorname Nachname pro Zeile'}) }}
 
