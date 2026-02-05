@@ -139,19 +139,19 @@ class ParticipantHandler
             $assigned[] = new SlotPlacement($starting_slots[$slotName], $p);
             $participants->drop($p);
             $slot_tracker[$slotName] -= 1;
+            if (!$slot_tracker[$slotName]) unset($slot_tracker[$slotName]);
          }
       }
 
       /* shuffle and seed the participants */
       $shuffled = $this->shuffleParticipantList($participants);
-      while (!empty($slot_tracker) && ($participant = array_shift($shuffled)))
+      while ($slot_tracker && $participant = array_shift($shuffled))
       {
          $bestSlots = [];
          $bestCost = PHP_FLOAT_MAX;
          /* check each available slot for the cost it would generate, memorize the cheapest */
          foreach ($slot_tracker as $slotName => $free_count)
          {
-            if(!$free_count) continue;
             $cost = $calculator->calculateCost($participant, $slotName, $assigned);
             if (abs($cost - $bestCost) < PHP_FLOAT_EPSILON) // another slot with same best cost
             {
@@ -168,6 +168,7 @@ class ParticipantHandler
 
          $assigned[] = new SlotPlacement($starting_slots[$bestSlotName], $participant);
          $slot_tracker[$bestSlotName] -= 1;
+         if (!$slot_tracker[$slotName]) unset($slot_tracker[$slotName]);
       }
 
       /* above algorithm will not yield optimal results - the best slot for a participant

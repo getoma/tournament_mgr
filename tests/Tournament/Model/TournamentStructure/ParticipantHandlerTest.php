@@ -71,7 +71,7 @@ class ParticipantHandlerTest extends TestCase
       $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
-      $participants = $structure->getParticipantHandler()->populate($this->participantList(14));
+      $participants = $structure->getParticipantHandler()->populate($this->participantList(14)); // set more participants than starting slots on purpose
 
       $structure2 = new TournamentStructure($category, AreaCollection::new());
       $structure2->generateStructure();
