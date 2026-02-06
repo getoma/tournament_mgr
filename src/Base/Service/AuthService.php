@@ -16,6 +16,13 @@ class AuthService
    /** buffer currently logged in user */
    private ?User $user = null;
 
+   private int $login_issue = 0;
+   public const NO_ISSUE          =  0;
+   public const USER_NOT_FOUND    = -1;
+   public const PASSWORD_MISMATCH = -2;
+   public const NO_PASSWORD_SET   = -3;
+   public const USER_DISABLED     = -5;
+
    /**
     * Constructor for AuthService
     * @param UserRepository $repo
@@ -23,6 +30,16 @@ class AuthService
     */
    public function __construct(private UserRepository $repo, private PasswordHasher $hasher, private SessionService $session)
    {
+   }
+
+   /** AuthService provides detailled feedback why login failed, for debugging issues
+    *  Of course, in a productive environment no specific information should be provided
+    *  on whether username or password is the issue.
+    *  (only exception: "user disabled" can be forwarded, and will only be given if the still password matched)
+    */
+   public function getLoginIssue(): int
+   {
+      return $this->login_issue;
    }
 
    /**
@@ -34,9 +51,27 @@ class AuthService
     */
    public function login(string $email, string $password): bool
    {
-      $user = $this->repo->findByEmail($email);
-      if ($user && !empty($user->password_hash) && $this->hasher->verify($password, $user->password_hash))
+      $user = $this->repo->findUser(['email' => $email]);
+      if( !$user )
       {
+         $this->login_issue = self::USER_NOT_FOUND;
+      }
+      else if( empty($user->password_hash) )
+      {
+         $this->login_issue = self::NO_PASSWORD_SET;
+      }
+      else if( !$this->hasher->verify($password, $user->password_hash) )
+      {
+         $this->login_issue = self::PASSWORD_MISMATCH;
+      }
+      else if( !$user->is_active )
+      {
+         $this->login_issue = self::USER_DISABLED;
+      }
+      else
+      {
+         $this->login_issue = self::NO_ISSUE;
+
          // login successful, store user in session
          $this->repo->setSessionUserId($user->id);
          $this->user = $user;

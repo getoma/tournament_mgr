@@ -8,7 +8,10 @@ use Base\Service\MailService;
 use Base\Service\SessionService;
 use Base\Service\DbUpdateService;
 
-use Base\Repository\UserRepository;
+use Tournament\Repository\UserRepository;
+
+use Tournament\Model\User\Role;
+use Tournament\Model\User\User;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -40,19 +43,25 @@ class AuthController
       $data = (array)$request->getParsedBody();
       $email = trim($data['email'] ?? '');
       $password = $data['password'];
+      $error = null;
 
       if ($this->authService->login($email, $password))
       {
-         /* Redirect the user after a successful login */
+         /* prepare redirection of user after a successful login */
          $redirect = $this->session->get('redirect_after_login') ?? RouteContext::fromRequest($request)->getRouteParser()->urlFor('home');
          $this->session->remove('redirect_after_login');
+
+         /* query the user instance to execute any login-hooks */
+         $user = $this->authService->getCurrentUser();
+
+         /* Register login */
+         $this->userRepository->registerLogin($user);
 
          /* a successful login from anyone is a nice hook to clean up any expired reset tokens, so let's do it here */
          $this->passwordResetService->cleanupResetTokens();
 
          /* a successful login of an admin is a nice hook to check for needed DB migration */
-         $user = $this->authService->getCurrentUser();
-         if( ($user instanceof \Tournament\Model\User\User) && $user->admin )
+         if( ($user instanceof \Tournament\Model\User\User) && $user->hasRole(Role::ADMIN) )
          {
             if( $this->dbUpdService->updateNeeded() )
             {
@@ -71,9 +80,23 @@ class AuthController
             ->withHeader('Location', $redirect)
             ->withStatus(302);
       }
+      else
+      {
+         /* only in case a disabled user tried to log in give this specific feedback
+          * check for disabled user is performed AFTER the password was checked
+          *
+          * for any other login issue, DO NOT give detailled feedback, so an attacker cannot
+          * determine existing usernames
+          */
+         if( $this->authService->getLoginIssue() === AuthService::USER_DISABLED )
+         {
+            $error = "Nutzer ist deaktiviert";
+         }
+      }
 
       return $this->twig->render($response, 'auth/login.twig', [
-         'error' => 'Ungültiger Benutzername oder Passwort'
+         'error' => $error ?? 'Ungültiger Benutzername oder Passwort',
+         'email' => $email,
       ])->withStatus(403);
    }
 
@@ -99,23 +122,23 @@ class AuthController
 
       if( $token !== null )
       {
-         // get the url for the pw_reset route, with token and email as GET parameters
-         $resetPath = RouteContext::fromRequest($request)->getRouteParser()->urlFor('pw_reset', [], ['email' => $email, 'token' => $token]);
          $uri = $request->getUri();
-         $baseUrl = $uri->getScheme() . '://' . $uri->getHost();
-         if ($uri->getPort())
-         {
-            $baseUrl .= ':' . $uri->getPort();
-         }
-         $resetUrl = $baseUrl . $resetPath;
 
-         // load the user to retrieve the username
-         $user = $this->userRepository->findByEmail($email);
+         // get the url for the pw_reset route, with token and email as GET parameters
+         $resetUrl = RouteContext::fromRequest($request)->getRouteParser()
+            ->fullUrlFor($uri, 'pw_reset', [], ['email' => $email, 'token' => $token]);
+
+         // build an application name from our uri
+         $app_name = $uri->getHost() . \config::$BASE_PATH ?? '';
+
+         /** @var User $user load the user to retrieve the username */
+         $user = $this->userRepository->findUser(['email' => $email]);
 
          // prepare the context data for mail rendering
          $context = [
-            'username' => $user->display_name,
+            'username'  => $user->display_name,
             'reset_url' => $resetUrl,
+            'app_name'  => $app_name,
          ];
 
          // load the mail template
@@ -124,10 +147,9 @@ class AuthController
          // prepare the mail content by rendering the template
          $subject = trim($tmpl->renderBlock('subject', $context));
          $bodyHtml = $tmpl->renderBlock('body_html', $context);
-         $bodyText = $tmpl->renderBlock('body_text', $context);
 
          // send the email
-         $this->mailService->send($email, $subject, $bodyHtml, $bodyText);
+         $this->mailService->send($email, $subject, $bodyHtml);
       }
       else
       {

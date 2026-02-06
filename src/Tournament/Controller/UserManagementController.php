@@ -1,0 +1,214 @@
+<?php
+
+namespace Tournament\Controller;
+
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Slim\Routing\RouteContext;
+use Slim\Views\Twig;
+
+use Base\Service\MailService;
+use Base\Service\PasswordResetService;
+
+use Tournament\Exception\EntityNotFoundException;
+use Tournament\Model\User\Role;
+use Tournament\Repository\UserRepository;
+use Tournament\Model\User\User;
+use Tournament\Policy\TournamentPolicy;
+
+class UserManagementController
+{
+   public function __construct(
+      private Twig $twig,
+      private UserRepository $repo,
+      private PasswordResetService $passwordResetService,
+      private MailService $mailService,
+   )
+   {
+   }
+
+   public function showCreateUser(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+   {
+      return $this->twig->render($response,'user/user_create.twig');
+   }
+
+   public function createUser(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+   {
+      /* parse the input data */
+      $data   = $request->getParsedBody();
+      $errors = User::validateArray($data, required: ['email']);
+
+      if(!$errors)
+      {
+         if( $this->repo->isMailUsed($data['email']) )
+         {
+            $errors['email'] = 'E-Mail existiert bereits als User';
+         }
+      }
+
+      if(!$errors)
+      {
+         // create and save new user
+         $user = new User(
+            id: null,
+            email: $data['email'],
+            display_name: $data['email'],
+            password_hash: '',
+            is_active: true,
+            created_at: new \DateTime()
+            );
+         $this->repo->saveUser($user);
+
+         // forward to user details
+         return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
+            ->urlFor('show_user', ['userId' => $user->id]))->withStatus(302);
+      }
+      else
+      {
+         // return the form with errors
+         return $this->twig->render($response, 'user/user_create.twig', [
+            'prev' => $data,
+            'errors' => $errors
+         ]);
+      }
+   }
+
+   public function listUsers(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+   {
+      return $this->twig->render($response, 'user/user_management.twig', [
+         'users' => $this->repo->getAllUsers()
+      ]);
+   }
+
+   public function showUser(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+   {
+      $user = isset($args['userId'])? $this->repo->findUser(['id' => $args['userId']]) : null;
+      if(!isset($user)) throw new EntityNotFoundException('user not found');
+
+      return $this->twig->render($response, 'user/user_details.twig', [
+         'user'   => $user,
+         'roles'  => Role::cases(),
+      ]);
+   }
+
+   public function sendNewUserMail(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+   {
+      /** @var User $user */
+      $user = isset($args['userId']) ? $this->repo->findUser(['id' => $args['userId']]) : null;
+      if (!isset($user)) throw new EntityNotFoundException('user not found');
+
+      // only allow to send a "new user mail" as long as no password is set
+      if ($user->password_hash)
+      {
+         $errors = [ 'error' => 'Nutzer hat bereits ein Passwort gesetzt.'];
+      }
+      else
+      {
+         $token = $this->passwordResetService->createResetToken($user->email);
+
+         if (!$token)
+         {
+            $errors = ['error' => 'Es konnte kein neues Reset-Token erstellt werden.'];
+         }
+         else
+         {
+            $uri = $request->getUri();
+
+            // get the url for the pw_reset route, with token and email as GET parameters
+            $resetUrl = RouteContext::fromRequest($request)->getRouteParser()
+               ->fullUrlFor($uri, 'pw_reset', [], ['email' => $user->email, 'token' => $token]);
+
+            // build an application name from our uri
+            $app_name = $uri->getHost() . \config::$BASE_PATH ?? '';
+
+            // prepare the context data for mail rendering
+            $context = [
+               'app_name'  => $app_name,
+               'username'  => $user->display_name,
+               'reset_url' => $resetUrl,
+            ];
+
+            // load the mail template
+            $tmpl = $this->twig->getEnvironment()->load('emails/new_user_mail.twig');
+
+            // prepare the mail content by rendering the template
+            $subject = trim($tmpl->renderBlock('subject', $context));
+            $bodyHtml = $tmpl->renderBlock('body_html', $context);
+
+            // send the email
+            $this->mailService->send($user->email, $subject, $bodyHtml);
+            $message = "E-Mail wurde gesendet";
+         }
+      }
+
+      return $this->twig->render($response, 'user/user_details.twig', [
+         'user'    => $user,
+         'roles'   => Role::cases(),
+         'errors'  => $errors,
+         'message' => $message
+      ]);
+
+      // forward to user details
+      return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
+         ->urlFor('show_user', ['userId' => $user->id]))->withStatus(302);
+   }
+
+   public function updateUser(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+   {
+      /** @var User $user */
+      $user = isset($args['userId']) ? $this->repo->findUser(['id' => $args['userId']]) : null;
+      if (!isset($user)) throw new EntityNotFoundException('user not found');
+
+      /** @var TournamentPolicy $policy */
+      $policy = $request->getAttribute('policy');
+      if( !isset($policy) ) throw new \LogicException('policy not found - is the policy middleware installed?');
+
+      /* parse the input data */
+      $data   = $request->getParsedBody();
+      /* default-initialize checkbox fields, as those are missing if not checked at all */
+      $data['roles']     ??= [];
+      $data['is_active'] ??= false;
+      $errors = $user->validateArray($data, ['roles', 'is_active']);
+
+      if( !$errors ) // if input valid, check policy
+      {
+         /* TODO: check if current user is even allowed to modify this other user */
+      }
+
+      if( $errors ) // if either input invalid or policy blocks, return with error
+      {
+         return $this->twig->render($response, 'user/user_details.twig', [
+            'user'   => $user,
+            'roles'  => Role::cases(),
+            'errors' => $errors,
+            'prev'   => $data
+         ]);
+      }
+
+      // all fine, save updates and return normal formular
+      $user->updateFromArray($data);
+      $this->repo->saveUser($user);
+
+      // if user was disabled, log him out immediately
+      if( !$user->is_active ) $this->repo->destroySessionsForUser($user->id);
+
+      return $this->twig->render($response, 'user/user_details.twig', [
+         'user'    => $user,
+         'roles'   => Role::cases(),
+         'message' => 'Benutzer aktualisiert!',
+      ]);
+   }
+
+   public function deleteUser(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+   {
+      /** @var User $user */
+      $user = isset($args['userId']) ? $this->repo->findUser(['id' => $args['userId']]) : null;
+      if (!isset($user)) throw new EntityNotFoundException('user not found');
+
+      $this->repo->deleteUser($user->id);
+
+      return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
+         ->urlFor('list_users'))->withStatus(302);
+   }
+
+}
