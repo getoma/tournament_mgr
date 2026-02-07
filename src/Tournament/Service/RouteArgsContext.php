@@ -15,6 +15,8 @@ class RouteArgsContext
       public ?Category    $category    = null,
       public ?Area        $area        = null,
       public ?Participant $participant = null,
+      public ?string      $pool_name   = null,
+      public ?string      $match_name  = null,
    )
    {}
 }

@@ -1,12 +1,5 @@
-{% extends 'base/layout.twig' %}
+{% include 'base/header.twig' with { 'active_page': 'home' } %}
 
-{% block nav_extension %}
-  <ul class="submenu">
-    <li><a href="{{ url_for('new_tournament_form') }}">Neues Turnier anlegen</a></li>
-  </ul>
-{% endblock %}
-
-{% block content %}
 <ul class="tournament_list_by_state">
   {% for status, tournaments in tournaments_by_state %}
   <li class="status-box">
@@ -14,8 +7,8 @@
     <table>
   <thead>
     <tr>
-      <th class="left-align">Datum</th>
-      <th class="left-align">Turnier</th>
+      <th>Datum</th>
+      <th>Turnier</th>
     </tr>
   </thead>
   <tbody>
@@ -32,12 +25,10 @@
     </tbody>
 </table>
   {%endfor%}
-
 </ul>
-{%- if test_interfaces %}
-{% endif -%}
-<p class="debug_stuff">
-  <a href="{{url_for('show_db_migrate')}}">DB-Migration</a>
-</p>
-{% endif -%}
-{% endblock %}
+
+<section>
+  <p><a class="form-btn" href="{{url_for('new_tournament_form')}}">Neues Turnier anlegen</a></p>
+</section>
+
+{% include 'base/footer.twig' %}

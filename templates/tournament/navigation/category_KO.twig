@@ -1,42 +1,19 @@
-{% extends 'base/layout.twig' %}
 {% import 'base/form.twig' as form %}
 {% import 'base/match.twig' as part %}
 
-{% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id } %}
+{% include 'base/header.twig' with {
+  'active_page': 'show_category_ko',
+  'css': ['tree.css']
+} %}
 
-{% block nav_extension %}
-  {% if tournament is defined %}
-    <!-- Untermenü für die "Turnier-Hauptseite" -->
-    <ul class="submenu">
-      <li>
-        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
-          Turnierleitung
-        </a>
-      </li>
-      <li>
-        <a href="{{ url_for('show_category_cfg', route_parameters) }}">
-          Kategorie konfigurieren
-        </a>
-      </li>
-    </ul>
-  {% endif %}
-{% endblock %}
-
-
-{% block content %}
 <section>
-<h2>{{ category.name }} </h2>
-
-{% if ko is defined %}
-<section>
-<h3>KO-Runde</h3>
-{{ part.printKo(ko, chunks, route_parameters) }}
+<h2>{{ route_context.category.name }} - KO-Runde</h2>
+{{ part.printKo(ko, chunks, route_context.args) }}
 </section>
-{% endif %}
 
 {% if unmapped_participants is not empty %}
 <section>
-  <h3>Nicht zugewiesen</h3>
+  <h2>Nicht zugewiesen</h2>
   <ul>
     {% for p in unmapped_participants %}
     <li>{{p.lastname}}, {{p.firstname}}</li>
@@ -45,15 +22,14 @@
 </section>
 {% endif %}
 
-<form action="{{url_for('reset_category_results', route_parameters)}}" method="post">
+<form action="{{url_for('reset_category_results', route_context.args)}}" method="post">
   <button type="submit">Ergebnisse löschen</button>
 </form>
 
 {% if policy.isActionAllowed('ManageSetup') %}
-<form action="{{url_for('repopulate_category', route_parameters)}}" method="post">
+<form action="{{url_for('repopulate_category', route_context.args)}}" method="post">
   <button type="submit">Teilnehmer neu verteilen</button>
 </form>
 {% endif %}
 
-</section>
-{% endblock %}
+{% include 'base/footer.twig' %}

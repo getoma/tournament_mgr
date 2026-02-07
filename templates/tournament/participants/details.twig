@@ -1,33 +1,39 @@
-{% extends 'base/layout.twig' %}
 {% import 'base/form.twig' as form %}
 
-{% block content %}
-<h2>Teilnehmer bearbeiten</h2>
-<form method="POST" action="{{ url_for('update_participant', route_context.args) }}">
-   {{ form.input('text', 'lastname', 'Nachname', prev.lastname ?? participant.lastname, errors.lastname, {'maxlength':100}, required=true) }}
-   {{ form.input('text', 'firstname', 'Vorname', prev.firstname ?? participant.firstname, errors.firstname, {'maxlength':100}, required=true) }}
-   {{ form.input('text', 'club', 'Verein/Verband', prev.club ?? participant.club, errors.club, {'maxlength':127})}}
-   <table>
-    <thead>
-      <tr><th>Kategorie</th><th>Teilnahme</th><th>Startslot</th></tr>
-    </thead>
-    <tbody>
-      {% for category in categories -%}
-      <tr>
-        <td>{{category.name}}
-          <input type="hidden" name="categories[]" value="{{category.id}}">
-        </td>
-        <td><input type="checkbox" name="category_selection[]" value="{{category.id}}" title="{{category.name}}"
-            {%- if prev.categories is not null?(category.id in prev.categories):(participant.categories[category.id]??false) %} checked{%endif%}>
-        </td>
-        <td>
-          {{ form.select_plain('pre_assign[]', starting_slots[category.id], prev.pre_assign??participant.categories[category.id].pre_assign ) }}
-        </td>
-      </tr>
-      {% endfor %}
-      {% if errors.categories %}<p class="error">{{errors.categories}}</p>{%endif%}
-    </tbody>
-   </table>
-   {{ form.submit('Speichern') }}
-</form>
-{% endblock %}
+{% include 'base/header.twig' with {
+  'active_page': 'show_participant_list',
+  'nav_entry_label': participant.lastname ~ ", " ~ participant.firstname,
+} %}
+
+<section>
+  <h2>Teilnehmer bearbeiten</h2>
+  <form method="POST" action="{{ url_for('update_participant', route_context.args) }}">
+    {{ form.input('text', 'lastname', 'Nachname', prev.lastname ?? participant.lastname, errors.lastname, {'maxlength':100}, required=true) }}
+    {{ form.input('text', 'firstname', 'Vorname', prev.firstname ?? participant.firstname, errors.firstname, {'maxlength':100}, required=true) }}
+    {{ form.input('text', 'club', 'Verein/Verband', prev.club ?? participant.club, errors.club, {'maxlength':127}) }}
+    <table>
+      <thead>
+        <tr><th>Kategorie</th><th>Teilnahme</th><th>Startslot</th></tr>
+      </thead>
+      <tbody>
+        {% for category in categories -%}
+        <tr>
+          <td>{{category.name}}
+            <input type="hidden" name="categories[]" value="{{category.id}}">
+          </td>
+          <td><input type="checkbox" name="category_selection[]" value="{{category.id}}" title="{{category.name}}"
+              {%- if prev.categories is not null?(category.id in prev.categories):(participant.categories[category.id]??false) %} checked{%endif%}>
+          </td>
+          <td>
+            {{ form.select_plain('pre_assign[]', starting_slots[category.id], prev.pre_assign??participant.categories[category.id].pre_assign ) }}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if errors.categories %}<p class="error">{{errors.categories}}</p>{%endif%}
+      </tbody>
+    </table>
+    {{ form.submit('Speichern') }}
+  </form>
+</section>
+
+{% include 'base/footer.twig' %}

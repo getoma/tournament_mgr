@@ -1,7 +1,6 @@
-{% extends "base/layout.twig" %}
-
-{% block content %}
-<h1>Login</h1>
+{% include 'base/header.twig' with {
+  'heading': 'Login'
+}%}
 
 {% if error %}
 <p class="error">{{ error }}</p>
@@ -19,4 +18,5 @@
     <a href="{{ url_for('pw_forgot') }}">Passwort vergessen?</a>
   </p>
 </form>
-{% endblock %}
+
+{% include 'base/footer.twig' %}

@@ -1,9 +1,7 @@
-{% extends "base/layout.twig" %}
-
-{% block heading %}Datenbank Update Durchgeführt{% endblock %}
-
-{% block content %}
+{% include 'base/header.twig' with {
+  'heading': 'Datenbank Update Durchgeführt',
+  'active_page': 'show_db_migrate'
+}%}
 <pre>{{ message }}</pre>
-
 <p><a href="{{ redirect }}">Weiter...</a></p>
-{% endblock %}
+{% include 'base/footer.twig' %}

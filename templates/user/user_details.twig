@@ -1,11 +1,11 @@
-{% extends "base/layout.twig" %}
 {% import 'base/form.twig' as form %}
 
-{% block heading %}Benutzerverwaltung{% endblock %}
+{% include 'base/header.twig' with {
+  'active_page': 'list_users',
+  'nav_entry_label': user.display_name
+}%}
 
-{% block content %}
-
-<div class="form-box">
+<section>
   <h2>{{user.display_name}}</h2>
   {%- if message %}<p class="ok">{{ message }}</p>{% endif %}
   {% if errors %}
@@ -32,6 +32,6 @@
          onclick="return confirm('{{user.display_name}} wirklich löschen?');">Nutzer löschen</a>
     </p>
   </form>
+</section>
 
-</div>
-{% endblock %}
+{% include 'base/footer.twig' %}

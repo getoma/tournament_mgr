@@ -25,14 +25,14 @@ return function (\Slim\App $app)
     * Global MiddleWare Injection
     */
 
-   // Add CurrentUserMiddleware
-   $app->add(Base\Middleware\CurrentUserMiddleware::create($app));
-
    // Add TournamentPolicyMiddleware
    $app->add(\Tournament\Middleware\TournamentPolicyMiddleware::create($app));
 
    // Add RouteArgsResolverMiddleware
    $app->add(\Tournament\Middleware\RouteArgsResolverMiddleware::create($app));
+
+   // Add CurrentUserMiddleware
+   $app->add(\Base\Middleware\CurrentUserMiddleware::create($app));
 
    // Add Routing Middleware
    $app->addRoutingMiddleware();
@@ -59,6 +59,9 @@ return function (\Slim\App $app)
    // Add TournamentStatusGuardMiddleware - enforce tournament status based permissions
    $statusGuardMW = \Tournament\Middleware\TournamentStatusGuardMiddleware::create($app);
 
+   // navigation key route handler, to inject a specific navigation identifier
+   $navGuard = \Tournament\Middleware\NavigationKeyMiddleware::create($app);
+
    /**********************
     * Route setup
     */
@@ -75,7 +78,7 @@ return function (\Slim\App $app)
    /***
     * Routes that need an active login
     */
-   $app->group('', function (RouteCollectorProxy $auth_grp) use ($statusGuardMW)
+   $app->group('', function (RouteCollectorProxy $auth_grp) use ($statusGuardMW, $navGuard)
    {
       /* navigation */
       $auth_grp->get('/', [IndexPageController::class, 'index'])->setName('home');
@@ -87,19 +90,29 @@ return function (\Slim\App $app)
       /**
        * Tournament routes
        */
-      $auth_grp->group('/tournament/{tournamentId:\d+}', function (RouteCollectorProxy $tgrp) use ($statusGuardMW)
+      $auth_grp->group('/tournament/{tournamentId:\d+}', function (RouteCollectorProxy $tgrp) use ($statusGuardMW, $navGuard)
       {
          /* tournament overview */
          $tgrp->get('[/]',      [TournamentSettingsController::class, 'showTournament'])->setName('show_tournament');
-         $tgrp->get('/control', [TournamentSettingsController::class, 'showControlPanel'])->setName('tournament_control');
 
          /* state transition */
          $tgrp->post('/setstatus', [TournamentSettingsController::class, 'changeTournamentStatus'])->setName('update_tournament_status');
 
          /* tournament configuration pages */
-         $tgrp->get( '/configure', [TournamentSettingsController::class, 'showTournamentConfiguration'])->setName('show_tournament_config');
-         $tgrp->post('/configure', [TournamentSettingsController::class, 'updateTournament'])->setName('update_tournament_config')
-            ->add( $statusGuardMW->for(TournamentAction::ManageDetails) );
+         $tgrp->group('/configure', function (RouteCollectorProxy $tcfg) use ($statusGuardMW, $navGuard)
+         {
+            $tcfg->get( '[/]', [TournamentSettingsController::class, 'showTournamentConfiguration'])->setName('show_tournament_config');
+            $tcfg->post('[/]', [TournamentSettingsController::class, 'updateTournament'])->setName('update_tournament_config')
+               ->add( $statusGuardMW->for(TournamentAction::ManageDetails) );
+
+            $tcfg->group('/category/{categoryId:\d+}', function (RouteCollectorProxy $ccfg) use ($statusGuardMW)
+            {
+               $ccfg->get('',  [TournamentSettingsController::class, 'showCategoryConfiguration'])->setName('show_tournament_category_cfg');
+               $ccfg->post('', [TournamentSettingsController::class, 'updateCategoryConfiguration'])->setName('update_tournament_category_cfg')
+                  ->add($statusGuardMW->for(TournamentAction::ManageSetup));
+            })
+            ->add( $navGuard->navkey('show_tournament_category_cfg') );
+         });
 
          $tgrp->group('', function (RouteCollectorProxy $cgrp)
          {
