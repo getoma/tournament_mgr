@@ -92,7 +92,7 @@ class ParticipantsDataController
     */
    private function renderParticipantList(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
    {
-      $tournament = $request->getAttribute('tournament');
+      $tournament = $request->getAttribute('route_context')->tournament;
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
       $participants = $this->repo->getParticipantsByTournamentId($tournament->id);
 
@@ -111,8 +111,9 @@ class ParticipantsDataController
     */
    private function sendToParticipantList(Request $request, Response $response, array $args): Response
    {
+      $ctx = $request->getAttribute('route_context');
       return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-         ->urlFor('show_participant_list', ['tournamentId' => $request->getAttribute('tournament')->id]))->withStatus(302);
+         ->urlFor('show_participant_list', ['tournamentId' => $ctx->tournament->id]))->withStatus(302);
    }
 
    /**
@@ -128,7 +129,7 @@ class ParticipantsDataController
     */
    public function updateParticipantList(Request $request, Response $response, array $args): Response
    {
-      $tournament = $request->getAttribute('tournament');
+      $tournament = $request->getAttribute('route_context')->tournament;
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
 
       $validation_rules = [];
@@ -170,7 +171,7 @@ class ParticipantsDataController
     */
    public function importParticipantList(Request $request, Response $response, array $args): Response
    {
-      $tournament = $request->getAttribute('tournament');
+      $tournament = $request->getAttribute('route_context')->tournament;
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
 
       $data = $request->getParsedBody();
@@ -226,7 +227,7 @@ class ParticipantsDataController
     */
    public function deleteParticipant(Request $request, Response $response, array $args): Response
    {
-      if ($this->repo->deleteParticipant($request->getAttribute('participant')->id))
+      if ($this->repo->deleteParticipant($request->getAttribute('route_context')->participant->id))
       {
          return $this->sendToParticipantList($request, $response, $args);
       }
@@ -243,18 +244,17 @@ class ParticipantsDataController
     */
    public function showParticipant(Request $request, Response $response, array $args): Response
    {
-      $tournament = $request->getAttribute('tournament');
-      /** @var Participant $participant */
-      $participant = $request->getAttribute('participant');
-      $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $categories = $this->tournamentRepo->getCategoriesByTournamentId($ctx->tournament->id);
 
-      $starting_slots = $this->getStartingSlotSelection($categories, $participant);
+      $starting_slots = $this->getStartingSlotSelection($categories, $ctx->participant);
 
       return $this->view->render($response, 'tournament/participants/details.twig', [
-         'tournament'     => $tournament,
+         'tournament'     => $ctx->tournament,
          'categories'     => $categories,
          'starting_slots' => $starting_slots,
-         'participant'    => $participant,
+         'participant'    => $ctx->participant,
       ]);
    }
 
@@ -264,12 +264,11 @@ class ParticipantsDataController
     */
    public function updateParticipant(Request $request, Response $response, array $args): Response
    {
-      $tournament = $request->getAttribute('tournament');
-      $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
-      /** @var Participant $participant */
-      $participant = $request->getAttribute('participant');
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $categories = $this->tournamentRepo->getCategoriesByTournamentId($ctx->tournament->id);
 
-      $starting_slots = $this->getStartingSlotSelection($categories, $participant);
+      $starting_slots = $this->getStartingSlotSelection($categories, $ctx->participant);
 
       $data = $request->getParsedBody();
       $data['category_selection'] ??= [];
@@ -283,10 +282,10 @@ class ParticipantsDataController
       if (!count($errors))
       {
          // Update participant data
-         $participant->updateFromArray($data);
+         $ctx->participant->updateFromArray($data);
 
          // take over category assignment
-         $participant->categories = CategoryAssignmentCollection::new(
+         $ctx->participant->categories = CategoryAssignmentCollection::new(
             array_map(fn($id) => new CategoryAssignment($this->tournamentRepo->getCategoryById($id)), $data['category_selection']??[])
          );
 
@@ -295,7 +294,7 @@ class ParticipantsDataController
          {
             $categoryId = $data['categories'][$i];
 
-            if( $assignment = $participant->categories[$categoryId] ?? null )
+            if( $assignment = $ctx->participant->categories[$categoryId] ?? null )
             {
                if( isset($starting_slots[$categoryId][$data['pre_assign'][$i]]) )
                {
@@ -305,7 +304,7 @@ class ParticipantsDataController
          }
 
          // try to save
-         if ($this->repo->saveParticipant($participant))
+         if ($this->repo->saveParticipant($ctx->participant))
          {
             return $this->sendToParticipantList($request, $response, $args);
          }
@@ -316,9 +315,9 @@ class ParticipantsDataController
       }
 
       return $this->view->render($response, 'tournament/participants/details.twig', [
-         'tournament'  => $tournament,
+         'tournament'  => $ctx->tournament,
          'categories'  => $categories,
-         'participant' => $participant,
+         'participant' => $ctx->participant,
          'errors'      => $errors,
          'prev'        => $data,
       ]);

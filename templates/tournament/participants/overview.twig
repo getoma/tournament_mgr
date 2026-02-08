@@ -2,11 +2,11 @@
 {% import 'base/form.twig' as form %}
 
 {% block nav_extension %}
-  {% if tournament is defined %}
+  {% if route_context.tournament is not null %}
     <!-- Untermenü für die "Turnier-Hauptseite" -->
     <ul class="submenu">
       <li>
-        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
+        <a href="{{ url_for('tournament_control', route_context.args) }}">
         Turnierleitung
         </a>
       <ul class="submenu-2">
@@ -50,8 +50,8 @@
       {% for participant in participants %}
       <tr>
          <td>
-            <a href="{{ url_for('show_participant', { 'tournamentId': tournament.id, 'participantId': participant.id }) }}">Bearbeiten</a>
-            <form method="POST" action="{{ url_for('delete_participant', { 'tournamentId': tournament.id, 'participantId': participant.id }) }}">
+            <a href="{{ url_for('show_participant', route_context.args|merge({'participantId': participant.id})) }}">Bearbeiten</a>
+            <form method="POST" action="{{ url_for('delete_participant', route_context.args|merge({'participantId': participant.id})) }}">
                <input type="submit" value="Löschen" onclick="return confirm('{{ participant.lastname }}, {{ participant.firstname }} wirklich löschen?');">
             </form>
          </td>
@@ -69,14 +69,14 @@
       {% endfor %}
    </tbody>
 </table>
-<form method="POST" action="{{ url_for('update_participant_list', { 'tournamentId': tournament.id }) }}" id="participant_list_form">
+<form method="POST" action="{{ url_for('update_participant_list', route_context.args) }}" id="participant_list_form">
    {{ form.submit('Speichern') }}
 </form>
 </div>
 
 <div class="form-box">
 <h2>Teilnehmer hinzufügen</h2>
-<form method="POST" action="{{ url_for('import_participants', { 'tournamentId': tournament.id }) }}" id="participant_add_form">
+<form method="POST" action="{{ url_for('import_participants', route_context.args) }}" id="participant_add_form">
 
     {{ form.textarea('participants', 'Direkteingabe', prev.participants ?? '', errors.participants, attributes={'rows':10, 'cols': 50, 'id':'participants', 'placeholder':'Vorname Nachname pro Zeile'}) }}
 
