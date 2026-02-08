@@ -28,14 +28,10 @@ class RouteArgsResolverMiddleware implements MiddlewareInterface
 
    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
    {
-      $routeArgs = RouteContext::fromRequest($request)->getRoute()->getArguments();
-      $resolvedArgs = $this->resolver->resolve($routeArgs);
-      foreach($resolvedArgs as $key => $value)
-      {
-         $request = $request->withAttribute($key, $value);
-         $this->twig?->getEnvironment()->addGlobal($key, $value);
-         $this->twig?->getEnvironment()->addGlobal('route_args', $routeArgs);
-      }
+      $routeArgs    = RouteContext::fromRequest($request)->getRoute()->getArguments();
+      $routeContext = $this->resolver->resolve($routeArgs);
+      $request = $request->withAttribute('route_context', $routeContext);
+      $this->twig?->getEnvironment()->addGlobal('route_context', $routeContext);
       return $handler->handle($request);
    }
 
@@ -48,8 +44,8 @@ class RouteArgsResolverMiddleware implements MiddlewareInterface
       ?Twig $twig = null,
    ): self
    {
-      $container = $app->getContainer();
-      if (!isset($resolver)) $resolver = $container->get(RouteArgsResolverService::class);
+      $container  = $app->getContainer();
+      $resolver ??= $container->get(RouteArgsResolverService::class);
       if (!isset($twig) && $container->has(Twig::class)) $twig = $container->get(Twig::class);
       return new self($resolver, $twig);
    }

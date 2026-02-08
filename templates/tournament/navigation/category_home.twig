@@ -2,19 +2,17 @@
 {% import 'base/form.twig' as form %}
 {% import 'base/match.twig' as part %}
 
-{% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id } %}
-
 {% block nav_extension %}
-  {% if tournament is defined %}
+  {% if route_context.tournament is not null %}
     <!-- Untermenü für die "Turnier-Hauptseite" -->
     <ul class="submenu">
       <li>
-        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
+        <a href="{{ url_for('tournament_control', route_context.args) }}">
           Turnierleitung
         </a>
       </li>
       <li>
-        <a href="{{ url_for('show_category_cfg', route_parameters) }}">
+        <a href="{{ url_for('show_category_cfg', route_context.args) }}">
           Kategorie konfigurieren
         </a>
       </li>
@@ -25,14 +23,14 @@
 
 {% block content %}
 <section>
-<h2>{{ category.name }} </h2>
+<h2>{{ route_context.category.name }} </h2>
 {% if pools is not empty %}
 <section>
 <h3>Pools</h3>
 <ul class="pool_list">
   {% for pool in pools %}
   <li>
-    <p class="pool_name"><a href="{{ url_for('show_pool', route_parameters|merge({pool: pool.getName})) }}">Pool {{pool.getName()}}</a></p>
+    <p class="pool_name"><a href="{{ url_for('show_pool', route_context.args|merge({pool: pool.getName})) }}">Pool {{pool.getName()}}</a></p>
     <ul class="participant_list">
       {% for slot in pool.participants %}
       <li>{{slot.lastname}}, {{slot.firstname}}</li>
@@ -50,10 +48,10 @@
 </section>
 {% endif %}
 
-{% if ko is defined %}
+{% if ko is not null %}
 <section>
 <h3>KO-Runde</h3>
-{{ part.printKo(ko, chunks, route_parameters) }}
+{{ part.printKo(ko, chunks, route_context.args) }}
 </section>
 {% endif %}
 
@@ -68,12 +66,12 @@
 </section>
 {% endif %}
 
-<form action="{{url_for('reset_category_results', route_parameters)}}" method="post">
+<form action="{{url_for('reset_category_results', route_context.args)}}" method="post">
   <button type="submit">Ergebnisse löschen</button>
 </form>
 
 {% if policy.isActionAllowed('ManageSetup') %}
-<form action="{{url_for('repopulate_category', route_parameters)}}" method="post">
+<form action="{{url_for('repopulate_category', route_context.args)}}" method="post">
   <button type="submit">Teilnehmer neu verteilen</button>
 </form>
 {% endif %}
