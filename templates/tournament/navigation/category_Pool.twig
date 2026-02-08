@@ -58,11 +58,9 @@
 <ul class="pool_list">
   {% for pool in pools %}
   
-      {% if pool.area is not empty %}
-        Area: {{ pool.area.name }}
-      {% endif %}
   <li>
-    <p class="pool_name">Pool {{pool.getName()}}</p>
+    <p class="pool_name">Pool {{pool.getName()}} ( {% if pool.area is not empty %} {{ pool.area.name }} )
+      {% endif %}</p>
     <ul class="participant_list">
       {% for slot in pool.participants %}
       <li>{{slot.lastname}}, {{slot.firstname}}</li>
