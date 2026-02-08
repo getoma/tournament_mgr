@@ -155,9 +155,7 @@ return function (\Slim\App $app)
       /* db migration during development, only */
       if( config::$test_interfaces ?? false )
       {
-         $auth_grp->get('/dbmigrate', [TestController::class, 'showDbMigrationList'])->setName('show_db_migrate');
-         $auth_grp->post('/dbmigrate', [TestController::class, 'setDbMigration'])->setName('do_db_migrate');
-      }
+       }
    })
    ->add($authMW);
 };
