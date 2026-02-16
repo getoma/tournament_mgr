@@ -1,10 +1,9 @@
 {% import 'base/form.twig' as form %}
 
-{% include 'base/header.twig' with {
-  'heading': 'Nutzereinstellungen'
-} %}
+{% include 'base/header.twig' %}
 
-<div class="form-box">
+<section>
+<h2>Nutzereinstellungen</h2>
 {% if prg_message %}
 <p class="ok">Account wurde aktualisiert!</p>
 {% endif %}

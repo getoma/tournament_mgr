@@ -9,37 +9,44 @@
 {% if prg_message == 'tournament_status'  %}<p class="ok">Turnier-Status aktualisiert!</p>{% endif %}
 {% if errors -%}<p class="error">Daten konnten nicht übernommen werden.</p>{%- endif %}
 
-<section>
+<section id="section-tournament-details">
   <h2>Turnier-Details</h2>
-  <div class="tournament-status">
-    <form action="{{ url_for('tournaments.setState', route_context.args) }}" method="post">
-      <input type="hidden" name="_METHOD" value="PATCH">
-      <ul id="new_status_list">
-        {% for status in route_context.tournament.getStateHandler().getPossibleTransitions() %}
-          <li>{{ form.submit(status.value, 'status', status.value) }}</li>
-        {% endfor %}
-      </ul>
-    </form>
-  </div>
-<form action="{{url_for('tournaments.update', route_context.args)}}" method="post">
-  <input type="hidden" name="_METHOD" value="PATCH">
-  {% set isActive=policy.isActionAllowed('ManageDetails') -%}
-  {% if isActive -%}
-  {{ form.input('text', 'name', 'Name', prev.tournament.name ?? route_context.tournament.name, errors.tournament['name'],
-  {'maxlength':100}, required=true, active=isActive) }}
-  {% endif -%}
-  {{ form.input('date', 'date', 'Datum', prev.tournament.date ?? route_context.tournament.date, errors.tournament['date'],
-  required=true, active=isActive) }}
-  {{ form.textarea('notes', 'Notizen', prev.tournament.notes ?? route_context.tournament.notes, errors.tournament['notes'],
-  {'rows':4}, active=isActive) }}
-  {% if isActive %}{{ form.submit('Aktualisieren') }}{%endif%}
-</form>
+  <form action="{{url_for('tournaments.update', route_context.args)}}" method="post">
+    <input type="hidden" name="_METHOD" value="PATCH">
+    {% set isActive=policy.isActionAllowed('ManageDetails') -%}
+    {% if isActive -%}
+    {{ form.input('text', 'name', 'Name', prev.tournament.name ?? route_context.tournament.name, errors.tournament['name'],
+    {'maxlength':100}, required=true, active=isActive) }}
+    {% endif -%}
+    {{ form.input('date', 'date', 'Datum', prev.tournament.date ?? route_context.tournament.date, errors.tournament['date'],
+    required=true, active=isActive) }}
+    {{ form.textarea('notes', 'Notizen', prev.tournament.notes ?? route_context.tournament.notes, errors.tournament['notes'],
+    {'rows':4}, active=isActive) }}
+    {% if isActive %}{{ form.submit('Aktualisieren') }}{%endif%}
+  </form>
 </section>
 
-<section>
+<section id="section-tournament-status">
+  <h2>Turnier-Phase</h2>
+  <p>Aktuell: <span class="current-selection">{{ route_context.tournament.status.value }}</span></p>
+  <form action="{{ url_for('tournaments.setState', route_context.args) }}" method="post" id="tournament-status-form">
+    <input type="hidden" name="_METHOD" value="PATCH">
+    {%- set status_details = {
+    'planning': 'Turnier konfigurieren und Teilnehmer importieren',
+    'planned': 'Turnierkonfiguration einfrieren',
+    'running': 'Turnier durchführen und Kampfergebnisse erfassen',
+    'completed': 'Turnier abschließen und Ergebnisse einfrieren',
+    } %}
+    {% for status in route_context.tournament.getStateHandler().getPossibleTransitions() -%}
+    {{ form.submit(status.value, 'status', status.value, attributes: { 'title': status_details[status.value]}) }}
+    {%- endfor %}
+  </form>
+</section>
+
+<section id="section-tournament-organisators">
   <h2>Organisatoren-Team</h2>
   {% if errors.user_id %}<p class="error">{{ errors.user_id }}</p>{% endif %}
-  <table id="owner_list" class="entry-list">
+  <table id="owner_list">
     <thead>
       <tr>
         <th>Name</th>
@@ -76,11 +83,11 @@
   </table>
 </section>
 
-<section class="form-box">
+<section id="section-tournament-areas">
 <h2>Kampfflächen</h2>
 
 {% if policy.isActionAllowed('ManageSetup') -%}
-<table id="area_list" class="entry-list">
+<table id="area_list">
   <thead>
     <tr>
       <th>Name</th>
@@ -126,11 +133,11 @@
 
 </section>
 
-<section class="form-box">
+<section id="section-tournament-categories">
 <h2>Kategorien</h2>
 
 {% if policy.isActionAllowed('ManageSetup') -%}
-<table id="category_list" class="entry-list">
+<table id="category_list">
   <thead>
     <tr>
       <th>Name</th>
@@ -144,7 +151,7 @@
       <td>{{category.name}}</td>
       <td>{{category.mode.value}}</td>
       <td>
-        <a href="{{url_for('tournaments.categories.edit', route_context.args|merge({'categoryId': category.id}))}}">Bearbeiten</a>
+        <a href="{{url_for('tournaments.categories.edit', route_context.args|merge({'categoryId': category.id}))}}" class="form-btn">Bearbeiten</a>
         <form method="POST" action="{{url_for('tournaments.categories.delete', route_context.args|merge({'categoryId': category.id}))}}">
           <input type="hidden" name="_METHOD" value="DELETE">
           {{ form.submit('Löschen') }}
@@ -178,7 +185,7 @@
 {% endif -%}
 </section>
 
-<section id="danger_zone">
+<section id="section-tournament-danger_zone">
   <h2>Gefährliche Aktionen</h2>
   <dl class="button-list">
     <dt>

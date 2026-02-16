@@ -4,18 +4,24 @@
   'active_page': 'tournaments.categories.edit'
 } %}
 
-<section class="form-box">
-<h2>Kategorie: Einstellungen</h2>
+<section>
+<h2>{{category.name}} - Konfiguration</h2>
 {% if prg_message %}<p class="ok">Daten übernommen und Turnierbaum neu generiert!</p>{% endif -%}
 <form action="{{url_for('tournaments.categories.update', route_context.args)}}" method="post">
   <input type="hidden" name="_METHOD" value="PATCH">
   {% set isActive = policy.isActionAllowed('ManageSetup') -%}
   {{ form.input('text', 'name', 'Name', prev.name ?? category.name, errors['name'], {'maxlength':100}, required=true, active=isActive) }}
   {{ form.select('mode', 'Modus', enum_options(category_modes), prev.mode ?? category.mode.value, errors['mode'], required=true, active=isActive) }}
+  {% if category.mode.value|lower in ['ko', 'combined'] -%}
   {{ form.input('number', 'num_rounds', 'Anzahl KO-Runden', prev.num_rounds ?? category.config.num_rounds, errors['num_rounds'], {'min':2, 'max': 10}, active=isActive) }}
-  {{ form.input('number', 'pool_winners', 'Anzahl Pool-Sieger', prev.pool_winners ?? category.config.pool_winners, errors['pool_winners'], {'max': 3, 'min': 1}, active=isActive) }}
-  {{ form.input('number', 'max_pools', 'Maximale Anzahl Pools (0 = unbegrenzt)', prev.max_pools ?? category.config.max_pools, errors['max_pools'], {'min': 0}, active=isActive) }}
-  {{ form.input('number', 'area_cluster', 'Kampfflächen-Cluster', prev.area_cluster ?? category.config.area_cluster, errors['area_cluster'], {'min': 1}, active=isActive)}}
+  {# area clusters not supported for now #}
+  {#{ form.input('number', 'area_cluster', 'Kampfflächen-Cluster', prev.area_cluster ?? category.config.area_cluster, errors['area_cluster'], {'min': 1}, active=isActive)}#}
+  {%- endif %}
+  {% if category.mode.value|lower in ['pool', 'combined'] -%}
+  {{ form.input('number', 'pool_winners', 'Anzahl Pool-Sieger', prev.pool_winners ?? category.config.pool_winners, errors['pool_winners'], {'max': 3, 'min': 1, 'placeholder': 2}, active=isActive) }}
+  {{ form.input('number', 'max_pools', 'Maximale Anzahl Pools', prev.max_pools ?? category.config.max_pools ?: '', errors['max_pools'], {'min': 0, 'max': 99, 'placeholder': '--'}, active=isActive) }}
+  {%- endif %}
+
   {{ form.submit('Aktualisieren', active=isActive) }}
 </form>
 </section>
