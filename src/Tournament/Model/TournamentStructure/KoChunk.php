@@ -36,7 +36,7 @@ class KoChunk
          /** @var MatchNode $node */
          foreach ($this->root->getMatchList() as $node)
          {
-            $node->name = $name . '-' . $local_match_idx++;
+            $node->setName($name . '-' . $local_match_idx++);
          }
       }
    }
