@@ -11,6 +11,8 @@ class UserRepository
    /* buffer of session user lookups to avoid multiple DB queries in one request */
    private $sessionUsers = [];
 
+   protected const BASE_SELECT_USER_QUERY = "SELECT * FROM users";
+
    public function __construct(protected \PDO $pdo, private SessionService $session)
    {
    }
@@ -19,25 +21,33 @@ class UserRepository
     * centralized generation of User
     * Enables injection of a specialized User class in derived classes.
     */
-   protected function createUser(array $data): User
+   protected function createUserObject(array $data): User
    {
       return new User(...$data);
    }
 
-   public function findByEmail(string $email): ?User
+   /**
+    * generalized user fetcher
+    */
+   public function findUser(array $filter): ?User
    {
-      $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = :email");
-      $stmt->execute(['email' => $email]);
+      $filter_string = join(' and ', array_map(fn($k) => "$k=:$k", array_keys($filter)));
+      try
+      {
+         $stmt = $this->pdo->prepare(static::BASE_SELECT_USER_QUERY . " where " . $filter_string);
+         $stmt->execute($filter);
+      }
+      catch( \PDOException $e )
+      {
+         /* the query failed, most probably cause is that the static BASE_SELECT_USER_QUERY is faulty.
+          * fall back by trying once more with the original BASE_SELECT_USER_QUERY
+          * if it fails again, just let the exception fly
+          */
+         $stmt = $this->pdo->prepare(self::BASE_SELECT_USER_QUERY . " where " . $filter_string);
+         $stmt->execute($filter);
+      }
       $data = $stmt->fetch();
-      return $data ? $this->createUser($data) : null;
-   }
-
-   public function findByUsername(string $username): ?User
-   {
-      $stmt = $this->pdo->prepare("SELECT * FROM users WHERE username = :username");
-      $stmt->execute(['username' => $username]);
-      $data = $stmt->fetch();
-      return $data ? $this->createUser($data) : null;
+      return $data ? $this->createUserObject($data) : null;
    }
 
    public function updateUserPassword(int $id, string $hashedPassword): bool
@@ -113,7 +123,7 @@ class UserRepository
       $stmt = $this->pdo->prepare("SELECT u.* FROM users u JOIN sessions s ON u.id = s.user_id WHERE s.id = :sid");
       $stmt->execute(['sid' => $sessionId]);
       $data = $stmt->fetch();
-      $user = $data ? $this->createUser($data) : null;
+      $user = $data ? $this->createUserObject($data) : null;
       $this->sessionUsers[$sessionId] = $user;
       return $user;
    }

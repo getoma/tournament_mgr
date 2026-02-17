@@ -16,7 +16,6 @@ use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
-use Tournament\Model\Participant\SlottedParticipantCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 
 /**
@@ -24,7 +23,7 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
  * to fully load up the structure, the various loading methods need to be called in a proper order:
  * - __construct()
  * - generateStructure()
- * - loadParticipants()
+ * - getParticipantHandler->loadParticipants()
  * - loadMatchRecords()
  */
 class TournamentStructure
@@ -94,22 +93,9 @@ class TournamentStructure
       }
    }
 
-   public function loadParticipants(SlottedParticipantCollection $participants)
+   public function getParticipantHandler()
    {
-      $this->unmapped_participants = $participants->unslotted();
-
-      if(!$this->pools->empty())
-      {
-         $this->loadPoolParticipants($participants);
-      }
-      else if ($this->ko)
-      {
-         $this->loadKoParticipants($participants);
-      }
-      else
-      {
-         throw new \LogicException('No structure generated, yet');
-      }
+      return new ParticipantHandler($this);
    }
 
    public function loadMatchRecords(MatchRecordCollection $matchRecords)
@@ -282,163 +268,6 @@ class TournamentStructure
          }
       }
       return $currentRound->front();
-   }
-
-   /**
-    * assign participants to each KO first round slot according the given mapping
-    */
-   private function loadKoParticipants(SlottedParticipantCollection $participants)
-   {
-      /* map nodes by their localid */
-      $firstRound = $this->ko->getRounds()->front()->column_map('name');
-
-      /* assign participants */
-      foreach ($participants as $slotId => $p)
-      {
-         $nodeName = substr($slotId, 0, -1);
-         $color = substr($slotId, -1);
-         if ($firstRound->keyExists($nodeName))
-         {
-            if ($color === 'r') $firstRound[$nodeName]->slotRed->participant = $p;
-            elseif ($color === 'w') $firstRound[$nodeName]->slotWhite->participant = $p;
-            else $this->unmapped_participants[] = $p;
-         }
-         else
-         {
-            $this->unmapped_participants[] = $p;
-         }
-      }
-   }
-
-   /**
-    * assign participants into pools according the given mapping
-    */
-   private function loadPoolParticipants(SlottedParticipantCollection $participants)
-   {
-      /* distribute the participants to a separate collection for each pool */
-      $pool_participants = [];
-      foreach ($participants as $slotId => $p)
-      {
-         list($poolId, $slotNr) = explode('.', $slotId);
-         if ( $this->pools->keyExists($poolId) )
-         {
-            $pool_participants[$poolId] ??= ParticipantCollection::new();
-            $pool_participants[$poolId][] = $p;
-         }
-         else
-         {
-            $this->unmapped_participants[] = $p;
-         }
-      }
-
-      /* forward the collected participants to each pool */
-      foreach ($pool_participants as $id => $col)
-      {
-         $this->pools[$id]->setParticipants($col);
-      }
-   }
-
-   /**
-    * shuffle in a new list of participants
-    */
-   public function shuffleParticipants(ParticipantCollection $participants): SlottedParticipantCollection
-   {
-      if (!$this->pools->empty())
-      {
-         return $this->shufflePoolParticipants($participants->values());
-      }
-      else
-      {
-         return $this->shuffleKoParticipants($participants->values());
-      }
-   }
-
-   /**
-    * shuffle in a new list of participants into a KO structure
-    */
-   private function shuffleKoParticipants(array $participants): SlottedParticipantCollection
-   {
-      /* algorithm for participant shuffling, that makes sure that BYEs are spread out evenly:
-       * 1) create an array of ParticipantSlot objects for each participant, and shuffle it
-       * 3) Split the array into two halves, the first half will be the red slots and the second half will be the white slots
-       * 4) fill up both array with null ParticipantSlot objects until we have $numSlots/2 objects in both arrays
-       * 5) shuffle both arrays again
-       *
-       * Assuming, that under normal circumstances we will have more then half of the expected participants set,
-       * this algorithm will ensure that the BYEs are spread out evenly across the matches and will always be in the white slots,
-       * while the red slots will always be filled with actual participants.
-       *
-       * Just to make this algorithm also work in case we have less than half of the expected participants,
-       * we will fill up the red slots with null ParticipantSlot objects as well.
-       */
-
-      // get references to all MatchNodes in the first round.
-      $firstRound = $this->ko->getRounds()->front();
-      // Initial shuffle to randomize assignment of participants to initial colors
-      shuffle($participants);
-      // Split into red and white slots
-      $numNodes   = $firstRound->count();
-      $redSlots   = array_slice($participants, 0, $numNodes);
-      $whiteSlots = array_slice($participants, $numNodes, $numNodes);
-      // Fill up both arrays with null ParticipantSlot objects until we have $numNodes objects in both arrays
-      $redSlots   = array_merge($redSlots,   array_fill(0, $numNodes - count($redSlots),   null));
-      $whiteSlots = array_merge($whiteSlots, array_fill(0, $numNodes - count($whiteSlots), null));
-      // Shuffle both arrays again to ensure randomness of BYEs distribution
-      shuffle($redSlots);
-      shuffle($whiteSlots);
-
-      // now assign the slots to each match
-      $newMapping = new SlottedParticipantCollection();
-      for ($i = 0; $i < $firstRound->count(); $i++)
-      {
-         $firstRound[$i]->slotRed->participant = $redSlots[$i];
-         if ($redSlots[$i])
-         {
-            $slotId = $firstRound[$i]->name . "r";
-            $newMapping[$slotId] = $redSlots[$i];
-         }
-
-         $firstRound[$i]->slotWhite->participant = $whiteSlots[$i];
-         if ($whiteSlots[$i])
-         {
-            $slotId = $firstRound[$i]->name . "w";
-            $newMapping[$slotId] = $whiteSlots[$i];
-         }
-      }
-
-      return $newMapping;
-   }
-
-   /**
-    * shuffle in a new list of participants into the pools
-    */
-   private function shufflePoolParticipants(array $participants): SlottedParticipantCollection
-   {
-      $numParticipants = count($participants);
-      $poolCount = $this->pools->count();
-      $minCount = intdiv($numParticipants, $poolCount); // minimum number of participants per pool
-      $extra = $numParticipants % $poolCount; // number of pools with one additional participant
-
-      $newMapping = new SlottedParticipantCollection();
-      shuffle($participants);
-      $offset = 0;
-      $slice_idx = 0;
-      foreach ($this->pools as $pool)
-      {
-         $slice_size = $minCount + (int)($slice_idx++ < $extra);
-         $p_slice = array_slice($participants, $offset, $slice_size);
-         $pool_participants = new ParticipantCollection();
-         for ($j = 0; $j < $slice_size; $j++)
-         {
-            $slotId = $pool->getName() . "." . $j;
-            $pool_participants[] = $p_slice[$j];
-            $newMapping[$slotId] = $p_slice[$j];
-         }
-         $pool->setParticipants($pool_participants);
-         $offset += $slice_size;
-      }
-
-      return $newMapping;
    }
 
    /**

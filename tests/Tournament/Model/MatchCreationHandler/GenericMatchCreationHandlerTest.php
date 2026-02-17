@@ -53,7 +53,7 @@ class GenericMatchCreationHandlerTest extends TestCase
       $this->assertEmpty($tst->generate(new ParticipantCollection(), $fact));
 
       /* a single Participant */
-      $p1 = $this->createStub(Participant::class);
+      $p1 = new Participant(1, 1, '', '');
       $this->assertEmpty($tst->generate(new ParticipantCollection([$p1]), $fact));
 
       /* two participants */
@@ -66,7 +66,7 @@ class GenericMatchCreationHandlerTest extends TestCase
                tie_break:   $this->equalTo(false),
                MatchRecord: $this->equalTo(null),
                frozen:      $this->equalTo(false));
-      $p2 = $this->createStub(Participant::class);
+      $p2 = new Participant(2, 1, '', '');
       /** @var TournamentStructureFactory $fact */
       $matchList = $tst->generate(new ParticipantCollection([$p1, $p2]), $fact);
       $this->assertCount(1, $matchList);
@@ -93,11 +93,7 @@ class GenericMatchCreationHandlerTest extends TestCase
             frozen: $this->equalTo(false)
          );
 
-      $p = [
-         $this->createStub(Participant::class),
-         $this->createStub(Participant::class),
-         $this->createStub(Participant::class)
-      ];
+      $p = array_map(fn($i) => new Participant($i, 1, '', ''), range(1,3));
 
       /** @var TournamentStructureFactory $fact */
       $matchList = $tst->generate(new ParticipantCollection($p), $fact);
@@ -133,12 +129,7 @@ class GenericMatchCreationHandlerTest extends TestCase
             frozen: $this->equalTo(false)
          );
 
-      $p = [
-         $this->createStub(Participant::class),
-         $this->createStub(Participant::class),
-         $this->createStub(Participant::class),
-         $this->createStub(Participant::class),
-      ];
+      $p = array_map(fn($i) => new Participant($i, 1, '', ''), range(1, 4));
 
       /** @var TournamentStructureFactory $fact */
       $matchList = $tst->generate(new ParticipantCollection($p), $fact);
@@ -198,13 +189,7 @@ class GenericMatchCreationHandlerTest extends TestCase
          );
 
       /* generate List of participants */
-      $p = array_map(function($i)
-                     {
-                        $a = $this->createStub(Participant::class);
-                        $a->id = $i;
-                        return $a;
-                     },
-                     range(1,$numPart));
+      $p = array_map(fn($i) => new Participant($i, 1, '', ''), range(1,$numPart));
       /* generate a list of all pairings */
       $pairings = [];
       for( $i = 0; $i < $numPart; ++$i)

@@ -2,7 +2,7 @@
 {% import 'base/form.twig' as form %}
 {% import 'base/match.twig' as part %}
 
-{% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id, 'pool': pool.getName(), 'decision_round': pool.getCurrentDecisionRound() } %}
+{% set route_parameters = route_context.args|merge({'pool': pool.getName()}) %}
 
 {% block special_links -%}
 <link rel="stylesheet" href="{{url_for('home')}}css/match.css">
@@ -26,7 +26,7 @@
   </form>
   {% endif %}
   {% if pool.getCurrentDecisionRound() -%}
-  <form method="post" action="{{url_for('delete_pool_tiebreak', route_parameters)}}" class="pool_control"
+  <form method="post" action="{{url_for('delete_pool_tiebreak', route_parameters|merge({'decision_round': pool.getCurrentDecisionRound()})) }}" class="pool_control"
     id="tie_break_match_delete">
     <button>Letzte Entscheidungsrunde löschen</button>
   </form>

@@ -22,6 +22,13 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       }
    }
 
+   public function copy(): static
+   {
+      $result = static::new();
+      $result->elements = $this->elements;
+      return $result;
+   }
+
    abstract static protected function elements_type(): string;
 
    public function keyExists(int|string $key): bool
@@ -39,9 +46,9 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return array_values($this->elements);
    }
 
-   public function column(string $attr): array
+   public function column(string $attr, ?string $indexattr = null): array
    {
-      return array_column($this->elements, $attr);
+      return array_column($this->elements, $attr, $indexattr);
    }
 
    public function keys(): array
@@ -127,6 +134,11 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return array_search($value, $this->elements, true);
    }
 
+   public function find(callable $callback): mixed
+   {
+      return array_find($this->elements, $callback);
+   }
+
    public function contains($value): bool
    {
       return $this->search($value) !== false;
@@ -143,6 +155,19 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       $keys = array_column($this->elements, $attr);
       $result->elements = array_combine($keys, $this->elements);
       return $result;
+   }
+
+   public function map_keys(callable $callback): self
+   {
+      $result = self::new();
+      $keys = array_map($callback, $this->elements);
+      $result->elements = array_combine($keys, $this->elements);
+      return $result;
+   }
+
+   public function map(callable $callback): array
+   {
+      return array_map($callback, $this->elements);
    }
 
    public function slice(int $offset, ?int $length = null): static
@@ -175,13 +200,26 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return true;
    }
 
-   // support empty() on object
-   public function __isset($name): bool
+   public function walk(callable $callback, $arg = null): void
    {
-      if ($name === '0')
+      array_walk($this->elements, $callback, $arg);
+   }
+
+   public function merge(iterable $other): static
+   {
+      return static::new(array_merge($this->elements, $other));
+   }
+
+   /**
+    * merge $other into $this without creating a new copy
+    * @param $other   - the other collection to merge
+    * @param $replace - if true, any duplicate in $other will replace the object inside $this. if false, duplicates in $other will be dropped
+    */
+   public function mergeInPlace(iterable $other, bool $replace = true): void
+   {
+      foreach( $other as $v )
       {
-         return $this->count() > 0;
+         if($replace || !$this->contains($v) ) $this[] = $v;
       }
-      return false;
    }
 }

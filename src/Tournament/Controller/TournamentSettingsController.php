@@ -16,6 +16,7 @@ use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\Tournament\TournamentStatus;
 
 use Tournament\Policy\TournamentPolicy;
+use Tournament\Service\RouteArgsContext;
 use Tournament\Service\TournamentStructureService;
 
 
@@ -34,7 +35,9 @@ class TournamentSettingsController
     */
    public function showTournament(Request $request, Response $response, array $args): Response
    {
-      $categories = $this->repo->getCategoriesByTournamentId($request->getAttribute('tournament')->id);
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $categories = $this->repo->getCategoriesByTournamentId($ctx->tournament->id);
 
       return $this->view->render($response, 'tournament/navigation/tournament_home.twig', [
          'categories' => $categories,
@@ -80,7 +83,9 @@ class TournamentSettingsController
     */
    public function showControlPanel(Request $request, Response $response, array $args): Response
    {
-      $categories = $this->repo->getCategoriesByTournamentId($request->getAttribute('tournament')->id);
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $categories = $this->repo->getCategoriesByTournamentId($ctx->tournament->id);
 
       return $this->view->render($response, 'tournament/navigation/controlpanel.twig', [
          'categories' => $categories,
@@ -92,9 +97,10 @@ class TournamentSettingsController
     */
    public function showTournamentConfiguration(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
    {
-      $tournament = $request->getAttribute('tournament');
-      $categories = $this->repo->getCategoriesByTournamentId($tournament->id);
-      $areas = $this->repo->getAreasByTournamentId($tournament->id);
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $categories = $this->repo->getCategoriesByTournamentId($ctx->tournament->id);
+      $areas = $this->repo->getAreasByTournamentId($ctx->tournament->id);
 
       return $this->view->render($response, 'tournament/settings/tournament.twig', [
          'areas' => $areas,
@@ -119,6 +125,9 @@ class TournamentSettingsController
     */
    public function updateTournament(Request $request, Response $response, array $args): Response
    {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
       $data = $request->getParsedBody();
       $errors = Tournament::validateArray($data);
 
@@ -131,8 +140,7 @@ class TournamentSettingsController
       }
 
       /** @var Tournament $tournament */
-      $tournament = $request->getAttribute('tournament');
-      $tournament->updateFromArray($data);
+      $ctx->tournament->updateFromArray($data);
       $this->repo->saveTournament($tournament);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
@@ -140,16 +148,16 @@ class TournamentSettingsController
 
    public function changeTournamentStatus(Request $request, Response $response, array $args): Response
    {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
       $data = $request->getParsedBody();
       $new_state = TournamentStatus::tryFrom($data['status']);
 
-      /** @var Tournament $tournament */
-      $tournament = $request->getAttribute('tournament');
-
-      if( $new_state && $this->policy->canTransition($tournament, $new_state) )
+      if( $new_state && $this->policy->canTransition($ctx->tournament, $new_state) )
       {
-         $tournament->status = $new_state;
-         $this->repo->saveTournament($tournament);
+         $ctx->tournament->status = $new_state;
+         $this->repo->saveTournament($ctx->tournament);
       }
       else
       {
@@ -165,6 +173,9 @@ class TournamentSettingsController
     */
    public function createArea(Request $request, Response $response, array $args): Response
    {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
       $data = $request->getParsedBody();
       $errors = Area::validateArray($data);
 
@@ -175,7 +186,7 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      $area = new Area(null, $request->getAttribute('tournament')->id, $data['name']);
+      $area = new Area(null, $ctx->tournament->id, $data['name']);
       $this->repo->saveArea($area);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
@@ -186,21 +197,21 @@ class TournamentSettingsController
     */
    public function updateArea(Request $request, Response $response, array $args): Response
    {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
       $data = $request->getParsedBody();
       $errors = Area::validateArray($data);
 
-      /** @var Area $area */
-      $area = $request->getAttribute('area');
-
       if (count($errors) > 0)
       {
-         $prev = ['areas' => [$area->id => $data]];
-         $err = ['areas' => [$area->id => $errors]];
+         $prev = ['areas' => [$ctx->area->id => $data]];
+         $err = ['areas' => [$ctx->area->id => $errors]];
          return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      $area->updateFromArray($data);
-      $this->repo->saveArea($area);
+      $ctx->area->updateFromArray($data);
+      $this->repo->saveArea($ctx->area);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
@@ -210,7 +221,9 @@ class TournamentSettingsController
     */
    public function deleteArea(Request $request, Response $response, array $args): Response
    {
-      $this->repo->deleteArea($request->getAttribute('area')->id);
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $this->repo->deleteArea($ctx->area->id);
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
 
@@ -219,6 +232,9 @@ class TournamentSettingsController
     */
    public function createCategory(Request $request, Response $response, array $args): Response
    {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
       $data = $request->getParsedBody();
       $errors = Category::validateArray($data);
 
@@ -231,7 +247,7 @@ class TournamentSettingsController
 
       $category = new Category(
          id: null,
-         tournament_id: $request->getAttribute('tournament')->id,
+         tournament_id: $ctx->tournament->id,
          name: $data['name'],
          mode: $data['mode']
       );
@@ -251,21 +267,21 @@ class TournamentSettingsController
     */
    public function updateCategory(Request $request, Response $response, array $args): Response
    {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
       $data = $request->getParsedBody();
       $errors = Category::validateArray($data);
 
-      /** @var Category $category */
-      $category = $request->getAttribute('category');
-
       if (count($errors) > 0)
       {
-         $prev = ['categories' => [$category->id => $data]];
-         $err = ['categories' => [$category->id => $errors]];
+         $prev = ['categories' => [$ctx->category->id => $data]];
+         $err = ['categories' => [$ctx->category->id => $errors]];
          return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      $category->updateFromArray($data);
-      if (!$this->repo->saveCategory($category))
+      $ctx->category->updateFromArray($data);
+      if (!$this->repo->saveCategory($ctx->category))
       {
          return $this->showTournamentConfiguration($request, $response, $args, ['category' => ['update' => 'Failed to update category']], $data);
       }
@@ -278,14 +294,14 @@ class TournamentSettingsController
     */
    public function showCategoryConfiguration(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
    {
-      /** @var Category */
-      $category = $request->getAttribute('category');
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
       $data = ($request->getMethod() === 'POST') ? $request->getParsedBody() : $request->getQueryParams();
 
       return $this->view->render($response, 'tournament/settings/category.twig', [
-         'config' => $category->config,
-         'errors' => $errors,
-         'prev' => $prev,
+         'category'  => $ctx->category,
+         'errors'    => $errors,
+         'prev'      => $prev,
          'return_to' => $data['return_to'] ?? 'show_category',
          'category_modes' => CategoryMode::cases(),
       ]);
@@ -296,12 +312,12 @@ class TournamentSettingsController
     */
    public function updateCategoryConfiguration(Request $request, Response $response, array $args): Response
    {
-      /** @var Category $category */
-      $category = $request->getAttribute('category');
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
 
       /* parse input */
       $data = $request->getParsedBody();
-      $data['name'] = $category->name; // name is not part of the form, just take it over from the DB
+      $data['name'] = $ctx->category->name; // name is not part of the form, just take it over from the DB
       $errors = Category::validateArray($data);
 
       /* return form if there are errors */
@@ -311,11 +327,11 @@ class TournamentSettingsController
       }
 
       /* update the data base */
-      $category->updateFromArray($data);
-      $this->repo->saveCategory($category);
+      $ctx->category->updateFromArray($data);
+      $this->repo->saveCategory($ctx->category);
 
       /* reshuffle the participants into the new configuration */
-      $this->structureLoadService->populate($category);
+      $this->structureLoadService->populate($ctx->category);
 
       /* forward to category page */
       return $this->showCategoryConfiguration($request, $response, $args);
@@ -326,7 +342,9 @@ class TournamentSettingsController
     */
    public function deleteCategory(Request $request, Response $response, array $args): Response
    {
-      $this->repo->deleteCategory($request->getAttribute('category')->id);
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $this->repo->deleteCategory($ctx->category->id);
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
 }

@@ -2,9 +2,7 @@
 
 namespace Tournament\Model\TournamentStructure\MatchNode;
 
-use Base\Model\ObjectCollection;
-
-class MatchNodeCollection extends ObjectCollection
+class MatchNodeCollection extends \Base\Model\ObjectCollection
 {
    static protected function elements_type(): string
    {
@@ -23,7 +21,7 @@ class MatchNodeCollection extends ObjectCollection
       return $result;
    }
 
-   public function find(string $name): ?MatchNode
+   public function findNode(string $name): ?MatchNode
    {
       return $this->getIteratorAt($name)?->current();
    }

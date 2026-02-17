@@ -1,0 +1,67 @@
+{% extends "base/layout.twig" %}
+{% import 'base/form.twig' as form %}
+
+{% block heading %}Benutzerverwaltung{% endblock %}
+
+{% block content %}
+<section class="form-box">
+  <h2>Aktive Nutzer</h2>
+  <table class="entry-list">
+    <thead>
+      <tr>
+      <th>Angezeigter Name</th>
+      <th>E-Mail</th>
+      <th>Rollen</th>
+      <th>Letzter Login</th>
+      <th>Aktionen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users|filter(u => u.is_active) -%}
+      <tr>
+      <td>{{user.display_name}}</td>
+      <td>{{user.email}}</td>
+      <td>{{user.roles|map(r => r.value)|join(', ')|humanize}}</td>
+      <td>{% if user.last_login %}{{user.last_login|date('d.m.Y H:i')}}{% else %}---{% endif %}</td>
+      <td><a href="{{ url_for('show_user', {'userId': user.id}) }}">Bearbeiten</a>
+          <a href="{{ url_for('delete_user', {'userId': user.id}) }}"
+             onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</a>
+      </td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% if users|find(u => not u.is_active) %}
+<section class="form-box">
+  <h2>Deaktivierte Nutzer</h2>
+  <table class="entry-list">
+    <thead>
+      <tr>
+        <th>Angezeigter Name</th>
+        <th>E-Mail</th>
+        <th>Aktionen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users|filter(u => not u.is_active) -%}
+      <tr>
+        <td>{{user.display_name}}</td>
+        <td>{{user.email}}</td>
+        <td><a href="{{ url_for('show_user', {'userId': user.id}) }}">Bearbeiten</a>
+            <a href="{{ url_for('delete_user', {'userId': user.id}) }}"
+               onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</a>
+        </td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+<section class="form-box">
+  <p><a class="form-btn" href="{{url_for('show_create_user')}}">Neuen Benutzer anlegen</a></p>
+</section>
+
+{% endblock %}

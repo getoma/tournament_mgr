@@ -9,7 +9,7 @@
 
 <form method="post" action="{{ url_for('login') }}">
   <p>
-    <label>E-Mail: <input type="text" name="email" required></label>
+    <label>E-Mail: <input type="text" name="email" value="{{email}}" required></label>
   </p>
   <p>
     <label>Passwort: <input type="password" name="password" required></label>

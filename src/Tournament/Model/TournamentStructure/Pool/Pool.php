@@ -58,8 +58,8 @@ class Pool
       /** @var MatchNode $node */
       foreach ($this->matches as $node)
       {
-         $extId = $this->getExtensionId($node->name);
-         $node->name = $this->nameFor($local_match_idx++, $extId);
+         $extId = $this->getExtensionId($node->getName());
+         $node->setName($this->nameFor($local_match_idx++, $extId));
       }
    }
 
@@ -199,7 +199,7 @@ class Pool
    {
       $roundId ??= $this->getCurrentDecisionRound();
       if(!$roundId) return MatchNodeCollection::new();
-      return $this->matches->filter(fn($node) => ($this->getExtensionId($node->name) === $roundId ));
+      return $this->matches->filter(fn($node) => ($this->getExtensionId($node->getName()) === $roundId ));
    }
 
    /**
@@ -209,9 +209,9 @@ class Pool
    {
       foreach ($this->matches as $match)
       {
-         if ($matchRecords->keyExists($match->name))
+         if ($matchRecords->keyExists($match->getName()))
          {
-            $match->setMatchRecord($matchRecords[$match->name]);
+            $match->setMatchRecord($matchRecords[$match->getName()]);
          }
       }
 
@@ -262,7 +262,7 @@ class Pool
       $matchId = $this->matches->count();
       foreach ($report as $match)
       {
-         $match->name = $this->nameFor($matchId++, $this->current_extension);
+         $match->setName($this->nameFor($matchId++, $this->current_extension));
          $match->area = $this->area;
          $this->matches[] = $match;
       }

@@ -18,10 +18,8 @@ class KendoMatchPointHandlerTest extends TestCase
 
    protected function setUp(): void
    {
-      $this->redP = $this->createStub(Participant::class);
-      $this->redP->id = 1;
-      $this->whiteP = $this->createStub(Participant::class);
-      $this->whiteP->id = 2;
+      $this->redP   = new Participant(1, 1, '', '');
+      $this->whiteP = new Participant(2, 1, '', '');
    }
 
    private function createMatchRecord(int $id = 1): MatchRecord
@@ -115,8 +113,7 @@ class KendoMatchPointHandlerTest extends TestCase
       $this->assertEmpty($rec->points);
 
       /* add point for invalid participant */
-      $p = $this->createStub(Participant::class);
-      $p->id = 100;
+      $p = new Participant(100, 1, '', '');
       $ptP = new MatchPoint(id: null, point: 'M', given_at: new \DateTime(), participant: $p);
       $this->assertFalse($unit->addPoint($rec, $ptP));
       $this->assertEmpty($rec->points);
