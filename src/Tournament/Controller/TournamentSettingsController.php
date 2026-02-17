@@ -139,9 +139,8 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      /** @var Tournament $tournament */
       $ctx->tournament->updateFromArray($data);
-      $this->repo->saveTournament($tournament);
+      $this->repo->saveTournament($ctx->tournament);
 
       return $this->sendToTournamentConfiguration($request, $response, $args);
    }
