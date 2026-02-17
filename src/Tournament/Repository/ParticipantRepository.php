@@ -34,7 +34,7 @@ class ParticipantRepository
    private function getParticipantInstance(array $data): Participant
    {
       /* extract the link to the categories first */
-      $category_data = $data['category_id']? explode(',', $data['category_id']) : [];
+      $category_data = $data['category_id']??'' ? explode(',', $data['category_id']) : [];
       $assignments   = explode(',', $data['pre_assign'] ??'');
       unset($data['category_id']);
       unset($data['pre_assign']);
@@ -85,7 +85,7 @@ class ParticipantRepository
    public function getParticipantsByCategoryId(int $categoryId): ParticipantCollection
    {
       $stmt = $this->pdo->prepare(
-         "SELECT p.* "
+         "SELECT p.*, pc.category_id, pc.pre_assign "
             . "FROM participants_categories pc LEFT JOIN participants p ON p.id = pc.participant_id "
             . "WHERE pc.category_id = :category_id "
             . "ORDER BY p.lastname, p.firstname"
@@ -110,7 +110,7 @@ class ParticipantRepository
          "SELECT p.*, pc.slot_name "
             . "FROM participants_categories pc LEFT JOIN participants p ON p.id = pc.participant_id "
             . "WHERE pc.category_id = :category_id "
-            . "ORDER BY participant_id"
+            . "ORDER BY pc.slot_name, p.id"
       );
       $stmt->execute(['category_id' => $categoryId]);
 

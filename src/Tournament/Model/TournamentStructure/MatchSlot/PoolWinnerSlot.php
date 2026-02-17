@@ -30,4 +30,14 @@ class PoolWinnerSlot extends MatchSlot
    {
       $this->pool->freezeResults();
    }
+
+   /**
+    * get the slot name
+    * @return string name of the pool that is connected to this slot
+    * @return null  if this is not a viable starting slot
+    */
+   public function getName(): ?string
+   {
+      return $this->pool->getName();
+   }
 }

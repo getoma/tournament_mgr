@@ -258,7 +258,7 @@ class TournamentTreeController
       }
 
       /* get an iterator to the current node for further navigation build-up */
-      $current_it = $nav_match_list->getIteratorAt($node->name);
+      $current_it = $nav_match_list->getIteratorAt($node->getName());
 
       /* get the next real matches after the current one */
       $next_matches = $nav_match_list->slice($current_it->skip()->key())->filter(fn(MatchNode $n) => $n->isReal());
