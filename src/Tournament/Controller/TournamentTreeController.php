@@ -2,7 +2,6 @@
 
 namespace Tournament\Controller;
 
-use DateTime;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -24,7 +23,7 @@ use Tournament\Exception\EntityNotFoundException;
 
 use Respect\Validation\Validator as v;
 use Base\Service\DataValidationService;
-
+use Base\Service\PrgService;
 
 class TournamentTreeController
 {
@@ -33,6 +32,7 @@ class TournamentTreeController
       private ParticipantRepository $p_repo,
       private MatchDataRepository $m_repo,
       private TournamentStructureService $structureLoadService,
+      private PrgService $prgService,
    )
    {
    }
@@ -140,10 +140,7 @@ class TournamentTreeController
       }
       else
       {
-         return $response->withHeader(
-            'Location',
-            RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_pool', $args)
-         )->withStatus(302);
+         return $this->prgService->redirect($request, $response, 'show_pool', $args, 'tie_break_added');
       }
    }
 
@@ -196,10 +193,7 @@ class TournamentTreeController
       }
       else
       {
-         return $response->withHeader(
-            'Location',
-            RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_pool', $args)
-         )->withStatus(302);
+         return $this->prgService->redirect($request, $response, 'show_pool', $args, 'tie_break_deleted');
       }
    }
 
@@ -211,10 +205,7 @@ class TournamentTreeController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->structureLoadService->resetMatchRecords($ctx->category);
-      return $response->withHeader(
-         'Location',
-         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
-      )->withStatus(302);
+      return $this->prgService->redirect($request, $response, 'show_category', $args, 'records_deleted');
    }
 
    /**
@@ -225,10 +216,7 @@ class TournamentTreeController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->structureLoadService->populate($ctx->category);
-      return $response->withHeader(
-         'Location',
-         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
-      )->withStatus(302);
+      return $this->prgService->redirect($request, $response, 'show_category', $args, 'repopulated');
    }
 
    public function showMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response
@@ -438,6 +426,18 @@ class TournamentTreeController
          }
       }
 
-      return $this->showMatch($request, $response, $args, $structure, $error);
+      if( $error )
+      {
+         return $this->showMatch($request, $response, $args, $structure, $error);
+      }
+      else
+      {
+         /* there are different routes: ko match, pool match.
+          * but for all, the location is the same for the GET and POST route,
+          * therefore just use the current route's name to generate the redirect
+          */
+         $route = RouteContext::fromRequest($request)->getRoute()->getName();
+         return $this->prgService->redirect($request, $response, $route, $args, 'match_updated');
+      }
    }
 }

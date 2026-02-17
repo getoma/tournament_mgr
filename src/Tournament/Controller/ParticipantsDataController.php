@@ -5,7 +5,6 @@ namespace Tournament\Controller;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
-use Slim\Routing\RouteContext;
 
 use Tournament\Model\Category\CategoryCollection;
 use Tournament\Model\Participant\Participant;
@@ -20,6 +19,7 @@ use Tournament\Service\TournamentStructureService;
 use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\ParticipantRepository;
 
+use Base\Service\PrgService;
 use Base\Service\DataValidationService;
 use Respect\Validation\Validator as v;
 
@@ -31,6 +31,7 @@ class ParticipantsDataController
       private TournamentRepository $tournamentRepo,
       private ParticipantImportService $plistParser,
       private TournamentStructureService $tournamentService,
+      private PrgService $prgService,
    ) {
    }
 
@@ -96,24 +97,22 @@ class ParticipantsDataController
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
       $participants = $this->repo->getParticipantsByTournamentId($tournament->id);
 
+      /* retrieve any possible PRG message and pre-process it */
+      $status = $this->prgService->getStatusMessage() ?? [];
+      if( isset($status['duplicate']) )
+      {
+         $status['duplicate'] = $participants->filter(fn($p) => in_array($p->id, $status['duplicate']));
+      }
+
       return $this->view->render($response, 'tournament/participants/overview.twig', [
          'tournament'     => $tournament,
          'categories'     => $categories,
          'starting_slots' => $this->getStartingSlotSelection($categories),
          'participants'   => $participants,
+         'prg_message'    => $status,
          'errors' => $errors,
          'prev'   => $prev,
       ]);
-   }
-
-   /**
-    * Redirect to the participants details page after an action
-    */
-   private function sendToParticipantList(Request $request, Response $response, array $args): Response
-   {
-      $ctx = $request->getAttribute('route_context');
-      return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-         ->urlFor('show_participant_list', ['tournamentId' => $ctx->tournament->id]))->withStatus(302);
    }
 
    /**
@@ -161,7 +160,7 @@ class ParticipantsDataController
          $this->repo->setCategoryParticipants($category->id, $participantIds);
       }
 
-      return $this->sendToParticipantList($request, $response, $args);
+      return $this->prgService->redirect($request, $response, 'show_participant_list', $args, ['status' => 'updated']);
    }
 
    /**
@@ -207,18 +206,21 @@ class ParticipantsDataController
       $import_ok = $this->repo->importParticipants($import_report['new']);
 
       // Process the uploaded file and import participants
-      if ($import_ok && $import_report['duplicate']->empty())
+      if ($import_ok)
       {
-         return $this->sendToParticipantList($request, $response, $args);
+         return $this->prgService->redirect($request, $response, 'show_participant_list', $args,
+            [ 'status'    => 'imported',
+              'duplicate' => $import_report['duplicate']->column('id')
+            ]
+         );
       }
       else
       {
          // If there are errors, render the participant list with errors
          $errors = [
-            'sql_error'  => $this->repo->getLastErrors(),
-            'duplicate' => $import_report['duplicate'],
+            'sql_error' => $this->repo->getLastErrors(),
          ];
-         return $this->renderParticipantList($request, $response, $args, $errors, []);
+         return $this->renderParticipantList($request, $response, $args, $errors);
       }
    }
 
@@ -229,7 +231,7 @@ class ParticipantsDataController
    {
       if ($this->repo->deleteParticipant($request->getAttribute('route_context')->participant->id))
       {
-         return $this->sendToParticipantList($request, $response, $args);
+         return $this->prgService->redirect($request, $response, 'show_participant_list', $args, ['status' => 'deleted']);
       }
       else
       {
@@ -306,7 +308,7 @@ class ParticipantsDataController
          // try to save
          if ($this->repo->saveParticipant($ctx->participant))
          {
-            return $this->sendToParticipantList($request, $response, $args);
+            return $this->prgService->redirect($request, $response, 'show_participant', $args, 'updated');
          }
          else
          {

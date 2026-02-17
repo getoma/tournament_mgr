@@ -9,6 +9,7 @@ use Slim\Views\Twig;
 
 use Base\Service\MailService;
 use Base\Service\PasswordResetService;
+use Base\Service\PrgService;
 
 use Tournament\Exception\EntityNotFoundException;
 use Tournament\Model\User\Role;
@@ -23,6 +24,7 @@ class UserManagementController
       private UserRepository $repo,
       private PasswordResetService $passwordResetService,
       private MailService $mailService,
+      private PrgService $prgService,
    )
    {
    }
@@ -32,7 +34,7 @@ class UserManagementController
       return $this->twig->render($response,'user/user_create.twig');
    }
 
-   public function createUser(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+   public function createUser(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
    {
       /* parse the input data */
       $data   = $request->getParsedBody();
@@ -60,8 +62,7 @@ class UserManagementController
          $this->repo->saveUser($user);
 
          // forward to user details
-         return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-            ->urlFor('show_user', ['userId' => $user->id]))->withStatus(302);
+         return $this->prgService->redirect($request, $response, 'show_user', ['userId' => $user->id], 'created');
       }
       else
       {
@@ -137,7 +138,9 @@ class UserManagementController
 
             // send the email
             $this->mailService->send($user->email, $subject, $bodyHtml);
-            $message = "E-Mail wurde gesendet";
+
+            // redirect-to-GET
+            return $this->prgService->redirect($request, $response, 'show_user', $args, 'mail_sent');
          }
       }
 
@@ -145,12 +148,7 @@ class UserManagementController
          'user'    => $user,
          'roles'   => Role::cases(),
          'errors'  => $errors,
-         'message' => $message
       ]);
-
-      // forward to user details
-      return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-         ->urlFor('show_user', ['userId' => $user->id]))->withStatus(302);
    }
 
    public function updateUser(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
@@ -192,11 +190,8 @@ class UserManagementController
       // if user was disabled, log him out immediately
       if( !$user->is_active ) $this->repo->destroySessionsForUser($user->id);
 
-      return $this->twig->render($response, 'user/user_details.twig', [
-         'user'    => $user,
-         'roles'   => Role::cases(),
-         'message' => 'Benutzer aktualisiert!',
-      ]);
+      // done, redirect-to-GET
+      return $this->prgService->redirect($request, $response, 'show_user', $args, 'updated');
    }
 
    public function deleteUser(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
@@ -207,8 +202,7 @@ class UserManagementController
 
       $this->repo->deleteUser($user->id);
 
-      return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-         ->urlFor('list_users'))->withStatus(302);
+      return $this->prgService->redirect($request, $response, 'list_users', $args, 'user_deleted');
    }
 
 }
