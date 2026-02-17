@@ -1,17 +1,16 @@
 {% extends 'base/layout.twig' %}
 {% import 'base/form.twig' as form %}
 
-
 {% block content %}
 
 <section class="form-box">
 <h2>{{category.name}} - Konfiguration</h2>
-<form action="{{url_for('update_category_cfg', {'tournamentId': tournament.id, 'categoryId': category.id})}}" method="post">
+<form action="{{url_for('update_category_cfg', route_context.args)}}" method="post">
   {% set isActive = policy.isActionAllowed('ManageSetup') -%}
   {{ form.select('mode', 'Modus', enum_options(category_modes), prev.mode ?? category.mode.value, errors['mode'], required=true, active=isActive) }}
-  {{ form.input('number', 'num_rounds', 'Anzahl KO-Runden', prev.num_rounds ?? config.num_rounds, errors['num_rounds'], {'min':2, 'max': 10}, active=isActive) }}
-  {{ form.input('number', 'pool_winners', 'Anzahl Pool-Sieger', prev.pool_winners ?? config.pool_winners, errors['pool_winners'], {'max': 3, 'min': 1}, active=isActive) }}
-  {{ form.input('number', 'area_cluster', 'Kampfflächen-Cluster', prev.area_cluster ?? config.area_cluster, errors['area_cluster'], {'min': 1}, active=isActive)}}
+  {{ form.input('number', 'num_rounds', 'Anzahl KO-Runden', prev.num_rounds ?? category.config.num_rounds, errors['num_rounds'], {'min':2, 'max': 10}, active=isActive) }}
+  {{ form.input('number', 'pool_winners', 'Anzahl Pool-Sieger', prev.pool_winners ?? category.config.pool_winners, errors['pool_winners'], {'max': 3, 'min': 1}, active=isActive) }}
+  {{ form.input('number', 'area_cluster', 'Kampfflächen-Cluster', prev.area_cluster ?? category.config.area_cluster, errors['area_cluster'], {'min': 1}, active=isActive)}}
   <input type="hidden" name="return_to" value="{{return_to}}">
   {{ form.submit('Speichern und neu generieren', active=isActive) }}
 </form>

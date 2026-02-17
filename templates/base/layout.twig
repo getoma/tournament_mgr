@@ -10,12 +10,11 @@
 </head>
 <body>
 
-  <!-- Header -->
-  <header class="header">
-  <div class="header-container">
+<header>
+<div class="header-container">
     <h1>
       {%- block heading -%}
-        {{ tournament.name|default('Kendo Turniersoftware') }}
+      {{ route_context.tournament.name|default('Kendo Turniersoftware') }}
       {%- endblock -%}
     </h1>
 
@@ -47,13 +46,13 @@
       <nav class="tournament">
   <ul>
     {% if return_to is not empty %}
-      <li><a href="{{ url_for(return_to, route_args) }}">&laquo; Zurück</a></li>
+      <li><a href="{{ url_for(return_to, route_context.args) }}">&laquo; Zurück</a></li>
     {% endif %}
 
     <li><a href="{{ url_for('home') }}">Turniere Übersicht</a></li>
 
-    {% if tournament is defined %}
-      <li><a href="{{ url_for('show_tournament', {'tournamentId': tournament.id}) }}">Turnierkategorien</a></li>
+    {% if route_context.tournament is not null %}
+      <li><a href="{{ url_for('show_tournament', route_context.args) }}">Turnierkategorien</a></li>
     {% endif %}
 
     <li><a href="{{ url_for('list_users') }}">Benutzerverwaltung</a></li>

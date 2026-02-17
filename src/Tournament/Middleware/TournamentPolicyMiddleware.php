@@ -31,8 +31,11 @@ class TournamentPolicyMiddleware implements MiddlewareInterface
          throw new \DomainException("Route could not be determined from request. Is the RoutingMiddleware registered?");
       }
 
+      /** @var RouteArgsContext $ctx acquire the routing context*/
+      $ctx = $request->getAttribute('route_context');
+
       // extract the tournament from the route and spawn the policy handler for it
-      $policy = new CurrentTournamentPolicy($request->getAttribute('tournament', null), $this->tournamentPolicy);
+      $policy = new CurrentTournamentPolicy($ctx->tournament, $this->tournamentPolicy);
 
       // inject the policy handler
       $this->twig->getEnvironment()->addGlobal('policy', $policy);
