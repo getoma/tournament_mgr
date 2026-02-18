@@ -72,7 +72,7 @@ class TournamentTreeController
       }
 
       return $this->view->render($response, 'tournament/navigation/category_KO.twig', [
-         'pools'      => $structure->pools,
+         'no_pools'   => $structure->pools->empty(),
          'ko'         => $ko,
          'chunks'     => $structure->chunks,
          'unmapped_participants' => $structure->unmapped_participants,
@@ -266,10 +266,11 @@ class TournamentTreeController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
-      $this->structureLoadService->populate($ctx->category);
+      $structure = $this->structureLoadService->populate($ctx->category);
+      $redirect_route = $structure->pools->empty()? 'show_category_ko' : 'show_category_pools';
       return $response->withHeader(
          'Location',
-         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category_home', $args)
+         RouteContext::fromRequest($request)->getRouteParser()->urlFor($redirect_route, $args)
       )->withStatus(302);
    }
 

@@ -11,6 +11,8 @@
 {{ part.printKo(ko, chunks, route_context.args) }}
 </section>
 
+{% if no_pools %}
+
 {% if unmapped_participants is not empty %}
 <section>
   <h2>Nicht zugewiesen</h2>
@@ -22,14 +24,14 @@
 </section>
 {% endif %}
 
-<form action="{{url_for('reset_category_results', route_context.args)}}" method="post">
-  <button type="submit">Ergebnisse löschen</button>
-</form>
-
 {% if policy.isActionAllowed('ManageSetup') %}
+<section>
 <form action="{{url_for('repopulate_category', route_context.args)}}" method="post">
   <button type="submit">Teilnehmer neu verteilen</button>
 </form>
+</section>
+{% endif %}
+
 {% endif %}
 
 {% include 'base/footer.twig' %}

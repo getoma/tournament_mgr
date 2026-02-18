@@ -21,4 +21,11 @@
   </a>
 </nav>
 
+<section>
+  <h2>Test-Optionen</h2>
+  <form action="{{url_for('reset_category_results', route_context.args)}}" method="post">
+    <button type="submit">Aktuellen Turnierfortschritt löschen</button>
+  </form>
+</section>
+
 {% include 'base/footer.twig' %}

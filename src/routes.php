@@ -151,7 +151,7 @@ return function (\Slim\App $app)
             /* Tournament tree navigation */
             $cgrp->get( '/pool', [TournamentTreeController::class, 'showCategoryPool'])->setName('show_category_pools');
             $cgrp->get( '/pool/{pool}', [TournamentTreeController::class, 'showPool'])->setName('show_pool');
-            $cgrp->get( '/tree', [TournamentTreeController::class, 'showCategorytree'])->setName('show_category_ko');
+            $cgrp->get( '/ko', [TournamentTreeController::class, 'showCategorytree'])->setName('show_category_ko');
             $cgrp->get( '/area/ko/{chunk}', [TournamentTreeController::class, 'showKoArea'])->setName('show_ko_area');
             $cgrp->get('/category', [TournamentTreeController::class, 'showCategoryHome'])->setName('show_category_home');
 
