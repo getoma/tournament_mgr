@@ -19,18 +19,28 @@
 {% endblock %}
 
 {% block content %}
-{%- if errors %}
+{% if prg_message -%}
+{% set message_dict = {
+  'updated':  "Teilnehmerliste erfolgreich aktualisiert!",
+  'imported': "Teilnehmer erfolgreich importiert!",
+  'deleted':  "Teilnehmer wurde gelöscht."
+} %}
 <div class="form-box">
-  {% if errors.input_error %}<p class="form-error">Teilnehmer konnten nicht importiert werden, bitte Eingaben überprüfen</p>{% endif -%}
-  {% if errors.sql_error %}<p class="form-error">{{errors.sql_error}}</p>{% endif -%}
-  {% if errors.duplicate -%}
+  <p class="ok">{{ message_dict[prg_message.status]|default("Teilnehmerliste erfolgreich aktualisiert!") }}</p>
+  {% if prg_message.duplicate -%}
   <p class="form-warning">Teilnehmer bereits erfasst und nicht neu importiert:</p>
   <ul id="duplicate_participant_list">
-    {% for participant in errors.duplicate %}
+    {% for participant in prg_message.duplicate %}
     <li>{{participant.lastname}}, {{participant.firstname}} {%if participant.club%}({{participant.club}}){%endif%}</li>
     {% endfor %}
   </ul>
-  {%-endif%}
+  {%- endif %}
+</div>
+{%- endif %}
+{% if errors -%}
+<div class="form-box">
+  {% if errors.input_error %}<p class="form-error">Teilnehmer konnten nicht importiert werden, bitte Eingaben überprüfen</p>{% endif -%}
+  {% if errors.sql_error %}<p class="form-error">{{errors.sql_error}}</p>{% endif -%}
 </div>
 {% endif -%}
 <div class="form-box">

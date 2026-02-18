@@ -19,6 +19,7 @@ use Tournament\Policy\TournamentPolicy;
 use Tournament\Service\RouteArgsContext;
 use Tournament\Service\TournamentStructureService;
 
+use Base\Service\PrgService;
 
 class TournamentSettingsController
 {
@@ -27,6 +28,7 @@ class TournamentSettingsController
       private TournamentRepository $repo,
       private TournamentStructureService $structureLoadService,
       private TournamentPolicy $policy,
+      private PrgService $prgService,
    ) {
    }
 
@@ -74,8 +76,7 @@ class TournamentSettingsController
       $tournament = new Tournament(...$data);
       $this->repo->saveTournament($tournament);
 
-      return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-         ->urlFor('show_tournament_config', ['tournamentId' => $tournament->id]))->withStatus(302);
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', ['tournamentId' => $tournament->id], 'tournament_created');
    }
 
    /**
@@ -112,15 +113,6 @@ class TournamentSettingsController
    }
 
    /**
-    * Redirect to the tournament details page after an action
-    */
-   private function sendToTournamentConfiguration(Request $request, Response $response, array $args): Response
-   {
-      return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-         ->urlFor('show_tournament_config', ['tournamentId' => $args['tournamentId']]))->withStatus(302);
-   }
-
-   /**
     * Update tournament details
     */
    public function updateTournament(Request $request, Response $response, array $args): Response
@@ -142,7 +134,7 @@ class TournamentSettingsController
       $ctx->tournament->updateFromArray($data);
       $this->repo->saveTournament($ctx->tournament);
 
-      return $this->sendToTournamentConfiguration($request, $response, $args);
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'tournament_updated');
    }
 
    public function changeTournamentStatus(Request $request, Response $response, array $args): Response
@@ -164,7 +156,7 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, $err);
       }
 
-      return $this->sendToTournamentConfiguration($request, $response, $args);
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'tournament_status');
    }
 
    /**
@@ -188,7 +180,7 @@ class TournamentSettingsController
       $area = new Area(null, $ctx->tournament->id, $data['name']);
       $this->repo->saveArea($area);
 
-      return $this->sendToTournamentConfiguration($request, $response, $args);
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'area_created');
    }
 
    /**
@@ -212,7 +204,7 @@ class TournamentSettingsController
       $ctx->area->updateFromArray($data);
       $this->repo->saveArea($ctx->area);
 
-      return $this->sendToTournamentConfiguration($request, $response, $args);
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'area_updated');
    }
 
    /**
@@ -223,7 +215,7 @@ class TournamentSettingsController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->repo->deleteArea($ctx->area->id);
-      return $this->sendToTournamentConfiguration($request, $response, $args);
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'area_deleted');
    }
 
    /**
@@ -258,7 +250,7 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      return $this->sendToTournamentConfiguration($request, $response, $args);
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'category_created');
    }
 
    /**
@@ -285,7 +277,7 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, ['category' => ['update' => 'Failed to update category']], $data);
       }
 
-      return $this->sendToTournamentConfiguration($request, $response, $args);
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'category_updated');
    }
 
    /**
@@ -307,7 +299,7 @@ class TournamentSettingsController
    }
 
    /**
-    * Update the detailled category configuration and regenerate the structure
+    * Update the detailed category configuration and regenerate the structure
     */
    public function updateCategoryConfiguration(Request $request, Response $response, array $args): Response
    {
@@ -333,7 +325,7 @@ class TournamentSettingsController
       $this->structureLoadService->populate($ctx->category);
 
       /* forward to category page */
-      return $this->showCategoryConfiguration($request, $response, $args);
+      return $this->prgService->redirect($request, $response, 'show_category_cfg', $args);
    }
 
    /**
@@ -344,6 +336,6 @@ class TournamentSettingsController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->repo->deleteCategory($ctx->category->id);
-      return $this->sendToTournamentConfiguration($request, $response, $args);
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'category_deleted');
    }
 }

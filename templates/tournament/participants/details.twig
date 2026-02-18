@@ -3,6 +3,12 @@
 
 {% block content %}
 <h2>Teilnehmer bearbeiten</h2>
+{% if prg_message %}
+<p class="ok">Teilnehmer wurde aktualisiert!</p>
+{% endif %}
+{% if errors %}
+<p class="error">Daten konnten nicht übernommen werden!</p>
+{% endif %}
 <form method="POST" action="{{ url_for('update_participant', route_context.args) }}">
    {{ form.input('text', 'lastname', 'Nachname', prev.lastname ?? participant.lastname, errors.lastname, {'maxlength':100}, required=true) }}
    {{ form.input('text', 'firstname', 'Vorname', prev.firstname ?? participant.firstname, errors.firstname, {'maxlength':100}, required=true) }}

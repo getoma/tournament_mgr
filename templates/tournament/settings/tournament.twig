@@ -32,6 +32,9 @@
       </form>
     </div>
   </div>
+{% if prg_message == 'tournament_created' %}<p class="ok">Turnier erfolgreich angelegt!</p>{% endif %}
+{% if prg_message == 'tournament_updated' %}<p class="ok">Daten übernommen!</p>{% endif %}
+{% if prg_message == 'tournament_status'  %}<p class="ok">Turnier-Status aktualisiert!</p>{% endif %}
 <form action="{{url_for('update_tournament_config', route_context.args)}}" method="post">
   {% set isActive=policy.isActionAllowed('ManageDetails') -%}
   {% if isActive -%}
