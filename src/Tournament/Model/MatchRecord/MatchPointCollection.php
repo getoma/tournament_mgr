@@ -31,13 +31,6 @@ class MatchPointCollection extends \Base\Model\IdObjectCollection
       {
          $this->dropped[] = $value;
          parent::offsetUnset($offset);
-
-         /* also, drop any point that resulted from this one */
-         foreach( $this->filter(fn(MatchPoint $pt) => $pt->caused_by === $value) as $i => $pt )
-         {
-            $this->dropped[] = $pt;
-            parent::offsetUnset($i);
-         }
       }
    }
 

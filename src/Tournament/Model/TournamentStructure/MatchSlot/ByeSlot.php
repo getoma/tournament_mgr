@@ -24,4 +24,8 @@ class ByeSlot extends MatchSlot
    {
       return null;
    }
+
+   public function freezeResult(): void
+   {
+   }
 }

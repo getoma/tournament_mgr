@@ -10,7 +10,7 @@
   {% endif %}
   </label>
   {%- if error is not empty %}
-  <span class="invalid-feedback">{{ error }}</span>
+  <span class="invalid-feedback">{{ error|e|nl2br }}</span>
   {%- endif %}
 </p>
 {%- endmacro %}
@@ -21,22 +21,23 @@
   {%- for attr, val in attributes %} {{attr}}="{{ val }}" {% endfor %}
   {%- if required %} required{% endif %}>
 {%- if error is not empty %}
-<span class="invalid-feedback">{{ error }}</span>
+<span class="invalid-feedback">{{ error|e|nl2br }}</span>
 {%- endif %}
 {% else -%}
 <span class="input_text">{{value|e|default('n/a')}}</span>
 {% endif %}
 {%- endmacro %}
 
-{%- macro checkbox(name, label, checked=false, error='', attributes={}, active=true) -%}
+{%- macro checkbox(name, label, value, checked=false, error='', attributes={}, active=true) -%}
 <p>
   <label>
-    <input type="checkbox" name="{{ name }}" {%- if checked %} checked{% endif %}
-      {%- for attr, val in attributes %} {{attr }}="{{ val }}" {% endfor %}
+    <input type="checkbox" name="{{ name }}" value="{{ value }}"
+      {%- for attr, val in attributes %} {{attr }}="{{ val }}"{% endfor %}
+      {%- if checked %} checked{% endif %}
       {%- if not active %} disabled{%endif%}>
     <span>{{ label }}</span></label>
   {%- if error is not empty %}
-  <span class="invalid-feedback">{{ error }}</span>
+  <span class="invalid-feedback">{{ error|e|nl2br }}</span>
   {%- endif %}
 </p>
 {%- endmacro %}
@@ -53,7 +54,7 @@
   {% endif -%}
   </label>
   {%- if error is not empty %}
-  <span class="invalid-feedback">{{ error }}</span>
+  <span class="invalid-feedback">{{ error|e|nl2br }}</span>
   {%- endif %}
 </p>
 {%- endmacro %}
@@ -74,7 +75,7 @@
     {% endif -%}
   </label>
   {%- if error is not empty %}
-  <span class="invalid-feedback">{{ error }}</span>
+  <span class="invalid-feedback">{{ error|e|nl2br }}</span>
   {%- endif %}
 </p>
 {%- endmacro %}
@@ -89,7 +90,7 @@
   {% endfor -%}
 </select>
 {%- if error is not empty %}
-<span class="invalid-feedback">{{ error }}</span>
+<span class="invalid-feedback">{{ error|e|nl2br }}</span>
 {%- endif %}
 {% else -%}
 <span class="input_text">{{ options[selected]|e|default('n/a') }}</span>

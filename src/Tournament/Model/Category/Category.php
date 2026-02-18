@@ -4,22 +4,24 @@ namespace Tournament\Model\Category;
 
 use Respect\Validation\Validator as v;
 
-class Category extends \Tournament\Model\Base\DbItem
+/**
+ * Represents a competition category within a tournament.
+ */
+class Category implements \Tournament\Model\Base\DbItem
 {
-   // Represents a competition category within a tournament.
+   use \Tournament\Model\Base\DbItemTrait;
 
    public CategoryConfiguration $config; // Configuration for the category
    public CategoryMode $mode;            // Tournament mode (e.g., "ko", "pool", "combined")
 
    public function __construct(
-      ?int $id,                              // Unique identifier for the category
+      public ?int $id,                       // Unique identifier for the category
       public readonly int $tournament_id,    // Identifier for the tournament this category belongs to
       public string $name,                   // Name of the category (e.g., "Juniors -60kg")
       string|CategoryMode $mode = CategoryMode::KO, // Tournament mode (e.g., "ko", "pool", "combined")
       ?CategoryConfiguration $config = null, // detailled configuration for the category (e.g., seeding strategy, pool sizes)
    )
    {
-      $this->id = $id;
       $this->config = $config ?? new CategoryConfiguration();
       $this->mode = is_string($mode) ? CategoryMode::from($mode) : $mode;
    }
@@ -50,6 +52,32 @@ class Category extends \Tournament\Model\Base\DbItem
    public function getMatchPointHandler(): \Tournament\Model\MatchPointHandler\MatchPointHandler
    {
       return new \Tournament\Model\MatchPointHandler\KendoMatchPointHandler();
+   }
+
+   /**
+    * same for PoolRankHandler
+    */
+   public function getPoolRankHandler(): \Tournament\Model\PoolRankHandler\PoolRankHandler
+   {
+      return new \Tournament\Model\PoolRankHandler\GenericPoolRankHandler($this->getMatchPointHandler());
+   }
+
+   /**
+    * same same for PairingHandler
+    */
+   public function getMatchCreationHandler(): \Tournament\Model\MatchCreationHandler\MatchCreationHandler
+   {
+      return new \Tournament\Model\MatchCreationHandler\GenericMatchCreationHandler();
+   }
+
+   /**
+    * PlacmentCostCalculator
+    */
+   public function getPlacementCostCalculator(): \Tournament\Model\PlacementCostCalculator\PlacementCostCalculator
+   {
+      $config = [];
+      if( $this->config->ignore_club ) $config['club_weight'] = 0;
+      return new \Tournament\Model\PlacementCostCalculator\GenericPlacementCostCalculator(...$config);
    }
 }
 

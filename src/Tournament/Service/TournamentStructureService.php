@@ -30,37 +30,31 @@ class TournamentStructureService
       $matchRecords = $this->matchDataRepo->getMatchRecordsByCategoryId($category->id);
 
       $struc = $this->initialize($category);
-      $struc->loadParticipants($participants);
+      $struc->getParticipantHandler()->loadParticipants($participants);
       $struc->loadMatchRecords($matchRecords);
       return $struc;
    }
 
    /**
-    * populate a tornament structure by shuffling in all participants
+    * populate a tournament structure by shuffling in all participants
     */
    public function populate(Category $category): TournamentStructure
    {
-      $structure = $this->initialize($category);
+      $struc = $this->initialize($category);
       $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
-      $slot_assignment = $structure->shuffleParticipants($participants);
+      $slot_assignment = $struc->getParticipantHandler()->populate($participants);
       $this->participantRepo->updateAllParticipantSlots($category->id, $slot_assignment);
-      return $structure;
+      return $struc;
    }
 
    /**
     * initialize a new TournamentStructure for a category and assign areas.
     */
-   private function initialize(Category $category): TournamentStructure
+   public function initialize(Category $category): TournamentStructure
    {
-      $struc = new TournamentStructure();
       $areas = $this->tournamentRepo->getAreasByTournamentId($category->tournament_id);
-      $struc->generateStructure(
-         $category->mode,
-         $category->config->num_rounds,
-         $areas,
-         $category->config->pool_winners,
-         $category->config->area_cluster
-      );
+      $struc = new TournamentStructure($category, $areas);
+      $struc->generateStructure();
       return $struc;
    }
 

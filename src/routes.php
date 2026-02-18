@@ -4,16 +4,18 @@ use Tournament\Controller\ParticipantsDataController;
 use Tournament\Controller\TournamentSettingsController;
 use Tournament\Controller\IndexPageController;
 use Tournament\Controller\AuthController;
-use Tournament\Controller\UserDataController;
+use Tournament\Controller\AccountController;
 use Tournament\Controller\TestController;
 use Tournament\Controller\TournamentTreeController;
+use Tournament\Controller\UserManagementController;
 
 use Tournament\Policy\TournamentAction;
 use Tournament\Exception\EntityNotFoundException;
 use Tournament\Middleware\EntityNotFoundHandler;
 
-use Slim\Routing\RouteCollectorProxy;
+use Base\Service\RedirectHandler;
 
+use Slim\Routing\RouteCollectorProxy;
 
 return function (\Slim\App $app)
 {
@@ -111,8 +113,9 @@ return function (\Slim\App $app)
          )->add( $statusGuardMW->for(TournamentAction::ManageSetup) );
 
          /* participants */
-         $tgrp->get( '/participants', [ParticipantsDataController::class, 'showParticipantList'])->setName('show_participant_list');
+         $tgrp->get('/participants', [ParticipantsDataController::class, 'showParticipantList'])->setName('show_participant_list');
          $tgrp->get('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'showParticipant'])->setName('show_participant');
+         $tgrp->get('/participants/import', [RedirectHandler::class, 'show_participant_list']);
          $tgrp->group('', function (RouteCollectorProxy $pgrp)
          {
             $pgrp->post('/participants', [ParticipantsDataController::class, 'updateParticipantList'])->setName('update_participant_list');
@@ -140,22 +143,48 @@ return function (\Slim\App $app)
             $cgrp->get('/category', [TournamentTreeController::class, 'showCategoryHome'])->setName('show_category_home');
 
             /* Match updating */
-            $cgrp->get('/ko/{matchName}', [TournamentTreeController::class, 'showKoMatch'])->setName('show_ko_match');
-            $cgrp->post('/ko/{matchName}', [TournamentTreeController::class, 'updateKoMatch'])->setName('update_ko_match')
+            $cgrp->get('/ko/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('show_ko_match');
+            $cgrp->post('/ko/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('update_ko_match')
                ->add( $statusGuardMW->for(TournamentAction::RecordResults) );
+
+            $cgrp->get('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('show_pool_match');
+            $cgrp->post('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('update_pool_match')
+               ->add($statusGuardMW->for(TournamentAction::RecordResults));
+
+            $cgrp->post('/pool/{pool}/addTieBreak', [TournamentTreeController::class, 'addPoolTieBreak'])->setName('add_pool_tiebreak')
+               ->add($statusGuardMW->for(TournamentAction::RecordResults));
+            $cgrp->post('/pool/{pool}/delete/{decision_round}', [TournamentTreeController::class, 'deletePoolDecisionRound'])->setName('delete_pool_tiebreak')
+               ->add($statusGuardMW->for(TournamentAction::RecordResults));
 
             $cgrp->post('resetResults', [TournamentTreeController::class, 'resetMatchRecords'])->setName('reset_category_results')
                ->add( $statusGuardMW->for(TournamentAction::RecordResults) );
          });
       });
 
-      $auth_grp->get('/user/account', [UserDataController::class, 'showAccount'])->setName('user_account');
-      $auth_grp->post('/user/account', [UserDataController::class, 'updateAccount'])->setName('user_account_post');
-                
+      /* user management */
+      $auth_grp->group('/users', function (RouteCollectorProxy $ugrp)
+      {
+         $ugrp->get( '[/]',            [UserManagementController::class, 'listUsers'])->setName('list_users');
+         $ugrp->get( '/create',        [UserManagementController::class, 'showCreateUser'])->setName('show_create_user');
+         $ugrp->post('/create',        [UserManagementController::class, 'createUser'])->setName('do_create_user');
+         $ugrp->get( '/{userId:\d+}',  [UserManagementController::class, 'showUser'])->setName('show_user');
+         $ugrp->post('/{userId:\d+}',  [UserManagementController::class, 'updateUser'])->setName('update_user');
+         $ugrp->get( '/{userId:\d+}/delete', [UserManagementController::class, 'deleteUser'])->setName('delete_user');
+         $ugrp->get( '/{userId:\d+}/welcome_mail', [UserManagementController::class, 'sendNewUserMail'])->setName('welcome_user');
+      });
+
+      $auth_grp->group('/account', function (RouteCollectorProxy $agrp)
+      {
+         $agrp->get('', [AccountController::class, 'showAccount'])->setName('user_account');
+         $agrp->post('', [AccountController::class, 'updateAccount'])->setName('user_account_post');
+      });
+
       /* db migration during development, only */
       if( config::$test_interfaces ?? false )
       {
-       }
+         $auth_grp->get('/dbmigrate', [TestController::class, 'showDbMigrationList'])->setName('show_db_migrate');
+         $auth_grp->post('/dbmigrate', [TestController::class, 'setDbMigration'])->setName('do_db_migrate');
+      }
    })
    ->add($authMW);
 };

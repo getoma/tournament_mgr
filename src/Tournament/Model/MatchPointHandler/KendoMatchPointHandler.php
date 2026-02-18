@@ -54,6 +54,8 @@ final class KendoMatchPointHandler implements MatchPointHandler
       /* validity checks */
       if( $this->isDecided($match) ) return false;
       if( !isset(self::$_ACCEPTED[$pt->point]) ) return false;
+      if( $pt->participant !== $match->redParticipant && $pt->participant !== $match->whiteParticipant ) return false;
+      if( $match->points->contains($pt) ) return false;
 
       /* add the point */
       $match->points[] = $pt;
@@ -83,14 +85,22 @@ final class KendoMatchPointHandler implements MatchPointHandler
     */
    function removePoint(MatchRecord $match, MatchPoint|int $pt): bool
    {
-      $pt_id = ($pt instanceof MatchPoint)? $pt->id : (int)$pt;
-      /* removing of follow-up points is implemented within
-       * MatchPointCollection already, which is evaluating the
-       * caused_by-relation for that
-       * so, at this place we can simply drop it from the points list
-       * and be done with it.
+      /* we work on the object, in case this method is called with a
+       * match point that doesn't have an ID (yet)
        */
-      $match->points->offsetUnset($pt_id);
+      if( !($pt instanceof MatchPoint) )
+      {
+         $pt = $match->points[$pt];
+
+         if( !isset($pt) ) return true; // already not part of points
+      }
+      $match->points->drop($pt);
+
+      /* also, drop any point that resulted from this one */
+      foreach ($match->points->filter(fn(MatchPoint $p) => $p->caused_by === $pt) as $derived_pt)
+      {
+         $match->points->drop($derived_pt);
+      }
       return true;
    }
 
@@ -141,7 +151,7 @@ final class KendoMatchPointHandler implements MatchPointHandler
     * returns a list of active penalties that did not yet result
     * in any further consequences according the specific rules applied
     */
-   public function getActivePenalties(MatchPointCollection $col): MatchPointCollection
+   public function getActivePenalties(MatchRecord $match): MatchPointCollection
    {
       $penalty_list = [];
 
@@ -154,7 +164,7 @@ final class KendoMatchPointHandler implements MatchPointHandler
        */
 
       /** @var MatchPoint $p */
-      foreach( $col as $p )
+      foreach( $match->points as $p )
       {
          if( $p->point === self::PENALTY['Hansoku'] )
          {
@@ -178,9 +188,9 @@ final class KendoMatchPointHandler implements MatchPointHandler
    /**
     * extract real, actual points
     */
-   public function getPoints(MatchPointCollection $col): MatchPointCollection
+   public function getPoints(MatchRecord $match): MatchPointCollection
    {
-      return $col->filter(fn(MatchPoint $p) => isset(self::$_POINTS[$p->point]));
+      return $match->points->filter(fn(MatchPoint $p) => isset(self::$_POINTS[$p->point]));
    }
 
 }

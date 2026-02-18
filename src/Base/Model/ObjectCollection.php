@@ -22,6 +22,13 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       }
    }
 
+   public function copy(): static
+   {
+      $result = static::new();
+      $result->elements = $this->elements;
+      return $result;
+   }
+
    abstract static protected function elements_type(): string;
 
    public function keyExists(int|string $key): bool
@@ -39,9 +46,9 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return array_values($this->elements);
    }
 
-   public function column(string $attr): array
+   public function column(string $attr, ?string $indexattr = null): array
    {
-      return array_column($this->elements, $attr);
+      return array_column($this->elements, $attr, $indexattr);
    }
 
    public function keys(): array
@@ -111,7 +118,7 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 
    public function drop($value): bool
    {
-      $offset = array_search($value, $this->elements, true);
+      $offset = $this->search($value);
       if ($offset === false) return false;
       $this->offsetUnset($offset);
       return true;
@@ -125,6 +132,11 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
    public function search($value): mixed
    {
       return array_search($value, $this->elements, true);
+   }
+
+   public function find(callable $callback): mixed
+   {
+      return array_find($this->elements, $callback);
    }
 
    public function contains($value): bool
@@ -145,6 +157,19 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return $result;
    }
 
+   public function map_keys(callable $callback): self
+   {
+      $result = self::new();
+      $keys = array_map($callback, $this->elements);
+      $result->elements = array_combine($keys, $this->elements);
+      return $result;
+   }
+
+   public function map(callable $callback): array
+   {
+      return array_map($callback, $this->elements);
+   }
+
    public function slice(int $offset, ?int $length = null): static
    {
       return new static(array_slice($this->elements, $offset, $length));
@@ -155,13 +180,46 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       return new static(array_filter($this->elements, $callback));
    }
 
-   // support empty() on object
-   public function __isset($name): bool
+   public function any(callable $callback): bool
    {
-      if ($name === '0')
+      /* array_any only available from php8.4, and we need to be 8.3-compatible for now */
+      foreach ($this->elements as $k => $e)
       {
-         return $this->count() > 0;
+         if ($callback($e, $k)) return true;
       }
       return false;
+   }
+
+   public function all(callable $callback): bool
+   {
+      /* array_all only available from php8.4, and we need to be 8.3-compatible for now */
+      foreach( $this->elements as $k => $e)
+      {
+         if( !$callback($e, $k) ) return false;
+      }
+      return true;
+   }
+
+   public function walk(callable $callback, $arg = null): void
+   {
+      array_walk($this->elements, $callback, $arg);
+   }
+
+   public function merge(iterable $other): static
+   {
+      return static::new(array_merge($this->elements, $other));
+   }
+
+   /**
+    * merge $other into $this without creating a new copy
+    * @param $other   - the other collection to merge
+    * @param $replace - if true, any duplicate in $other will replace the object inside $this. if false, duplicates in $other will be dropped
+    */
+   public function mergeInPlace(iterable $other, bool $replace = true): void
+   {
+      foreach( $other as $v )
+      {
+         if($replace || !$this->contains($v) ) $this[] = $v;
+      }
    }
 }
