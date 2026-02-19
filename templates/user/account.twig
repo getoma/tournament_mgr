@@ -5,6 +5,9 @@
 } %}
 
 <div class="form-box">
+{% if prg_message %}
+<p class="ok">Account wurde aktualisiert!</p>
+{% endif %}
 {% if errors %}
 <p class="error">Daten konnten nicht übernommen werden!</p>
 {% endif %}

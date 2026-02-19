@@ -7,7 +7,13 @@
 
 <section>
   <h2>{{user.display_name}}</h2>
-  {%- if message %}<p class="ok">{{ message }}</p>{% endif %}
+  {% if prg_message -%}
+  {% set message_dict = {
+    'created': 'Benutzer erfolgreich angelegt.',
+    'mail_sent': 'Willkommens-Mail erfolgreich gesendet.'
+  }-%}
+  <p class="ok">{{ message_dict[prg_message]|default('Benutzer aktualisiert.') }}</p>
+  {%- endif %}
   {% if errors %}
   <p class="error">Fehler: {{ errors.error|default('Daten konnten nicht übernommen werden!') }}</p>
   {% if errors.policy %}<p class="error">{{ errors.policy }}</p>{%endif%}

@@ -6,6 +6,7 @@
 
 <section class="form-box">
 <h2>{{category.name}} - Konfiguration</h2>
+{% if prg_message %}<p class="ok">Daten übernommen und Turnierbaum neu generiert!</p>{% endif -%}
 <form action="{{url_for('update_category_cfg', route_context.args)}}" method="post">
   {% set isActive = policy.isActionAllowed('ManageSetup') -%}
   {{ form.select('mode', 'Modus', enum_options(category_modes), prev.mode ?? category.mode.value, errors['mode'], required=true, active=isActive) }}

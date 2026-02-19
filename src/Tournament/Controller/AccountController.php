@@ -10,13 +10,15 @@ use Tournament\Repository\UserRepository;
 use Tournament\Model\User\User;
 
 use Base\Service\PasswordHasher;
+use Base\Service\PrgService;
 
 class AccountController
 {
    public function __construct(
       private Twig $twig,
       private UserRepository $userRepository,
-      private PasswordHasher $hasher
+      private PasswordHasher $hasher,
+      private PrgService $prgService,
    )
    {
    }
@@ -38,7 +40,6 @@ class AccountController
       if( !$errors )
       {
          /* check if password change is requested, and process it */
-         $password_msg = null;
          if (!empty($data['current_password']) && !empty($data['new_password']))
          {
             if( !$this->hasher->verify($data['current_password'], $user->password_hash) )
@@ -56,8 +57,6 @@ class AccountController
                $this->userRepository->updateUserPassword($user->id, $new_password);
                // invalidate all other sessions for this user
                $this->userRepository->destroySessionsForUser($user->id, true);
-               // return success message
-               $password_msg = 'Passwort erfolgreich geändert.';
             }
          }
       }
@@ -67,19 +66,18 @@ class AccountController
       {
          $user->updateFromArray($data);
          $this->userRepository->saveUser($user);
-         $data = [];
+         return $this->prgService->redirect($request, $response, 'user_account', []);
       }
       else
       {
          /* do not return any entered passwords */
          unset($data['current_password'], $data['new_password'], $data['new_password_repeat']);
-      }
 
-      return $this->twig->render($response, 'user/account.twig', [
-         'user'   => $user,
-         'errors' => $errors,
-         'prev'   => $data,
-         'password_msg' => $password_msg,
-      ]);
+         return $this->twig->render($response, 'user/account.twig', [
+            'user'   => $user,
+            'errors' => $errors,
+            'prev'   => $data,
+         ]);
+      }
    }
 }

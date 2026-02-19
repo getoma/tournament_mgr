@@ -25,6 +25,9 @@ return function (\Slim\App $app)
     * Global MiddleWare Injection
     */
 
+   // Add PRG Middleware - support POST-REDIRECT-GET pattern with status messages
+   $app->add(Base\Middleware\PrgMiddleware::create($app));
+
    // Add TournamentPolicyMiddleware
    $app->add(\Tournament\Middleware\TournamentPolicyMiddleware::create($app));
 

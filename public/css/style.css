@@ -624,3 +624,20 @@ tr.label_row td
    padding-bottom: 0;
 }
 
+/* error/ok message blocks */
+p.error, span.error {
+   display: block;
+   background-color: #f8d7da;
+   border-left: 4px solid #dc3545;
+   padding: 0.75rem;
+   border-radius: 4px;
+   margin-bottom: 1rem;
+}
+
+p.ok, span.ok {
+   background-color: #d1e7dd;
+   border-left: 4px solid #198754;
+   padding: 0.75rem 1rem;
+   border-radius: 4px;
+   margin-bottom: 1rem;
+}
