@@ -168,7 +168,7 @@ class ParticipantHandler
 
          $assigned[] = new SlotPlacement($starting_slots[$bestSlotName], $participant);
          $slot_tracker[$bestSlotName] -= 1;
-         if (!$slot_tracker[$slotName]) unset($slot_tracker[$slotName]);
+         if (!$slot_tracker[$bestSlotName]) unset($slot_tracker[$bestSlotName]);
       }
 
       /* above algorithm will not yield optimal results - the best slot for a participant
