@@ -10,6 +10,9 @@ class config
       'pw'     => ''
    ];
 
+   public static $TWIG_CACHE_DIR = '';
+   public static $TWIG_AUTO_RELOAD = true;
+
    public static $debug = false;
    public static $test_interfaces = false;
 
