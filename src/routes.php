@@ -4,9 +4,10 @@ use Tournament\Controller\ParticipantsDataController;
 use Tournament\Controller\TournamentSettingsController;
 use Tournament\Controller\IndexPageController;
 use Tournament\Controller\AuthController;
-use Tournament\Controller\UserDataController;
+use Tournament\Controller\AccountController;
 use Tournament\Controller\TestController;
 use Tournament\Controller\TournamentTreeController;
+use Tournament\Controller\UserManagementController;
 
 use Tournament\Policy\TournamentAction;
 use Tournament\Exception\EntityNotFoundException;
@@ -16,7 +17,6 @@ use Base\Service\RedirectHandler;
 
 use Slim\Routing\RouteCollectorProxy;
 
-
 return function (\Slim\App $app)
 {
    $container = $app->getContainer();
@@ -24,6 +24,9 @@ return function (\Slim\App $app)
    /**********************
     * Global MiddleWare Injection
     */
+
+   // Add PRG Middleware - support POST-REDIRECT-GET pattern with status messages
+   $app->add(Base\Middleware\PrgMiddleware::create($app));
 
    // Add CurrentUserMiddleware
    $app->add(Base\Middleware\CurrentUserMiddleware::create($app));
@@ -162,8 +165,23 @@ return function (\Slim\App $app)
          });
       });
 
-      $auth_grp->get('/user/account', [UserDataController::class, 'showAccount'])->setName('user_account');
-      $auth_grp->post('/user/account', [UserDataController::class, 'updateAccount'])->setName('user_account_post');
+      /* user management */
+      $auth_grp->group('/users', function (RouteCollectorProxy $ugrp)
+      {
+         $ugrp->get( '[/]',            [UserManagementController::class, 'listUsers'])->setName('list_users');
+         $ugrp->get( '/create',        [UserManagementController::class, 'showCreateUser'])->setName('show_create_user');
+         $ugrp->post('/create',        [UserManagementController::class, 'createUser'])->setName('do_create_user');
+         $ugrp->get( '/{userId:\d+}',  [UserManagementController::class, 'showUser'])->setName('show_user');
+         $ugrp->post('/{userId:\d+}',  [UserManagementController::class, 'updateUser'])->setName('update_user');
+         $ugrp->get( '/{userId:\d+}/delete', [UserManagementController::class, 'deleteUser'])->setName('delete_user');
+         $ugrp->get( '/{userId:\d+}/welcome_mail', [UserManagementController::class, 'sendNewUserMail'])->setName('welcome_user');
+      });
+
+      $auth_grp->group('/account', function (RouteCollectorProxy $agrp)
+      {
+         $agrp->get('', [AccountController::class, 'showAccount'])->setName('user_account');
+         $agrp->post('', [AccountController::class, 'updateAccount'])->setName('user_account_post');
+      });
 
       /* db migration during development, only */
       if( config::$test_interfaces ?? false )

@@ -8,7 +8,7 @@
 {% block content %}
 <section class="form-box">
 <h2>Teilnehmer importieren - {{import.name}} - Vorschau</h2>
-<form method="POST" id="form_preview_attributes" action="{{ url_for('upload_participants_confirm_update', {'tournamentId': tournament.id}) }}">
+<form method="POST" id="form_preview_attributes" action="{{ url_for('upload_participants_confirm_update', route_context.args) }}">
   {{ form.input('text', 'club', "Verband/Verein", club, errors.club, { 'maxlength': 100 }) }}
   {{ form.select('category', 'Kategorie (global)', category_sel, category, errors.category) }}
   {{ form.input('number', 'start_row', "Importieren ab Zeile", start_row, errors.start_row, {'min': 1, 'max': import.rows|length}, required=true)}}

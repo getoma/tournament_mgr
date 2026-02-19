@@ -23,7 +23,7 @@ class PasswordResetService
    public function createResetToken(string $email): ?string
    {
       // find the user
-      $user = $this->userRepository->findByEmail($email);
+      $user = $this->userRepository->findUser(['email' => $email]);
       if (!$user)
       {
          // User doesn't exist, return
@@ -58,7 +58,7 @@ class PasswordResetService
     */
    public function validateToken(string $email, string $token): ?User
    {
-      $user = $this->userRepository->findByEmail($email);
+      $user = $this->userRepository->findUser(['email' => $email]);
       if( !$user )
       {
          // User doesn't exist, return null

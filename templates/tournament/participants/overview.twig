@@ -2,11 +2,11 @@
 {% import 'base/form.twig' as form %}
 
 {% block nav_extension %}
-  {% if tournament is defined %}
+  {% if route_context.tournament is not null %}
     <!-- Untermenü für die "Turnier-Hauptseite" -->
     <ul class="submenu">
       <li>
-        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
+        <a href="{{ url_for('tournament_control', route_context.args) }}">
         Turnierleitung
         </a>
       <ul class="submenu-2">
@@ -19,23 +19,33 @@
 {% endblock %}
 
 {% block content %}
-{%- if errors %}
+{% if prg_message -%}
+{% set message_dict = {
+  'updated':  "Teilnehmerliste erfolgreich aktualisiert!",
+  'imported': "Teilnehmer erfolgreich importiert!",
+  'deleted':  "Teilnehmer wurde gelöscht."
+} %}
 <div class="form-box">
-  {% if errors.input_error %}<p class="form-error">Teilnehmer konnten nicht importiert werden, bitte Eingaben überprüfen</p>{% endif -%}
-  {% if errors.sql_error %}<p class="form-error">{{errors.sql_error}}</p>{% endif -%}
-  {% if errors.duplicate -%}
+  <p class="ok">{{ message_dict[prg_message.status]|default("Teilnehmerliste erfolgreich aktualisiert!") }}</p>
+  {% if prg_message.duplicates is not empty -%}
   <p class="form-warning">Teilnehmer bereits erfasst und nicht neu importiert:</p>
   <ul id="duplicate_participant_list">
-    {% for participant in errors.duplicate %}
+    {% for participant in prg_message.duplicates %}
     <li>{{participant.lastname}}, {{participant.firstname}} {%if participant.club%}({{participant.club}}){%endif%}</li>
     {% endfor %}
   </ul>
-  {%-endif%}
+  {%- endif %}
+</div>
+{%- endif %}
+{% if errors -%}
+<div class="form-box">
+  {% if errors.input_error %}<p class="form-error">Teilnehmer konnten nicht importiert werden, bitte Eingaben überprüfen</p>{% endif -%}
+  {% if errors.sql_error %}<p class="form-error">{{errors.sql_error}}</p>{% endif -%}
 </div>
 {% endif -%}
 <div class="form-box">
 <h2>Teilnehmer</h2>
-<table class="participants-table">
+<table class="entry-list">
    <thead>
       <tr>
          <th>Aktionen</th>
@@ -50,8 +60,8 @@
       {% for participant in participants %}
       <tr>
          <td>
-            <a href="{{ url_for('show_participant', { 'tournamentId': tournament.id, 'participantId': participant.id }) }}">Bearbeiten</a>
-            <form method="POST" action="{{ url_for('delete_participant', { 'tournamentId': tournament.id, 'participantId': participant.id }) }}">
+            <a href="{{ url_for('show_participant', route_context.args|merge({'participantId': participant.id})) }}">Bearbeiten</a>
+            <form method="POST" action="{{ url_for('delete_participant', route_context.args|merge({'participantId': participant.id})) }}">
                <input type="submit" value="Löschen" onclick="return confirm('{{ participant.lastname }}, {{ participant.firstname }} wirklich löschen?');">
             </form>
          </td>
@@ -69,7 +79,7 @@
       {% endfor %}
    </tbody>
 </table>
-<form method="POST" action="{{ url_for('update_participant_list', { 'tournamentId': tournament.id }) }}" id="participant_list_form">
+<form method="POST" action="{{ url_for('update_participant_list', route_context.args) }}" id="participant_list_form">
    {{ form.submit('Speichern') }}
 </form>
 </div>
@@ -84,22 +94,20 @@
 
 <div class="form-box">
 <h2>Teilnehmer hinzufügen</h2>
-<form method="POST" action="{{ url_for('add_participants', { 'tournamentId': tournament.id }) }}" id="participant_add_form">
+<form method="POST" action="{{ url_for('add_participants', route_context.args) }}" id="participant_add_form">
 
     {{ form.textarea('participants', 'Direkteingabe', prev.participants ?? '', errors.participants, attributes={'rows':10, 'cols': 50, 'id':'participants', 'placeholder':'Vorname Nachname pro Zeile'}) }}
-
     {{ form.input('text', 'club', 'Verein/Verband', prev.club ?? '', errors.club, attributes={'maxlength':100}) }}
-
     <fieldset class="category-fieldset">
       <legend>Kategorien auswählen</legend>
       <div class="category-checkboxes">
         {% for category in categories -%}
-        {{ form.checkbox('categories[]', category.name, category.id in prev.categories, '', attributes={'value': category.id}) }}
+        {{ form.checkbox('categories[]', category.name, category.id, category.id in prev.categories) }}
         {%- endfor %}
-        {%- if errors.categories %}
-        <p class="error">{{errors.categories}}</p>
-        {%endif-%}
       </div>
+      {%- if errors.categories %}
+      <p class="error">{{errors.categories}}</p>
+      {%endif-%}
     </fieldset>
 
     {{ form.submit('Hinzufügen', attributes={'class':'form-btn'}) }}

@@ -9,7 +9,7 @@ body {
 }
 
 /* Header */
-.header {
+header {
   background-color: #fff;
   padding: 1rem 2rem;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -344,8 +344,8 @@ nav.tournament .submenu-2 li.active {
   }
 }
 
-/* Teilnehmer Tabelle*/
-.participants-table {
+/* Tabelle zum Auflisten von DB-Einträgen */
+table.entry-list {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -354,30 +354,30 @@ nav.tournament .submenu-2 li.active {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-.participants-table thead {
+table.entry-list thead {
   background-color: #f0f0f0;
 }
 
-.participants-table th, td {
+table.entry-list th, td {
   padding: 0.75rem 1rem;
   text-align: left;
   border-bottom: 1px solid #eee;
 }
 
-.participants-table tbody tr:nth-child(even) {
+table.entry-list tbody tr:nth-child(even) {
   background-color: #fafafa;
 }
 
-.participants-table tbody tr:hover {
+table.entry-list tbody tr:hover {
   background-color: #f5f5f5;
 }
 
-.participants-table td form {
+table.entry-list td form {
   display: inline-block;
   margin: 0;
 }
 
-.participants-table td a, td input[type="submit"] {
+table.entry-list td a, td input[type="submit"] {
   background-color: #667eea;
   color: #fff;
   border: none;
@@ -389,7 +389,7 @@ nav.tournament .submenu-2 li.active {
   transition: background 0.2s;
 }
 
-.participants-table td a:hover, td input[type="submit"]:hover {
+table.entry-list td a:hover, td input[type="submit"]:hover {
   background-color: #4455cc;
 }
 
@@ -397,6 +397,10 @@ input[type="checkbox"] {
   width: 1.2em;
   height: 1.2em;
   cursor: pointer;
+}
+
+label {
+   cursor: pointer;
 }
 
 .boxed-section {
@@ -442,17 +446,21 @@ input[type="checkbox"] {
 
 .form-box input[type="submit"],
 .form-box button {
-  background-color: #f0f0f0;   /* neutral hellgrau */
-  color: #333;                 /* dunkler Text */
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+   background-color: #f0f0f0; /* neutral hellgrau */
+   border: 1px solid #ccc;
+   border-radius: 6px;
+   padding: 0.5rem 1rem;
+   transition: background 0.2s, color 0.2s;
 }
 
-.form-box input[type="submit"]:hover,
-.form-box button:hover {
+.form-box input[type="submit"]:enabled,
+.form-box button:enabled {
+  color: #333;                 /* dunkler Text */
+  cursor: pointer;
+}
+
+.form-box input[type="submit"]:enabled:hover,
+.form-box button:enabled:hover {
   background-color: #e0e0e0;   /* etwas dunkler beim Hover */
   color: #111;
 }
@@ -503,7 +511,8 @@ input[type="checkbox"] {
   padding: 0.5rem 1rem;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  text-decoration: none;
 }
 
 .form-btn:hover {
@@ -569,3 +578,20 @@ tr.label_row td
    padding-bottom: 0;
 }
 
+/* error/ok message blocks */
+p.error {
+   display: block;
+   background-color: #f8d7da;
+   border-left: 4px solid #dc3545;
+   padding: 0.75rem;
+   border-radius: 4px;
+   margin-bottom: 1rem;
+}
+
+p.ok {
+   background-color: #d1e7dd;
+   border-left: 4px solid #198754;
+   padding: 0.75rem 1rem;
+   border-radius: 4px;
+   margin-bottom: 1rem;
+}

@@ -2,29 +2,28 @@
 
 namespace Tournament\Controller;
 
-use DateTime;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
-use Tournament\Model\Category\Category;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 use Tournament\Model\TournamentStructure\TournamentStructure;
 use Tournament\Model\MatchRecord\MatchPoint;
-use Tournament\Model\MatchRecord\MatchPointCollection;
 
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
 
+use Tournament\Service\RouteArgsContext;
 use Tournament\Service\TournamentStructureService;
+
 use Tournament\Exception\EntityNotFoundException;
 
 use Respect\Validation\Validator as v;
 use Base\Service\DataValidationService;
-
+use Base\Service\PrgService;
 
 class TournamentTreeController
 {
@@ -33,6 +32,7 @@ class TournamentTreeController
       private ParticipantRepository $p_repo,
       private MatchDataRepository $m_repo,
       private TournamentStructureService $structureLoadService,
+      private PrgService $prgService,
    )
    {
    }
@@ -42,8 +42,11 @@ class TournamentTreeController
     */
    public function showCategoryTree(Request $request, Response $response, array $args): Response
    {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
       // Load the tournament structure for this category
-      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+      $structure = $this->structureLoadService->load($ctx->category);
 
       /* filter pool/ko display if we have a very large structure */
       if ($structure->ko)
@@ -64,8 +67,11 @@ class TournamentTreeController
     */
    public function showKoArea(Request $request, Response $response, array $args): Response
    {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
       // Load the tournament structure for this category and fetch the specific chunk
-      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+      $structure = $this->structureLoadService->load($ctx->category);
       $chunk = $structure->chunks[$args['chunk']] ?? throw new EntityNotFoundException('Chunk not found');
 
       return $this->view->render($response, 'tournament/navigation/area_ko.twig', [
@@ -79,8 +85,10 @@ class TournamentTreeController
     */
    public function showPool(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error = null): Response
    {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
       // Load the tournament structure for this category and fetch the specific chunk
-      $structure ??= $this->structureLoadService->load($request->getAttribute('category'));
+      $structure ??= $this->structureLoadService->load($ctx->category);
       /** @var Pool $pool */
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found');
 
@@ -95,11 +103,11 @@ class TournamentTreeController
     */
    public function addPoolTieBreak(Request $request, Response $response, array $args): Response
    {
-      /** @var Category $category */
-      $category = $request->getAttribute('category');
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
 
       /* load the structure and find the current node/match */
-      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+      $structure = $this->structureLoadService->load($ctx->category);
 
       /** @var Pool $pool */
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
@@ -114,7 +122,7 @@ class TournamentTreeController
          $nodes = $pool->createDecisionRound();
          foreach( $nodes as $node )
          {
-            $record = $node->provideMatchRecord($category);
+            $record = $node->provideMatchRecord($ctx->category);
             $record->tie_break = $nodes->count() === 1; // if only a single decision match - make it a tie break match.
             if (!$this->m_repo->saveMatchRecord($record))
             {
@@ -132,10 +140,7 @@ class TournamentTreeController
       }
       else
       {
-         return $response->withHeader(
-            'Location',
-            RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_pool', $args)
-         )->withStatus(302);
+         return $this->prgService->redirect($request, $response, 'show_pool', $args, 'tie_break_added');
       }
    }
 
@@ -144,8 +149,11 @@ class TournamentTreeController
     */
    public function deletePoolDecisionRound(Request $request, Response $response, array $args): Response
    {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
       /* load the structure and find the current node/match */
-      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+      $structure = $this->structureLoadService->load($ctx->category);
 
       /** @var Pool $pool */
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
@@ -185,10 +193,7 @@ class TournamentTreeController
       }
       else
       {
-         return $response->withHeader(
-            'Location',
-            RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_pool', $args)
-         )->withStatus(302);
+         return $this->prgService->redirect($request, $response, 'show_pool', $args, 'tie_break_deleted');
       }
    }
 
@@ -197,12 +202,10 @@ class TournamentTreeController
     */
    public function resetMatchRecords(Request $request, Response $response, array $args): Response
    {
-      $category = $request->getAttribute('category');
-      $this->structureLoadService->resetMatchRecords($category);
-      return $response->withHeader(
-         'Location',
-         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
-      )->withStatus(302);
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $this->structureLoadService->resetMatchRecords($ctx->category);
+      return $this->prgService->redirect($request, $response, 'show_category', $args, 'records_deleted');
    }
 
    /**
@@ -210,21 +213,19 @@ class TournamentTreeController
     */
    public function repopulate(Request $request, Response $response, array $args): Response
    {
-      $category = $request->getAttribute('category');
-      $this->structureLoadService->populate($category);
-      return $response->withHeader(
-         'Location',
-         RouteContext::fromRequest($request)->getRouteParser()->urlFor('show_category', $args)
-      )->withStatus(302);
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $this->structureLoadService->populate($ctx->category);
+      return $this->prgService->redirect($request, $response, 'show_category', $args, 'repopulated');
    }
 
    public function showMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response
    {
-      /** @var Category $category */
-      $category = $request->getAttribute('category');
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
 
       /* load the structure and find the current node/match */
-      $structure ??= $this->structureLoadService->load($category);
+      $structure ??= $this->structureLoadService->load($ctx->category);
 
       if( isset($args['pool']) )
       {
@@ -245,7 +246,7 @@ class TournamentTreeController
       }
 
       /* get an iterator to the current node for further navigation build-up */
-      $current_it = $nav_match_list->getIteratorAt($node->name);
+      $current_it = $nav_match_list->getIteratorAt($node->getName());
 
       /* get the next real matches after the current one */
       $next_matches = $nav_match_list->slice($current_it->skip()->key())->filter(fn(MatchNode $n) => $n->isReal());
@@ -258,7 +259,7 @@ class TournamentTreeController
       }
 
       /* load match point handler to get the list of possible points */
-      $mphdl = $category->getMatchPointHandler();
+      $mphdl = $ctx->category->getMatchPointHandler();
 
       /* load the list of points per participant */
       if( $record = $node->getMatchRecord() )
@@ -294,11 +295,11 @@ class TournamentTreeController
 
    public function updateMatch(Request $request, Response $response, array $args): Response
    {
-      /** @var Category $category */
-      $category = $request->getAttribute('category');
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
 
       /* load the structure and find the current node/match */
-      $structure = $this->structureLoadService->load($request->getAttribute('category'));
+      $structure = $this->structureLoadService->load($ctx->category);
 
       if (isset($args['pool']))
       {
@@ -325,7 +326,7 @@ class TournamentTreeController
       else
       {
          /* load match point handler to evaluate the input */
-         $mphdl = $category->getMatchPointHandler();
+         $mphdl = $ctx->category->getMatchPointHandler();
 
          /* load and validate the input data */
          $data = $request->getParsedBody();
@@ -342,7 +343,7 @@ class TournamentTreeController
          }
          else
          {
-            $record = $node->provideMatchRecord($category);
+            $record = $node->provideMatchRecord($ctx->category);
             $saveRecord = false;
 
             if ($data['action'] === 'tie')
@@ -425,6 +426,18 @@ class TournamentTreeController
          }
       }
 
-      return $this->showMatch($request, $response, $args, $structure, $error);
+      if( $error )
+      {
+         return $this->showMatch($request, $response, $args, $structure, $error);
+      }
+      else
+      {
+         /* there are different routes: ko match, pool match.
+          * but for all, the location is the same for the GET and POST route,
+          * therefore just use the current route's name to generate the redirect
+          */
+         $route = RouteContext::fromRequest($request)->getRoute()->getName();
+         return $this->prgService->redirect($request, $response, $route, $args, 'match_updated');
+      }
    }
 }

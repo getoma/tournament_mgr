@@ -1,8 +1,6 @@
 {% extends 'base/layout.twig' %}
 {% import 'base/match.twig' as part %}
 
-{% set route_parameters = { 'tournamentId': tournament.id, 'categoryId': category.id, 'matchName': node.name, 'pool': pool } %}
-
 {% if type == 'ko' %}
 {% set update_route, get_route = 'update_ko_match', 'show_ko_match' %}
 {% else %}
@@ -16,9 +14,9 @@
 
 {% block nav_extension -%}
 {% if pool is not empty -%}
-<a href="{{url_for('show_pool', route_parameters)}}">Zurück...</a>
+<a href="{{url_for('show_pool', route_context.args|merge({'pool': pool}))}}">Zurück...</a>
 {% endif -%}
-<a href="{{url_for('show_category', route_parameters)}}">Zur Kategorie</a>
+<a href="{{url_for('show_category', route_context.args)}}">Zur Kategorie</a>
 {% endblock %}
 
 {% macro printControls(node,participant,possible_pts,undo,update_route,route_parameters) -%}
@@ -47,7 +45,7 @@
 {% if previous is not empty -%}
 <h2>Vorheriger Kampf</h2>
 <nav id="previous_match_nav" class="match_nav">
-  {{part.printMatchLinks({0: previous}, route_parameters, get_route)}}
+  {{part.printMatchLinks({0: previous}, route_context.args, get_route)}}
 </nav>
 {%- endif %}
 
@@ -81,18 +79,18 @@
     {% if node.isModifiable() and policy.isActionAllowed('RecordResults') -%}
     <tr>
       <td colspan="3" class="controls redside">
-        {{_self.printControls(node, node.getRedParticipant(),possible_pts,points['red'].undo,update_route,route_parameters)}}
+        {{_self.printControls(node, node.getRedParticipant(),possible_pts,points['red'].undo,update_route,route_context.args)}}
       </td>
       <td colspan="2" class="controls noside">
         {% if node.tiesAllowed() -%}
-        <form method="post" action="{{url_for(update_route, route_parameters)}}" class="match_control">
+        <form method="post" action="{{url_for(update_route, route_context.args)}}" class="match_control">
             <button name="action" value="tie"
             {%- if not node.isModifiable() or node.isTied() %} disabled{%endif-%}
             >Unentschieden</button>
         {%- endif %}
       </td>
       <td colspan="3" class="controls whiteside">
-        {{_self.printControls(node, node.getWhiteParticipant(),possible_pts,points['white'].undo,update_route,route_parameters)}}
+        {{_self.printControls(node, node.getWhiteParticipant(),possible_pts,points['white'].undo,update_route,route_context.args)}}
       </td>
     </tr>
   {% endif -%}
@@ -114,7 +112,7 @@
 {% if next is not empty -%}
 <h2>Nächste Kämpfe</h2>
 <nav id="next_match_nav" class="match_nav">
-  {{part.printMatchLinks(next, route_parameters, get_route)}}
+  {{part.printMatchLinks(next, route_context.args, get_route)}}
 </nav>
 {%endif-%}
 {% endblock %}

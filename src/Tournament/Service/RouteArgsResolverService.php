@@ -28,30 +28,29 @@ class RouteArgsResolverService
     * @return array An associative array with keys 'tournament', 'category', 'participant', 'area' depending on which IDs were present in $args
     * @return null if any entry could not be found
     */
-   public function resolve(array $args): ?array
+   public function resolve(array $args): RouteArgsContext
    {
-      $result = [];
+      $result = new RouteArgsContext(args: $args);
       if( isset($args['tournamentId']) )
       {
-         $result['tournament'] = $this->tournamentRepo->getTournamentById($args['tournamentId'])
-                               ?? throw new EntityNotFoundException('Tournament not found');
+         $result->tournament = $this->tournamentRepo->getTournamentById($args['tournamentId'])
+                             ?? throw new EntityNotFoundException('Tournament not found');
       }
       if (isset($args['categoryId']))
       {
-         $result['category'] = $this->tournamentRepo->getCategoryById($args['categoryId'])
-                             ?? throw new EntityNotFoundException('Category not found');
+         $result->category = $this->tournamentRepo->getCategoryById($args['categoryId'])
+                           ?? throw new EntityNotFoundException('Category not found');
       }
       if (isset($args['participantId']))
       {
-         $result['participant'] = $this->participantRepo->getParticipantById($args['participantId'])
-                                ?? throw new EntityNotFoundException('Participant not found');
+         $result->participant = $this->participantRepo->getParticipantById($args['participantId'])
+                              ?? throw new EntityNotFoundException('Participant not found');
       }
       if (isset($args['areaId']))
       {
-         $result['area'] = $this->tournamentRepo->getAreaById($args['areaId'])
-                        ?? throw new EntityNotFoundException('Area not found');
+         $result->area = $this->tournamentRepo->getAreaById($args['areaId'])
+                       ?? throw new EntityNotFoundException('Area not found');
       }
-
       return $result;
    }
 

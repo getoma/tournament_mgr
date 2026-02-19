@@ -1,11 +1,11 @@
 {% extends 'base/layout.twig' %}
 
 {% block nav_extension %}
-  {% if tournament is defined %}
+  {% if route_context.tournament is not null %}
     <!-- Untermenü für die "Turnier-Hauptseite" -->
     <ul class="submenu">
       <li>
-        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
+        <a href="{{ url_for('tournament_control', route_context.args) }}">
           Turnierleitung
         </a>
       </li>
@@ -19,7 +19,7 @@
 
 <div class="nav-cards">
   {% for category in categories %}
-    <a href="{{ url_for('show_category', {'tournamentId': tournament.id, 'categoryId': category.id}) }}" class="card">
+    <a href="{{ url_for('show_category', route_context.args|merge({'categoryId': category.id})) }}" class="card">
       <h3>{{ category.name }}</h3>
       <p>Turnier ansehen</p>
     </a>

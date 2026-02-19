@@ -2,9 +2,7 @@
 
 namespace Tournament\Model\TournamentStructure\MatchNode;
 
-use Base\Model\ObjectCollection;
-
-class MatchNodeCollection extends ObjectCollection
+class MatchNodeCollection extends \Base\Model\ObjectCollection
 {
    static protected function elements_type(): string
    {

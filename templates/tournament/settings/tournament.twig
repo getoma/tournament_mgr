@@ -1,13 +1,12 @@
 {% extends 'base/layout.twig' %}
 {% import 'base/form.twig' as form %}
 
-
 {% block nav_extension %}
-  {% if tournament is defined %}
+  {% if route_context.tournament is not null %}
     <!-- Untermenü für die "Turnier-Hauptseite" -->
     <ul class="submenu">
       <li>
-        <a href="{{ url_for('tournament_control', {'tournamentId': tournament.id}) }}">
+        <a href="{{ url_for('tournament_control', route_context.args) }}">
           Turnierleitung
         </a>
         <ul class="submenu-2">
@@ -24,7 +23,7 @@
   <div class="form-box-header">
     <h2>Turnier-Details</h2>
     <div class="tournament-status">
-      <form action="{{ url_for('update_tournament_status', {'tournamentId': tournament.id}) }}" method="post">
+      <form action="{{ url_for('update_tournament_status', route_context.args) }}" method="post">
         <ul id="new_status_list">
           {% for status in policy.getPossibleTransitions() %}
             <li>{{ form.submit(status.value, 'status', status.value) }}</li>
@@ -33,15 +32,18 @@
       </form>
     </div>
   </div>
-<form action="{{url_for('update_tournament_config', {'tournamentId': tournament.id})}}" method="post">
+{% if prg_message == 'tournament_created' %}<p class="ok">Turnier erfolgreich angelegt!</p>{% endif %}
+{% if prg_message == 'tournament_updated' %}<p class="ok">Daten übernommen!</p>{% endif %}
+{% if prg_message == 'tournament_status'  %}<p class="ok">Turnier-Status aktualisiert!</p>{% endif %}
+<form action="{{url_for('update_tournament_config', route_context.args)}}" method="post">
   {% set isActive=policy.isActionAllowed('ManageDetails') -%}
   {% if isActive -%}
-  {{ form.input('text', 'name', 'Name', prev.tournament.name ?? tournament.name, errors.tournament['name'],
+  {{ form.input('text', 'name', 'Name', prev.tournament.name ?? route_context.tournament.name, errors.tournament['name'],
   {'maxlength':100}, required=true, active=isActive) }}
   {% endif -%}
-  {{ form.input('date', 'date', 'Datum', prev.tournament.date ?? tournament.date, errors.tournament['date'],
+  {{ form.input('date', 'date', 'Datum', prev.tournament.date ?? route_context.tournament.date, errors.tournament['date'],
   required=true, active=isActive) }}
-  {{ form.textarea('notes', 'Notizen', prev.tournament.notes ?? tournament.notes, errors.tournament['notes'],
+  {{ form.textarea('notes', 'Notizen', prev.tournament.notes ?? route_context.tournament.notes, errors.tournament['notes'],
   {'rows':4}, active=isActive) }}
   {% if isActive %}{{ form.submit('Aktualisieren') }}{%endif%}
 </form>
@@ -51,7 +53,7 @@
 <h2>Kampfflächen</h2>
 
 {% if policy.isActionAllowed('ManageSetup') -%}
-<table id="area_list" class="participants-table">
+<table id="area_list" class="entry-list">
   <thead>
     <tr>
       <th>Name</th>
@@ -65,10 +67,10 @@
         errors.areas[area.id]['name'],
         {'maxlength':100, 'form': 'area_update_' ~ area.id}, required=true) }}</td>
       <td>
-        <form method="POST" action="{{url_for('update_area', {'tournamentId': tournament.id, 'areaId': area.id})}}" id="area_update_{{ area.id }}">
+        <form method="POST" action="{{url_for('update_area', route_context.args|merge({'areaId': area.id}))}}" id="area_update_{{ area.id }}">
           {{ form.submit('Speichern') }}
         </form>
-        <form method="POST" action="{{url_for('delete_area', {'tournamentId': tournament.id, 'areaId': area.id})}}">
+        <form method="POST" action="{{url_for('delete_area', route_context.args|merge({'areaId': area.id}))}}">
           {{ form.submit('Löschen') }}
         </form>
       </td>
@@ -78,7 +80,7 @@
       <td>{{ form.input_plain('text', 'name', prev.areas.new.name??'', errors.areas.new['name'],
         {'placeholder': 'Neue Kampffläche', 'maxlength':100, 'form':'area_new'}, required=true) }}</td>
       <td>
-        <form method="POST" action="{{url_for('create_area', {'tournamentId': tournament.id})}}" id="area_new">
+        <form method="POST" action="{{url_for('create_area', route_context.args)}}" id="area_new">
           {{ form.submit('Hinzufügen') }}
         </form>
       </td>
@@ -95,11 +97,11 @@
 
 </section>
 
-<section class="form-box"">
+<section class="form-box">
 <h2>Kategorien</h2>
 
 {% if policy.isActionAllowed('ManageSetup') -%}
-<table id="category_list" class="participants-table">
+<table id="category_list" class="entry-list">
   <thead>
     <tr>
       <th>Name</th>
@@ -120,14 +122,14 @@
            errors.categories[category.id]['mode'], {'form': 'category_update_' ~ category.id}, required=true) }}
       </td>
       <td>
-        <form method="GET" action="{{url_for('show_category_cfg', {'tournamentId': tournament.id, 'categoryId': category.id})}}">
+        <form method="GET" action="{{url_for('show_category_cfg', route_context.args|merge({'categoryId': category.id}))}}">
           <input type="hidden" name="return_to" value="show_tournament_config">
           {{ form.submit('Bearbeiten') }}
         </form>
-        <form method="POST" action="{{url_for('update_category', {'tournamentId': tournament.id, 'categoryId': category.id})}}" id="category_update_{{ category.id }}">
+        <form method="POST" action="{{url_for('update_category', route_context.args|merge({'categoryId': category.id}))}}" id="category_update_{{ category.id }}">
           {{ form.submit('Speichern') }}
         </form>
-        <form method="POST" action="{{url_for('delete_category', {'tournamentId': tournament.id, 'categoryId': category.id})}}">
+        <form method="POST" action="{{url_for('delete_category', route_context.args|merge({'categoryId': category.id}))}}">
           {{ form.submit('Löschen') }}
         </form>
       </td>
@@ -143,7 +145,7 @@
                              {'form':'category_new'}, required=true) }}
       </td>
       <td>
-        <form method="POST" action="{{url_for('create_category', {'tournamentId': tournament.id})}}" id="category_new">
+        <form method="POST" action="{{url_for('create_category', route_context.args)}}" id="category_new">
           {{ form.submit('Hinzufügen') }}
         </form>
       </td>
@@ -153,7 +155,7 @@
 {% else -%}
 <ul id="category_list">
   {% for category in categories -%}
-  <li><a href="{{url_for('show_category', {'tournamentId': tournament.id, 'categoryId': category.id})}}">{{category.name}} ({{category.mode.value}})</a></li>
+  <li><a href="{{url_for('show_category', route_context.args|merge({'categoryId': category.id}))}}">{{category.name}} ({{category.mode.value}})</a></li>
   {% endfor -%}
 </ul>
 {% endif -%}

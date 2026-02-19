@@ -5,23 +5,27 @@
 
 {% block content %}
 
-{% if error %}
-<p class="error">{{ error }}</p>
-{% endif %}
-
 <div class="form-box">
+{% if prg_message %}
+<p class="ok">Account wurde aktualisiert!</p>
+{% endif %}
+{% if errors %}
+<p class="error">Daten konnten nicht übernommen werden!</p>
+{% endif %}
 <form method="post" action="{{ url_for('user_account_post') }}">
-  <p>
-    <label>E-Mail: <span>{{user.email}}</span></label>
+  <p class="info">
+    E-Mail: <span>{{user.email}}</span>
   </p>
-  {{ form.input('text', 'display_name', 'Angezeigter Name', prev.display_name ?? user.display_name, errors.display_name, {'maxlength':100},
-  required=true) }}
+  {{ form.input('text', 'display_name', 'Angezeigter Name', prev.display_name ?? user.display_name, errors.display_name, {'maxlength':100}, required=true) }}
+  <p class="info">
+    <span class="label">Rollen:</span> {{ user.roles|map(r => r.value)|join(', ') }}
+  </p>
   <fieldset>
     <legend>Passwort ändern</legend>
     {% if password_msg -%}
     <p class="success">{{ password_msg }}</p>
-    {% elseif password_error -%}
-    <p class="error">{{ password_error }}</p>
+    {% elseif errors.password -%}
+    <p class="error">{{ errors.password }}</p>
     {%- endif %}
     <p><label>Aktuelles Passwort: <input type="password" name="current_password"></label></p>
     <p><label>Neues Passwort: <input type="password" name="new_password"></label></p>

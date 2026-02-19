@@ -41,10 +41,11 @@ class TournamentStatusGuardMiddleware implements MiddlewareInterface
          throw new \DomainException("Route is missing requiredAction argument or it is not of type TournamentAction");
       }
 
-      $tournament = $request->getAttribute('tournament');
-      if (!$this->policy->isActionAllowed($tournament, $requiredAction))
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      if (!$this->policy->isActionAllowed($ctx->tournament, $requiredAction))
       {
-         throw new HttpForbiddenException($request, "Aktion {$requiredAction->name} ist im Status {$tournament->status->value} nicht erlaubt.");
+         throw new HttpForbiddenException($request, "Aktion {$requiredAction->name} ist im Status {$ctx->tournament->status->value} nicht erlaubt.");
       }
 
       return $handler->handle($request);

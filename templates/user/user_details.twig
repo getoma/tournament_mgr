@@ -1,0 +1,43 @@
+{% extends "base/layout.twig" %}
+{% import 'base/form.twig' as form %}
+
+{% block heading %}Benutzerverwaltung{% endblock %}
+
+{% block content %}
+
+<div class="form-box">
+  <h2>{{user.display_name}}</h2>
+  {% if prg_message -%}
+  {% set message_dict = {
+    'created': 'Benutzer erfolgreich angelegt.',
+    'mail_sent': 'Willkommens-Mail erfolgreich gesendet.'
+  }-%}
+  <p class="ok">{{ message_dict[prg_message]|default('Benutzer aktualisiert.') }}</p>
+  {%- endif %}
+  {% if errors %}
+  <p class="error">Fehler: {{ errors.error|default('Daten konnten nicht übernommen werden!') }}</p>
+  {% if errors.policy %}<p class="error">{{ errors.policy }}</p>{%endif%}
+  {% endif %}
+  <form method="post" action="{{ url_for('update_user', { 'userId': user.id }) }}">
+    <p class="info">
+      E-Mail: <span>{{user.email}}</span>
+    </p>
+    <fieldset id="user_roles">
+      <legend>Rollen</legend>
+      {% for role in roles -%}
+      {{ form.checkbox('roles[]', role.value|humanize, role.value, prev? role.value in prev.role : user.hasRole(role))}}
+      {%- endfor %}
+    </fieldset>
+    {{ form.checkbox('is_active', 'Benutzer aktiv', true, prev? prev.is_active : user.is_active)}}
+    <p>
+      <input type="submit" value="Speichern">
+      {% if user.password_hash is empty -%}
+      <a class="form-btn" href="{{ url_for('welcome_user', {'userId': user.id}) }}">Willkommens-Mail schicken</a>
+      {%- endif %}
+      <a class="form-btn" href="{{ url_for('delete_user', {'userId': user.id}) }}"
+         onclick="return confirm('{{user.display_name}} wirklich löschen?');">Nutzer löschen</a>
+    </p>
+  </form>
+
+</div>
+{% endblock %}

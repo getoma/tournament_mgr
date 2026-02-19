@@ -104,7 +104,7 @@ class PoolTest extends TestCase
       foreach ($matches as $m)
       {
          /** @var MatchNode $m */
-         $record = new MatchRecord($m_id++, $m->name, $category, $area, $m->slotRed->getParticipant(), $m->slotWhite->getParticipant());
+         $record = new MatchRecord($m_id++, $m->getName(), $category, $area, $m->slotRed->getParticipant(), $m->slotWhite->getParticipant());
          if (!$lastOngoing || ($m_id < $matches->count()) )
          {
             $record->winner = $m->slotRed->getParticipant();
@@ -188,9 +188,9 @@ class PoolTest extends TestCase
       $names = [];
       foreach( $dut->getMatchList() as $m )
       {
-         $this->assertStringContainsString(self::POOL_NAME, $m->name);
-         $this->assertNotContains($m->name, $names);
-         $names[] = $m->name;
+         $this->assertStringContainsString(self::POOL_NAME, $m->getName());
+         $this->assertNotContains($m->getName(), $names);
+         $names[] = $m->getName();
       }
    }
 
@@ -209,7 +209,7 @@ class PoolTest extends TestCase
        * create a match record for the first match
        */
       $records = MatchRecordCollection::new();
-      $records[] = new MatchRecord(1, $matches[0]->name, $this->createStub(Category::class), $this->createStub(Area::class),
+      $records[] = new MatchRecord(1, $matches[0]->getName(), $this->createStub(Category::class), $this->createStub(Area::class),
                      $plist[1], $plist[2]);
       $dut->setMatchRecords($records);
       $this->assertNotNull($matches[0]->getMatchRecord());
