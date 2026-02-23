@@ -7,6 +7,7 @@ use Tournament\Model\Area\AreaCollection;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryConfiguration;
 use Tournament\Model\Category\CategoryMode;
+use Tournament\Model\TournamentStructure\MatchSlot\PoolWinnerSlot;
 use Tournament\Model\TournamentStructure\TournamentStructure;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
@@ -78,6 +79,74 @@ class TournamentStructureTest extends TestCase
 
       // 3 rounds with 2 winners per pool result into 4 pools
       $this->assertCount(4, $structure->pools);
+   }
+
+   public static function PoolSetupProvider()
+   {
+      return [
+         /* rounds, pool limit, pool_winners */
+         [ 4, 0, 2], // 4 rounds, no limit
+         [ 4, 6, 2], // 4 rounds, 6 pools
+         [ 4, 5, 2], // 4 rounds, 5 pools
+         [ 3, 8, 2]  // 3 rounds, pool limit higher than possible for 3 rounds
+      ];
+   }
+
+   /**
+    * test whether "pool limit" configuration works as expected
+    * @dataProvider PoolSetupProvider
+    */
+   public function testCombinedPoolLimit(int $rounds = 4, int $pool_limit = 6, int $pool_winners = 2)
+   {
+      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration($rounds, pool_winners: $pool_winners, max_pools: $pool_limit));
+      $structure = new TournamentStructure($category, AreaCollection::new());
+      /* expected pool count is number of KO start slots, divided by winners by pool, OR the configured limit if lower */
+      $expected_pool_count = floor(pow(2, $rounds) / $pool_winners);
+      if( $pool_limit && $pool_limit < $expected_pool_count ) $expected_pool_count = $pool_limit;
+
+      /* set up the structure and shuffle in participants*/
+      $structure->generateStructure();
+
+      /* verify the created setup to be as expected */
+      $this->assertNotNull($structure->ko);
+      $this->assertNotEmpty($structure->pools);
+      $this->assertCount($expected_pool_count, $structure->pools);
+
+      /* sanity check of first round: wildcards should be distributed among higher pool ranks first */
+      $match_count = array_fill_keys(range(1,$pool_winners), 0);
+      $wildcard_count = array_fill_keys(range(1, $pool_winners), 0);
+      /* count the number of matches and wildcards per pool result rank */
+      /** @var KoNode $node */
+      foreach($structure->ko->getRounds(0, 1)->front() as $node)
+      {
+         $red_rank   = ($node->slotRed instanceof PoolWinnerSlot)? $node->slotRed->rank : null;
+         $white_rank = ($node->slotWhite instanceof PoolWinnerSlot) ? $node->slotWhite->rank : null;
+
+         if( isset($white_rank) && isset($red_rank) )
+         {
+            $match_count[$red_rank] += 1;
+            $match_count[$white_rank] += 1;
+         }
+         elseif( isset($white_rank) )
+         {
+            $wildcard_count[$white_rank] += 1;
+         }
+         elseif( isset($red_rank) )
+         {
+            $wildcard_count[$red_rank] += 1;
+         }
+         else
+         {
+            // nothing, full BYE match
+         }
+      }
+      /* now check if the distribution is as expected: wildcards should be on highest places first */
+      $wildcards_allowed = true;
+      for( $rank = 1; $rank <= $pool_winners; ++$rank )
+      {
+         if( !$wildcards_allowed ) $this->assertEquals(0, $wildcard_count[$rank], "wildcards assigned to place $rank although matches assigned to higher ranks" );
+         if( $match_count[$rank] ) $wildcards_allowed = false;
+      }
    }
 
    /**
@@ -155,10 +224,11 @@ class TournamentStructureTest extends TestCase
    /**
     * test whether a fully set-up combined structure with allocated participants
     * can be re-generated from memory
+    * @dataProvider PoolSetupProvider
     */
-   public function testCombinedReproducability()
+   public function testCombinedReproducability(int $rounds = 4, int $pool_limit = 6, int $pool_winners = 2)
    {
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration($rounds, pool_winners: $pool_winners, max_pools: $pool_limit));
       $structure = new TournamentStructure($category, $this->areaList(2));
       $structure->generateStructure();
 

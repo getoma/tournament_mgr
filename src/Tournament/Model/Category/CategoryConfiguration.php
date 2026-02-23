@@ -12,6 +12,7 @@ class CategoryConfiguration
       public int $num_rounds = 4,        // Number of rounds in the tournament
       public ?int $pool_winners = null,  // Number of winners from each pool (if applicable)
       public ?int $area_cluster = null,  // Number of concurrent participants per area (if applicable)
+      public ?int $max_pools = 0,        // Max number of pools (0 = unlimited)
       public bool $ignore_club = false,            // consider the club memberships at starting slot seeding
    )
    {
@@ -20,6 +21,7 @@ class CategoryConfiguration
       if (!$rules['num_rounds']->isValid($this->num_rounds) || !isset($this->num_rounds) ) $this->num_rounds = 4;
       if (!$rules['pool_winners']->isValid($this->pool_winners)) $this->pool_winners = null;
       if (!$rules['area_cluster']->isValid($this->area_cluster)) $this->area_cluster = null;
+      if (!$rules['max_pools']->isValid($this->max_pools)) $this->max_pools = 0;
    }
 
    public static function validationRules(): array
@@ -29,7 +31,8 @@ class CategoryConfiguration
          'num_rounds'    => v::optional(v::numericVal()->intVal()->min(2)->max(10)), // Number of rounds in the tournament
          'pool_winners'  => v::optional(v::numericVal()->intVal()->min(1)->max(3)),  // number of winners from each pool
          'area_cluster'  => v::optional(v::numericVal()->intVal()->min(1)),          // clustering of area distribution
-         'ignore_club'            => v::optional(v::intVal()),
+         'max_pools'     => v::optional(v::numericVal()->intVal()->min(0)),          // Max number of pools (0 = unlimited)
+         'ignore_club'   => v::optional(v::intVal()),
       ];
    }
 
@@ -39,7 +42,8 @@ class CategoryConfiguration
       if (isset($data['num_rounds']))   $this->num_rounds   = (int)$data['num_rounds'];
       if (isset($data['pool_winners'])) $this->pool_winners = empty($data['pool_winners']) ? null : (int)$data['pool_winners'];
       if (isset($data['area_cluster'])) $this->area_cluster = empty($data['area_cluster']) ? null : (int)$data['area_cluster'];
-      $this->ignore_club            = (bool)($data['ignore_club'] ?? false);
+      if (isset($data['max_pools']))    $this->max_pools    = (int)$data['max_pools'];
+      $this->ignore_club = (bool)($data['ignore_club'] ?? false);
    }
 
    public static function load(string $json): self

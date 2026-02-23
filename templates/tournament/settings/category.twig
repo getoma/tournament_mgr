@@ -12,6 +12,7 @@
   {{ form.select('mode', 'Modus', enum_options(category_modes), prev.mode ?? category.mode.value, errors['mode'], required=true, active=isActive) }}
   {{ form.input('number', 'num_rounds', 'Anzahl KO-Runden', prev.num_rounds ?? category.config.num_rounds, errors['num_rounds'], {'min':2, 'max': 10}, active=isActive) }}
   {{ form.input('number', 'pool_winners', 'Anzahl Pool-Sieger', prev.pool_winners ?? category.config.pool_winners, errors['pool_winners'], {'max': 3, 'min': 1}, active=isActive) }}
+  {{ form.input('number', 'max_pools', 'Maximale Anzahl Pools (0 = unbegrenzt)', prev.max_pools ?? category.config.max_pools, errors['max_pools'], {'min': 0}, active=isActive) }}
   {{ form.input('number', 'area_cluster', 'Kampfflächen-Cluster', prev.area_cluster ?? category.config.area_cluster, errors['area_cluster'], {'min': 1}, active=isActive)}}
   {{ form.submit('Speichern und neu generieren', active=isActive) }}
 </form>
