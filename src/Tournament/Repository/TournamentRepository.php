@@ -53,6 +53,7 @@ class TournamentRepository
          $data = $stmt->fetch(PDO::FETCH_ASSOC);
          if( $data )
          {
+            $data['categories'] = $this->getCategoriesByTournamentId($id);
             $this->tournaments[$id] = new Tournament(...$data);
          }
       }

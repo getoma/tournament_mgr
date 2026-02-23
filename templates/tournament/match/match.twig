@@ -1,4 +1,3 @@
-{% extends 'base/layout.twig' %}
 {% import 'base/match.twig' as part %}
 
 {% if type == 'ko' %}
@@ -7,17 +6,10 @@
 {% set update_route, get_route = 'update_pool_match', 'show_pool_match' %}
 {% endif %}
 
-
-{% block special_links -%}
-  <link rel="stylesheet" href="{{url_for('home')}}css/match.css">
-{% endblock -%}
-
-{% block nav_extension -%}
-{% if pool is not empty -%}
-<a href="{{url_for('show_pool', route_context.args|merge({'pool': pool}))}}">Zurück...</a>
-{% endif -%}
-<a href="{{url_for('show_category', route_context.args)}}">Zur Kategorie</a>
-{% endblock %}
+{% include 'base/header.twig' with {
+  'active_page': get_route,
+  'css': ['match.css']
+}%}
 
 {% macro printControls(node,participant,possible_pts,undo,update_route,route_parameters) -%}
 <form method="post" action="{{url_for(update_route, route_parameters)}}" class="match_control">
@@ -41,14 +33,14 @@
 </ul>
 {% endmacro -%}
 
-{% block content %}
 {% if previous is not empty -%}
-<h2>Vorheriger Kampf</h2>
 <nav id="previous_match_nav" class="match_nav">
+  <h2>Vorheriger Kampf</h2>
   {{part.printMatchLinks({0: previous}, route_context.args, get_route)}}
 </nav>
 {%- endif %}
 
+<section>
 <h2>
   {%- if pool is not empty %}Pool {{pool}} - {%endif-%}
   Kampf {{node.getLocalId()}}
@@ -109,10 +101,13 @@
   </ul>
 </aside>
 
+</section>
+
 {% if next is not empty -%}
-<h2>Nächste Kämpfe</h2>
 <nav id="next_match_nav" class="match_nav">
+  <h2>Nächste Kämpfe</h2>
   {{part.printMatchLinks(next, route_context.args, get_route)}}
 </nav>
 {%endif-%}
-{% endblock %}
+
+{% include 'base/footer.twig' %}

@@ -3,6 +3,7 @@
 namespace Tournament\Model\Tournament;
 
 use Respect\Validation\Validator as v;
+use Tournament\Model\Category\CategoryCollection;
 
 class Tournament implements \Tournament\Model\Base\DbItem
 {
@@ -16,6 +17,7 @@ class Tournament implements \Tournament\Model\Base\DbItem
       public string $date,          // Date of the tournament
       public ?string $notes = null, // Additional notes about the tournament
       TournamentStatus|string $status = TournamentStatus::Planning, // Status of the tournament (e.g., scheduled, ongoing, completed)
+      public CategoryCollection $categories = new CategoryCollection()
    )
    {
       $this->status = $status instanceof TournamentStatus ? $status : TournamentStatus::from($status);

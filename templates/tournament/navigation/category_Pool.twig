@@ -1,0 +1,47 @@
+{% import 'base/form.twig' as form %}
+{% import 'base/match.twig' as part %}
+
+{% include 'base/header.twig' with {
+'active_page': 'show_category_pools',
+'css': ['tree.css']
+} %}
+
+<section>
+<h2>{{ route_context.category.name }} - Pools</h2>
+<ul class="pool_list">
+  {% for pool in pools %}
+  <li>
+    <p class="pool_name"><a href="{{url_for('show_pool', route_context.args|merge({'pool': pool.getName()}))}}">Pool {{pool.getName()}}
+      {%- if pool.area is not empty %} ({{ pool.area.name }}){% endif -%}
+      </a></p>
+    <ul class="participant_list">
+      {% for slot in pool.participants %}
+      <li>{{slot.lastname}}, {{slot.firstname}}</li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
+</section>
+
+{% if unmapped_participants is not empty %}
+<section>
+  <h2>Nicht zugewiesen</h2>
+  <ul>
+    {% for p in unmapped_participants %}
+    <li>{{p.lastname}}, {{p.firstname}}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if policy.isActionAllowed('ManageSetup') %}
+<section>
+<form action="{{url_for('repopulate_category', route_context.args)}}" method="post">
+  <button type="submit">Teilnehmer neu verteilen</button>
+</form>
+</section>
+{% endif %}
+
+{% include 'base/footer.twig' %}
+

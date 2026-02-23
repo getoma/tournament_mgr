@@ -1,16 +1,12 @@
-{% extends 'base/layout.twig' %}
 {% import 'base/form.twig' as form %}
 {% import 'base/match.twig' as part %}
 
 {% set route_parameters = route_context.args|merge({'pool': pool.getName()}) %}
 
-{% block special_links -%}
-<link rel="stylesheet" href="{{url_for('home')}}css/match.css">
-{% endblock -%}
-
-{% block nav_extension %}<a href="{{url_for('show_category', route_parameters)}}">Zurück...</a>{% endblock %}
-
-{% block content %}
+{% include 'base/header.twig' with {
+  'active_page': 'show_pool',
+  'css': ['match.css']
+} %}
 
 <section class="pool_match_list">
   <h2>Kämpfe - Pool {{pool.getName()}}</h2>
@@ -52,4 +48,5 @@
     </tbody>
   </table>
 </section>
-{% endblock %}
+
+{% include 'base/footer.twig' %}

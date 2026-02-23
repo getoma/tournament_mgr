@@ -10,7 +10,7 @@
   {% endif %}
   </label>
   {%- if error is not empty %}
-  <span class="invalid-feedback">{{ error|e|nl2br }}</span>
+  <span class="error">{{ error|e|nl2br }}</span>
   {%- endif %}
 </p>
 {%- endmacro %}
@@ -21,7 +21,7 @@
   {%- for attr, val in attributes %} {{attr}}="{{ val }}" {% endfor %}
   {%- if required %} required{% endif %}>
 {%- if error is not empty %}
-<span class="invalid-feedback">{{ error|e|nl2br }}</span>
+<span class="error">{{ error|e|nl2br }}</span>
 {%- endif %}
 {% else -%}
 <span class="input_text">{{value|e|default('n/a')}}</span>
@@ -37,7 +37,7 @@
       {%- if not active %} disabled{%endif%}>
     <span>{{ label }}</span></label>
   {%- if error is not empty %}
-  <span class="invalid-feedback">{{ error|e|nl2br }}</span>
+  <span class="error">{{ error|e|nl2br }}</span>
   {%- endif %}
 </p>
 {%- endmacro %}
@@ -54,7 +54,7 @@
   {% endif -%}
   </label>
   {%- if error is not empty %}
-  <span class="invalid-feedback">{{ error|e|nl2br }}</span>
+  <span class="error">{{ error|e|nl2br }}</span>
   {%- endif %}
 </p>
 {%- endmacro %}
@@ -75,7 +75,7 @@
     {% endif -%}
   </label>
   {%- if error is not empty %}
-  <span class="invalid-feedback">{{ error|e|nl2br }}</span>
+  <span class="error">{{ error|e|nl2br }}</span>
   {%- endif %}
 </p>
 {%- endmacro %}
@@ -90,7 +90,7 @@
   {% endfor -%}
 </select>
 {%- if error is not empty %}
-<span class="invalid-feedback">{{ error|e|nl2br }}</span>
+<span class="error">{{ error|e|nl2br }}</span>
 {%- endif %}
 {% else -%}
 <span class="input_text">{{ options[selected]|e|default('n/a') }}</span>

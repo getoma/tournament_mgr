@@ -1,11 +1,12 @@
-{% extends 'base/layout.twig' %}
 {% import 'base/match.twig' as part %}
 
-{% block nav_extension %}<a href="{{url_for('show_category', route_context.args)}}">Zurück...</a>{% endblock %}
+{% include 'base/header.twig' with {
+  'active_page': 'show_ko_area'
+}%}
 
-{% block content %}
 <section>
   <h2>{{chunk.name}}</h2>
   {{ part.printKo(ko, null, route_context.args) }}
 </section>
-{% endblock %}
+
+{% include 'base/footer.twig' %}

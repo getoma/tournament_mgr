@@ -1,10 +1,11 @@
-{% extends "base/layout.twig" %}
 {% import 'base/form.twig' as form %}
 
-{% block heading %}Benutzerverwaltung{% endblock %}
+{% include 'base/header.twig' with {
+  'active_page': 'list_users',
+  'nav_entry_label': 'Neuen Benutzer anlegen'
+}%}
 
-{% block content %}
-<div class="form-box">
+<section class="form-box">
   <h2>Neuen Benutzer anlegen</h2>
   {% if errors %}
   <p class="error">Nutzer konnte nicht angelegt werden!</p>
@@ -13,5 +14,6 @@
     {{ form.input('email', 'email', 'E-Mail', prev.email, errors.email, {'maxlength':255}, required=true) }}
     <p><button type="submit">Anlegen</button></p>
   </form>
-</div>
-{% endblock %}
+</section>
+
+{% include 'base/footer.twig' %}

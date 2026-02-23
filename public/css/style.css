@@ -1,73 +1,69 @@
 /* Body & Hintergrund */
 body {
- background: #f5f6f7; /* neutral helles Grau */
+  background: #f5f6f7; /* neutral helles Grau */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+  margin: 0 auto;
+  max-width: 1200px;
 }
 
 /* Header */
-.header {
+header {
   background-color: #fff;
   padding: 1rem 2rem;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-/* Container für Flexbox: Titel links, Navigation rechts */
-.header-container {
-  display: flex;
+  display: flex;  /* to support justify-content */
   justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-.header-container h1 {
+header h1 {
   margin: 0;
   font-size: 1.5rem;
+  display: inline-block;
 }
 
-/* Main Contant */
-.main-content {
-  display: flex;
-  padding: 2rem;
-}
-
+/* Main Content */
 main {
-  display: flex;
   width: 100%;
-  max-width: 1200px;
-  gap: 2rem;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: max-content 1fr;
+  gap: 15px;
+  margin-top: 15px;
 }
 
 /* Sidebar */
-aside {
-  min-width: 220px;
+#pagemenu {
   background-color: #f0f4f8;
   padding: 1rem;
   box-shadow: 2px 0 8px rgba(0,0,0,0.1);
   border-right: 1px solid #ccc;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  height: auto;
+  grid-column: 1 / span 1;
+  grid-row: 1 / span 2;
+}
+
+/* breadcrumbs area */
+nav.breadcrumbs {
+   grid-column: 2 / span 1;
+   grid-row: 1 / span 1;
+   margin: 0;
+   padding: 0;
+}
+
+/* content area */
+div#content {
+   grid-column: 2 / span 1;
+   grid-row: 2 / span 1;
 }
 
 /* Hauptmenü */
-nav.tournament ul {
+#pagemenu ul {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
 }
 
-nav.tournament a {
+#pagemenu a {
   display: block;
   padding: 0.5rem 0.9rem;
   text-decoration: none;
@@ -76,80 +72,108 @@ nav.tournament a {
   transition: background 0.3s, color 0.3s;
 }
 
-nav.tournament a:hover,
-nav.tournament a.active {
+#pagemenu .nav-level-1 > li > a:hover
+{
   background-color: #0077cc;
   color: #fff;
 }
 
 /* Submenü */
-nav.tournament .submenu {
+#pagemenu .nav-level-2 {
   list-style: none;
   margin: 0.2rem 0 0 1rem;
   padding: 0;
 }
 
-nav.tournament .submenu li {
+#pagemenu .nav-level-2 li {
   margin: 0;
 }
 
-nav.tournament .submenu a {
+#pagemenu .nav-level-2 a {
   display: block;
   padding: 0.35rem 0.9rem;
-  font-size: 0.9rem;
   color: #555;
   border-radius: 0.3rem;
   transition: background 0.2s, color 0.2s;
 }
 
-nav.tournament .submenu a:hover {
+#pagemenu .nav-level-2 a:hover {
   background-color: #e0f0ff;
   color: #0077cc;
-}
-
-nav.tournament .submenu li.active {
-  display: block;
-  padding: 0.35rem 0.9rem;
-  font-size: 0.9rem;
-  color: #0077cc;
-  font-weight: bold;
-  border-radius: 0.3rem;
-  background-color: #e0f0ff;
 }
 
 /* Sub-Submenü als dritte Ebene */
-nav.tournament .submenu-2 {
+#pagemenu .nav-level-3 {
   list-style: none;
   padding: 0;
   margin: 0.2rem 0 0 2rem;
 }
 
-nav.tournament .submenu-2 li,
-nav.tournament .submenu-2 li a {
+#pagemenu .nav-level-3 li,
+#pagemenu .nav-level-3 li a {
   display: block;
   padding: 0.35rem 0.9rem;
   font-size: 0.9rem;
 }
 
-nav.tournament .submenu-2 a {
+#pagemenu .nav-level-3 a {
   color: #555;
   border-radius: 0.3rem;
   transition: background 0.2s, color 0.2s;
 }
 
-nav.tournament .submenu-2 a:hover {
+#pagemenu .nav-level-3 a:hover {
   background-color: #e0f0ff;
   color: #0077cc;
 }
 
-/* Aktiver Menü */
-nav.tournament .submenu-2 li.active {
-  color: #0077cc;
+/* Aktiver Menüeintrag */
+#pagemenu .active > a {
   font-weight: bold;
-  background-color: #e0f0ff;
-  border-radius: 0.3rem;
 }
 
+/* Visuelle Absetzung eines Menüeintrages */
+#pagemenu .separated {
+   border-top: 1px solid #aaa;
+   margin-top: 1rem;
+}
+
+/* Breadcrumbs menü */
+nav.breadcrumbs ol
+{
+   list-style: none;
+   margin: 0;
+   padding: 0;
+   background-color: white;
+   border: 1px solid #ddd;
+   border-radius: 8px;
+   padding: 1rem;
+}
+
+nav.breadcrumbs li
+{
+   display: inline-block;
+   padding: 0.2em;
+}
+
+nav.breadcrumbs a
+{
+   text-decoration: none;
+   color: #555;
+}
+
+nav.breadcrumbs a:hover {
+   text-decoration: underline;
+}
+
+nav.breadcrumbs li:before {
+   content: " > ";
+   font-weight: bold;
+}
+
+nav.breadcrumbs ol li:last-child {
+   font-weight: bold;
+}
 
 /* Statusbox */
 .status-box {
@@ -224,16 +248,28 @@ nav.tournament .submenu-2 li.active {
 
 /* Usermenue */
 
-.user-menu {
-  position: relative;
+nav.user-menu {
   display: inline-block;
+  position:relative; /* make it an anchor-point for the drop-down positioning */
 }
 
-.user-menu-btn {
+nav.user-menu ul {
+   list-style-type: none;
+   margin:0;
+   padding:0;
+}
+
+nav.user-menu ul li {
+   margin:0;
+   padding: 0
+}
+
+nav.user-menu h2 {
   background: #f5f6f7;
   border: 1px solid #ccc;
   border-radius: 6px;
   padding: 0.5em 0.9em;
+  margin:0;
   font-size: 0.95rem;
   cursor: pointer;
   color: #333;
@@ -255,14 +291,13 @@ nav.tournament .submenu-2 li.active {
   border: 1px solid #ccc;
   border-radius: 6px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-  min-width: 150px;
   z-index: 999;
   padding-top: 2px; /* damit es visuell Luft hat, ohne echten Spalt */
 }
 
 .user-menu-dropdown a {
   display: block;
-  padding: 0.6em 1em;
+  padding: 0.6em 2em;
   text-decoration: none;
   color: #333;
   border-radius: 4px;
@@ -274,7 +309,7 @@ nav.tournament .submenu-2 li.active {
   color: #4455cc;
 }
 
-.user-menu:hover .user-menu-dropdown,
+nav.user-menu:hover .user-menu-dropdown,
 .user-menu-dropdown:hover {
   display: block;
 }
@@ -346,7 +381,6 @@ nav.tournament .submenu-2 li.active {
 
 /* Tabelle zum Auflisten von DB-Einträgen */
 table.entry-list {
-  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   border-radius: 8px;
@@ -377,7 +411,7 @@ table.entry-list td form {
   margin: 0;
 }
 
-table.entry-list td a, td input[type="submit"] {
+table.entry-list td a {
   background-color: #667eea;
   color: #fff;
   border: none;
@@ -389,7 +423,7 @@ table.entry-list td a, td input[type="submit"] {
   transition: background 0.2s;
 }
 
-table.entry-list td a:hover, td input[type="submit"]:hover {
+table.entry-list td a:hover {
   background-color: #4455cc;
 }
 
@@ -425,17 +459,16 @@ label {
 }
 
 /* form box */
-.form-box {
+#content > section {
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 2rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  width: 100%;
 }
 
-.form-box h2 {
+h2 {
   margin-top: 0;
   margin-bottom: 1rem;
   font-size: 1.3rem;
@@ -444,8 +477,8 @@ label {
   padding-bottom: 0.5rem;
 }
 
-.form-box input[type="submit"],
-.form-box button {
+input[type="submit"],
+button {
    background-color: #f0f0f0; /* neutral hellgrau */
    border: 1px solid #ccc;
    border-radius: 6px;
@@ -453,19 +486,19 @@ label {
    transition: background 0.2s, color 0.2s;
 }
 
-.form-box input[type="submit"]:enabled,
-.form-box button:enabled {
+input[type="submit"]:enabled,
+button:enabled {
   color: #333;                 /* dunkler Text */
   cursor: pointer;
 }
 
-.form-box input[type="submit"]:enabled:hover,
-.form-box button:enabled:hover {
+input[type="submit"]:enabled:hover,
+button:enabled:hover {
   background-color: #e0e0e0;   /* etwas dunkler beim Hover */
   color: #111;
 }
 
-.form-box textarea {
+textarea {
   width: 100%;
   font-family: inherit;
   font-size: 1rem;
@@ -520,18 +553,17 @@ label {
 }
 
 /* Status Position*/
-.form-box-header {
+.main > section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
 }
 
-.form-box-header {
+.main > section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-width: 100%;
 }
 
 .tournament-status {
@@ -570,6 +602,20 @@ label {
   background: #e0e0e0;
 }
 
+.area-btn {
+    padding: 10px 18px;
+    margin: 5px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.area-btn:hover {
+    background-color: #005ec4;
+}
+
 tr.label_row td
 {
    border: none;
@@ -579,7 +625,7 @@ tr.label_row td
 }
 
 /* error/ok message blocks */
-p.error {
+p.error, span.error {
    display: block;
    background-color: #f8d7da;
    border-left: 4px solid #dc3545;
@@ -588,7 +634,7 @@ p.error {
    margin-bottom: 1rem;
 }
 
-p.ok {
+p.ok, span.ok {
    background-color: #d1e7dd;
    border-left: 4px solid #198754;
    padding: 0.75rem 1rem;

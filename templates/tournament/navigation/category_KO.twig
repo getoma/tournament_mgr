@@ -1,0 +1,37 @@
+{% import 'base/form.twig' as form %}
+{% import 'base/match.twig' as part %}
+
+{% include 'base/header.twig' with {
+  'active_page': 'show_category_ko',
+  'css': ['tree.css']
+} %}
+
+<section>
+<h2>{{ route_context.category.name }} - KO-Runde</h2>
+{{ part.printKo(ko, chunks, route_context.args) }}
+</section>
+
+{% if no_pools %}
+
+{% if unmapped_participants is not empty %}
+<section>
+  <h2>Nicht zugewiesen</h2>
+  <ul>
+    {% for p in unmapped_participants %}
+    <li>{{p.lastname}}, {{p.firstname}}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if policy.isActionAllowed('ManageSetup') %}
+<section>
+<form action="{{url_for('repopulate_category', route_context.args)}}" method="post">
+  <button type="submit">Teilnehmer neu verteilen</button>
+</form>
+</section>
+{% endif %}
+
+{% endif %}
+
+{% include 'base/footer.twig' %}
