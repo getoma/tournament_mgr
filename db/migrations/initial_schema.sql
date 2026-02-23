@@ -81,17 +81,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `username` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `user_tournaments` (
-  `user_id` int(11) NOT NULL,
-  `tournament_id` int(11) NOT NULL,
-  `admin` tinyint(1) NOT NULL DEFAULT 0,
-  `area_id` int(11) DEFAULT NULL,
-  PRIMARY KEY (`user_id`,`tournament_id`),
-  KEY `user_tournaments_ibfk_2` (`tournament_id`),
-  KEY `user_tournaments_ibfk_3` (`area_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
 ALTER TABLE `areas`
   ADD CONSTRAINT `areas_ibfk_1` FOREIGN KEY (`tournament_id`) REFERENCES `tournaments` (`id`) ON DELETE CASCADE;
 
@@ -114,8 +103,3 @@ ALTER TABLE `sessions`
 
 ALTER TABLE `teams`
   ADD CONSTRAINT `teams_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE;
-
-ALTER TABLE `user_tournaments`
-  ADD CONSTRAINT `user_tournaments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `user_tournaments_ibfk_2` FOREIGN KEY (`tournament_id`) REFERENCES `tournaments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `user_tournaments_ibfk_3` FOREIGN KEY (`area_id`) REFERENCES `areas` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
