@@ -5,6 +5,8 @@
   'nav_entry_label': user.display_name
 }%}
 
+{% set form_active = policy.canModifyUser(user) %}
+
 <section>
   <h2>{{user.display_name}}</h2>
   {% if prg_message -%}
@@ -25,17 +27,19 @@
     <fieldset id="user_roles">
       <legend>Rollen</legend>
       {% for role in roles -%}
-      {{ form.checkbox('roles[]', role.value|humanize, role.value, prev? role.value in prev.role : user.hasRole(role))}}
+      {{ form.checkbox('roles[]', role.value|humanize, role.value, prev? role.value in prev.role : user.hasRole(role), active: policy.canModifyRole(user, role))}}
       {%- endfor %}
     </fieldset>
-    {{ form.checkbox('is_active', 'Benutzer aktiv', true, prev? prev.is_active : user.is_active)}}
+    {{ form.checkbox('is_active', 'Benutzer aktiv', true, prev? prev.is_active : user.is_active, active: form_active)}}
     <p>
+      {% if form_active -%}
       <input type="submit" value="Speichern">
       {% if user.password_hash is empty -%}
       <a class="form-btn" href="{{ url_for('welcome_user', {'userId': user.id}) }}">Willkommens-Mail schicken</a>
       {%- endif %}
       <a class="form-btn" href="{{ url_for('delete_user', {'userId': user.id}) }}"
          onclick="return confirm('{{user.display_name}} wirklich löschen?');">Nutzer löschen</a>
+      {%- endif %}
     </p>
   </form>
 </section>

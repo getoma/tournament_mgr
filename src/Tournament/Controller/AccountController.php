@@ -26,14 +26,14 @@ class AccountController
    public function showAccount(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
    {
       return $this->twig->render($response, 'user/account.twig', [
-         'user' => $request->getAttribute('current_user')
+         'user' => $request->getAttribute('auth_context')->user
       ]);
    }
 
    public function updateAccount(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
    {
       /** @var User $user */
-      $user = $request->getAttribute('current_user');
+      $user = $request->getAttribute('auth_context')->user;
       $data = (array)$request->getParsedBody();
       $errors = $user->validateArray($data, required: ['display_name']);
 

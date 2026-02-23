@@ -12,10 +12,8 @@ use Slim\Routing\RouteContext;
 use Tournament\Service\RouteArgsResolverService;
 
 /**
- * middleware to inject access to the current user into the request and twig.
- * This is a separate middleware next to AuthMiddleware because there may be pages
- * which can be accessed without authentication, but still benefit from having access
- * to the current user in case there is an authentication available.
+ * Middleware to create the RouteArgsContext on the current route.
+ * Needs to be added after the processing of the routing middleware itself.
  */
 class RouteArgsResolverMiddleware implements MiddlewareInterface
 {

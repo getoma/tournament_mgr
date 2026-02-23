@@ -23,9 +23,14 @@
       <td>{{user.email}}</td>
       <td>{{user.roles|map(r => r.value)|join(', ')|humanize}}</td>
       <td>{% if user.last_login %}{{user.last_login|date('d.m.Y H:i')}}{% else %}---{% endif %}</td>
-      <td><a href="{{ url_for('show_user', {'userId': user.id}) }}" class="crud">Bearbeiten</a>
-          <a href="{{ url_for('delete_user', {'userId': user.id}) }}" class="crud"
-             onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</a>
+      <td>{% set buttons_active = policy.canModifyUser(user) -%}
+          <a href="{{ url_for('show_user', {'userId': user.id}) }}" class="crud">
+            {%- if buttons_active %}Bearbeiten{% else %}Details anzeigen{% endif -%}
+          </a>
+          {% if buttons_active -%}
+            <a href="{{ url_for('delete_user', {'userId': user.id}) }}" class="crud"
+               onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</a>
+          {%- endif %}
       </td>
       </tr>
       {%- endfor %}
@@ -49,10 +54,13 @@
       <tr>
         <td>{{user.display_name}}</td>
         <td>{{user.email}}</td>
-        <td><a href="{{ url_for('show_user', {'userId': user.id}) }}">Bearbeiten</a>
-            <a href="{{ url_for('delete_user', {'userId': user.id}) }}"
-               onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</a>
-        </td>
+      <td>{% set buttons_active = policy.canModifyUser(user) -%}
+          <a href="{{ url_for('show_user', {'userId': user.id}) }}">{%if buttons_active%}Bearbeiten{%else%}Details anzeigen{%endif%}</a>
+          {% if buttons_active -%}
+          <a href="{{ url_for('delete_user', {'userId': user.id}) }}"
+             onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</a>
+          {%- endif %}
+      </td>
       </tr>
       {%- endfor %}
     </tbody>

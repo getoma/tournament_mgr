@@ -2,21 +2,24 @@
 
 namespace Templates;
 
+use Tournament\Policy\TournamentAction;
+use Tournament\Policy\TournamentPolicy;
 use Tournament\Service\RouteArgsContext;
 
 class Navigation
 {
    public const MAIN_MENU_DEPTH = 2;
 
-   static public function structure(?RouteArgsContext $ctx = null): array
+   static public function structure(TournamentPolicy $policy, ?RouteArgsContext $ctx = null): array
    {
       return [
          [  'label' => 'Turniere',
             'route' => 'home'
          ],
 
-         [  'label' => 'Benutzerverwaltung',
-            'route' => 'list_users'
+         [  'label'      => 'Benutzerverwaltung',
+            'route'      => 'list_users',
+            'visible_if' => $policy->isActionAllowed(TournamentAction::ManageUsers),
          ],
 
          [  'label' => 'DB-Migration',
@@ -67,7 +70,7 @@ class Navigation
                   'route' => 'show_participant_list'
                ],
 
-               [ 'label' => 'Konfiguration',
+               [  'label' => 'Konfiguration',
                   'route' => 'show_tournament_config',
                   'children' => [
                      [  'label' => $ctx?->category?->name,

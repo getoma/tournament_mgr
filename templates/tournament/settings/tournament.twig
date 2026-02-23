@@ -10,7 +10,7 @@
     <div class="tournament-status">
       <form action="{{ url_for('update_tournament_status', route_context.args) }}" method="post">
         <ul id="new_status_list">
-          {% for status in policy.getPossibleTransitions() %}
+          {% for status in tournament.getStateHandler().getPossibleTransitions() %}
             <li>{{ form.submit(status.value, 'status', status.value) }}</li>
           {% endfor %}
         </ul>

@@ -27,8 +27,10 @@
   {%endfor%}
 </ul>
 
+{%- if policy.isActionAllowed('CreateTournaments') %}
 <section>
   <p><a class="form-btn" href="{{url_for('new_tournament_form')}}">Neues Turnier anlegen</a></p>
 </section>
+{%- endif -%}
 
 {% include 'base/footer.twig' %}
