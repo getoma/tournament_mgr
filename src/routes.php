@@ -129,7 +129,7 @@ return function (\Slim\App $app)
          )->add( $statusGuardMW->for(TournamentAction::ManageSetup) );
 
          /* participants */
-         $tgrp->get('/participants', [ParticipantsDataController::class, 'showParticipantList'])->setName('show_participant_list');
+         $tgrp->get('/participants[/]', [ParticipantsDataController::class, 'showParticipantList'])->setName('show_participant_list');
          $tgrp->get('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'showParticipant'])->setName('show_participant');
          $tgrp->get('/participants/import', [RedirectHandler::class, 'show_participant_list']);
          $tgrp->group('', function (RouteCollectorProxy $pgrp)
@@ -137,7 +137,10 @@ return function (\Slim\App $app)
             $pgrp->post('/participants', [ParticipantsDataController::class, 'updateParticipantList'])->setName('update_participant_list');
             $pgrp->post('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'updateParticipant'])->setName('update_participant');
             $pgrp->post('/participants/{participantId:\d+}/delete', [ParticipantsDataController::class, 'deleteParticipant'])->setName('delete_participant');
-            $pgrp->post('/participants/import', [ParticipantsDataController::class, 'importParticipantList'])->setName('import_participants');
+            $pgrp->post('/participants/add',    [ParticipantsDataController::class, 'addParticipants'])->setName('add_participants');
+            $pgrp->post('/participants/upload', [ParticipantsDataController::class, 'uploadParticipantFile'])->setName('upload_participants');
+            $pgrp->get('/participants/upload/confirm', [ParticipantsDataController::class, 'confirmUpload'])->setName('upload_participants_confirm');
+            $pgrp->post('/participants/upload/confirm', [ParticipantsDataController::class, 'confirmUpload'])->setName('upload_participants_confirm_update');
          }
          )->add( $statusGuardMW->for(TournamentAction::ManageParticipants) );
 

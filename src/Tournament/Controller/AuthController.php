@@ -7,6 +7,7 @@ use Base\Service\PasswordResetService;
 use Base\Service\MailService;
 use Base\Service\SessionService;
 use Base\Service\DbUpdateService;
+use Base\Service\TmpStorageService;
 
 use Tournament\Repository\UserRepository;
 
@@ -28,7 +29,8 @@ class AuthController
       private MailService $mailService,
       private UserRepository $userRepository,
       private SessionService $session,
-      private DbUpdateService $dbUpdService
+      private DbUpdateService $dbUpdService,
+      private TmpStorageService $storageService,
    )
    {
    }
@@ -75,6 +77,9 @@ class AuthController
                ]);
             }
          }
+
+         /* also, clean-up any left-over import files of this user */
+         $this->storageService->cleanup($user->id);
 
          return $response
             ->withHeader('Location', $redirect)

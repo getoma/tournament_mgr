@@ -11,10 +11,10 @@
   'deleted':  "Teilnehmer wurde gelöscht."
 } %}
   <p class="ok">{{ message_dict[prg_message.status]|default("Teilnehmerliste erfolgreich aktualisiert!") }}</p>
-  {% if prg_message.duplicate is not empty -%}
+  {% if prg_message.duplicates is not empty -%}
   <p class="warning">Teilnehmer bereits erfasst und nicht neu importiert:</p>
   <ul id="duplicate_participant_list" class="warning">
-    {% for participant in prg_message.duplicate %}
+    {% for participant in prg_message.duplicates %}
     <li>{{participant.lastname}}, {{participant.firstname}} {%if participant.club%}({{participant.club}}){%endif%}</li>
     {% endfor %}
   </ul>
@@ -65,9 +65,16 @@
 </section>
 
 <section>
-<h2>Teilnehmer hinzufügen</h2>
-  <form method="POST" action="{{ url_for('import_participants', route_context.args) }}" id="participant_add_form">
+<h2>Teilnehmer importieren</h2>
+<form method="POST" action="{{ url_for('upload_participants', { 'tournamentId': tournament.id }) }}" id="participant_upload_form" enctype="multipart/form-data">
+  {{ form.input('file', 'participant_file', 'Datei (CSV oder Excel)', '', errors.file, attributes={'accept':".csv,.xlsx,.xls,.ods"}) }}
+  {{ form.submit('Importieren', attributes={'class':'form-btn'}) }}
+</form>
+</section>
 
+<section>
+<h2>Teilnehmer hinzufügen</h2>
+  <form method="POST" action="{{ url_for('add_participants', route_context.args) }}" id="participant_add_form">
     {{ form.textarea('participants', 'Direkteingabe', prev.participants ?? '', errors.participants, attributes={'rows':10, 'cols': 50, 'id':'participants', 'placeholder':'Vorname Nachname pro Zeile'}) }}
     {{ form.input('text', 'club', 'Verein/Verband', prev.club ?? '', errors.club, attributes={'maxlength':100}) }}
     <fieldset class="category-fieldset">
