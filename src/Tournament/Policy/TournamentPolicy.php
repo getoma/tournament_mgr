@@ -2,6 +2,7 @@
 
 namespace Tournament\Policy;
 
+use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\Tournament\TournamentStatus;
 use Tournament\Model\User\AuthContext;
 use Tournament\Model\User\Role;
@@ -91,16 +92,17 @@ final class TournamentPolicy
       switch( $action )
       {
          case TournamentAction::ManageDetails:
+         case TournamentAction::ManageOwners:
          case TournamentAction::ManageSetup:
          case TournamentAction::ManageParticipants:
          case TournamentAction::TransitionState:
             /* tournament specific actions: allowed if tournament ownership, TODO */
-            return true;
+            return $this->route_context?->tournament?->owners->contains($this->auth_context->user) ?? false;
 
          case TournamentAction::BrowseTournament:
          case TournamentAction::RecordResults:
             /* allowed if tournament ownership OR assigned area device account, TODO */
-            return true;
+            return $this->route_context?->tournament && $this->hasTournamentAccess($this->route_context->tournament);
 
          case TournamentAction::CreateTournaments:
             return $this->auth_context->hasRole(Role::ORGANIZER);
@@ -158,5 +160,13 @@ final class TournamentPolicy
       if (!$this->auth_context->hasRole(Role::USER_MANAGER)) return false; // if not user_manager, any user management is forbidden
       if (!$target->roles->intersect(self::PROTECTED_ROLES)->empty()) return false; // may not modify other admins/user_managers
       return true;
+   }
+
+   /**
+    * return whether current user has access to a specific tournament
+    */
+   public function hasTournamentAccess(Tournament $tournament): bool
+   {
+      return $tournament->owners->contains($this->auth_context->user);
    }
 }
