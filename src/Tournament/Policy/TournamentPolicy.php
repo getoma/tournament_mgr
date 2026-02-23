@@ -91,18 +91,25 @@ final class TournamentPolicy
       // determine authorization status depending on the specific action
       switch( $action )
       {
+         case TournamentAction::BrowseTournament:
+            /* allow if has access to this tournament in any way */
+            return $this->route_context?->tournament
+                && $this->hasTournamentAccess($this->route_context->tournament);
+
          case TournamentAction::ManageDetails:
          case TournamentAction::ManageOwners:
          case TournamentAction::ManageSetup:
          case TournamentAction::ManageParticipants:
          case TournamentAction::TransitionState:
-            /* tournament specific actions: allowed if tournament ownership, TODO */
-            return $this->route_context?->tournament?->owners->contains($this->auth_context->user) ?? false;
+            /* tournament specific actions: allowed if actual user with tournament ownership */
+            return  $this->auth_context->isUser()
+                 && $this->route_context?->tournament?->owners->contains($this->auth_context->user) ?? false;
 
-         case TournamentAction::BrowseTournament:
          case TournamentAction::RecordResults:
-            /* allowed if tournament ownership OR assigned area device account, TODO */
-            return $this->route_context?->tournament && $this->hasTournamentAccess($this->route_context->tournament);
+            /* allowed if has access to the tournament and is not anonymous */
+            return $this->auth_context->isAuthenticated()
+                && $this->route_context?->tournament
+                && $this->hasTournamentAccess($this->route_context->tournament);
 
          case TournamentAction::CreateTournaments:
             return $this->auth_context->hasRole(Role::ORGANIZER);
