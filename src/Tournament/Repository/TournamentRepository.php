@@ -11,6 +11,7 @@ use Tournament\Model\Category\CategoryCollection;
 
 use PDO;
 use Tournament\Model\Category\CategoryConfiguration;
+use Tournament\Model\User\UserCollection;
 
 class TournamentRepository
 {
@@ -28,40 +29,56 @@ class TournamentRepository
    /**@var CategoryCollection[] */
    private $categories_by_tournament = [];
 
-   public function __construct(private PDO $pdo)
+   public function __construct(private PDO $pdo, private UserRepository $user_repo)
    {
+   }
+
+   private function createTournamentObject($data): Tournament
+   {
+      $id = $data['id'];
+      if( isset($this->tournaments[$id]) ) return $this->tournaments[$id];
+
+      $data['categories'] = $this->getCategoriesByTournamentId($id);
+      $data['owners'] = $this->getTournamentOwners($id);
+      $result = new Tournament(...$data);
+      $this->tournaments[$id] = $result;
+      return $result;
    }
 
    public function getAllTournaments(): TournamentCollection
    {
-      $tournaments = new TournamentCollection();
+      $result = new TournamentCollection();
       $stmt = $this->pdo->query("SELECT * FROM tournaments order by date asc, name asc");
       foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
       {
-         $this->tournaments[$row['id']] ??= new Tournament(...$row);
-         $tournaments[] = $this->tournaments[$row['id']];
+         $result[] = $this->createTournamentObject($row);
       }
-      return $tournaments;
+      return $result;
    }
 
    public function getTournamentById($id): ?Tournament
    {
-      if( !isset($this->tournaments[$id]) )
-      {
-         $stmt = $this->pdo->prepare("SELECT * FROM tournaments WHERE id = :id");
-         $stmt->execute(['id' => $id]);
-         $data = $stmt->fetch(PDO::FETCH_ASSOC);
-         if( $data )
-         {
-            $data['categories'] = $this->getCategoriesByTournamentId($id);
-            $this->tournaments[$id] = new Tournament(...$data);
-         }
-      }
-      return $this->tournaments[$id] ?? null;
+      if( isset($this->tournaments[$id]) ) return $this->tournaments[$id];
+
+      $stmt = $this->pdo->prepare("SELECT * FROM tournaments WHERE id = :id");
+      $stmt->execute(['id' => $id]);
+      $data = $stmt->fetch(PDO::FETCH_ASSOC);
+      return $data? $this->createTournamentObject($data) : null;
+   }
+
+   public function getTournamentOwners($id): UserCollection
+   {
+      $stmt = $this->pdo->prepare("SELECT user_id from tournament_owners where tournament_id=:id");
+      $stmt->execute(['id' => $id]);
+      $owner_ids = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+      $users = $this->user_repo->getAllUsers();
+      return $users->filter(fn($u) => in_array($u->id, $owner_ids));
    }
 
    public function saveTournament(Tournament $t): bool
    {
+      $this->pdo->beginTransaction();
+
       $result = false;
       if ($t->id)
       {
@@ -78,6 +95,42 @@ class TournamentRepository
             $this->tournaments[$t->id] = $t;
          }
       }
+
+      /* also update ownership */
+      if( $result )
+      {
+         if( $t->owners->empty() )
+         {
+            $stmt = $this->pdo->prepare("DELETE FROM tournament_owners WHERE tournament_id = :id");
+            $stmt->execute(['id' => $t->id]);
+         }
+         else
+         {
+            // only delete removed owners - to not accidently delete any related records
+            // via foreign key constraints. At the moment, we don't have that, but be forward-compatible
+            $placeholders = implode(',', array_fill(0, $t->owners->count(), '?'));
+            $sql = "DELETE FROM tournament_owners WHERE tournament_id = ? AND user_id NOT IN ($placeholders)";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute( array_merge([$t->id], $t->owners->column('id')) );
+
+            // add any possible new relationships
+            $stmt = $this->pdo->prepare("INSERT IGNORE INTO tournament_owners (tournament_id, user_id) VALUES (:tournament_id, :user_id)");
+            foreach ($t->owners as $owner)
+            {
+               $stmt->execute(['tournament_id' => $t->id, 'user_id' => $owner->id]);
+            }
+         }
+      }
+
+      if( $result )
+      {
+         $this->pdo->commit();
+      }
+      else
+      {
+         $this->pdo->rollBack();
+      }
+
       return $result;
    }
 

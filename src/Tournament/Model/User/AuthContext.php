@@ -35,19 +35,19 @@ final class AuthContext
     */
 
    /* no authentication */
-   static public function anonymous(): static
+   static public function as_anonymous(): static
    {
       return new static();
    }
 
    /* an actual user */
-   static public function user(User $user): static
+   static public function as_user(User $user): static
    {
       return new static(authtype: AuthType::USER, user: $user);
    }
 
    /* device account */
-   static public function device(): static
+   static public function as_device(): static
    {
       return new static(authtype: AuthType::DEVICE);
    }

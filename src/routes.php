@@ -109,6 +109,11 @@ return function (\Slim\App $app)
             $tcfg->post('[/]', [TournamentSettingsController::class, 'updateTournament'])->setName('update_tournament_config')
                ->add(  $policyGuard->for(TournamentAction::ManageDetails) );
 
+            $tcfg->post('/add_owner', [TournamentSettingsController::class, 'addOwner'])->setName('tournament.owner.add')
+               ->add( $policyGuard->for(TournamentAction::ManageOwners));
+            $tcfg->post('/drop_owner', [TournamentSettingsController::class, 'removeOwner'])->setName('tournament.owner.remove')
+               ->add($policyGuard->for(TournamentAction::ManageOwners));
+
             $tcfg->group('/category/{categoryId:\d+}', function (RouteCollectorProxy $ccfg) use ( $policyGuard)
             {
                $ccfg->get('',  [TournamentSettingsController::class, 'showCategoryConfiguration'])->setName('show_tournament_category_cfg');

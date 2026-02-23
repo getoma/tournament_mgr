@@ -4,22 +4,22 @@
   'active_page': 'show_tournament_config'
 } %}
 
-<section class="form-box">
-  <div class="form-box-header">
-    <h2>Turnier-Details</h2>
-    <div class="tournament-status">
-      <form action="{{ url_for('update_tournament_status', route_context.args) }}" method="post">
-        <ul id="new_status_list">
-          {% for status in tournament.getStateHandler().getPossibleTransitions() %}
-            <li>{{ form.submit(status.value, 'status', status.value) }}</li>
-          {% endfor %}
-        </ul>
-      </form>
-    </div>
-  </div>
 {% if prg_message == 'tournament_created' %}<p class="ok">Turnier erfolgreich angelegt!</p>{% endif %}
 {% if prg_message == 'tournament_updated' %}<p class="ok">Daten übernommen!</p>{% endif %}
 {% if prg_message == 'tournament_status'  %}<p class="ok">Turnier-Status aktualisiert!</p>{% endif %}
+{% if errors -%}<p class="error">Daten konnten nicht übernommen werden.</p>{%- endif %}
+
+<section>
+  <h2>Turnier-Details</h2>
+  <div class="tournament-status">
+    <form action="{{ url_for('update_tournament_status', route_context.args) }}" method="post">
+      <ul id="new_status_list">
+        {% for status in route_context.tournament.getStateHandler().getPossibleTransitions() %}
+          <li>{{ form.submit(status.value, 'status', status.value) }}</li>
+        {% endfor %}
+      </ul>
+    </form>
+  </div>
 <form action="{{url_for('update_tournament_config', route_context.args)}}" method="post">
   {% set isActive=policy.isActionAllowed('ManageDetails') -%}
   {% if isActive -%}
@@ -32,6 +32,36 @@
   {'rows':4}, active=isActive) }}
   {% if isActive %}{{ form.submit('Aktualisieren') }}{%endif%}
 </form>
+</section>
+
+<section>
+  <h2>Organisatoren-Team</h2>
+  {% if errors.user_id %}<p class="error">{{ errors.user_id }}</p>{% endif %}
+  <table id="owner_list" class="entry-list">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Aktionen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for owner in route_context.tournament.owners -%}
+      <tr><td>{{ owner.display_name }}</td>
+          <td><form method="POST" action="{{url_for('tournament.owner.remove', route_context.args)}}">
+            <input type="hidden" name="user_id" value="{{owner.id}}">
+            {{ form.submit('Entfernen', active=policy.isActionAllowed('ManageOwners')) }}</form>
+          </td>
+      </tr>
+      {%- endfor %}
+      {% if policy.isActionAllowed('ManageOwners') -%}
+      <tr><td>{{ form.select_plain("user_id", available_owners, attributes: { 'form': 'add_owner_form' }) }}</td>
+          <td><form method="POST" action="{{url_for('tournament.owner.add', route_context.args)}}" id="add_owner_form">
+            {{ form.submit('Hinzufügen') }}</form>
+          </td>
+      </tr>
+      {%- endif %}
+    </tbody>
+  </table>
 </section>
 
 <section class="form-box">
@@ -123,7 +153,7 @@
                             {'placeholder':'Neue Kategorie', 'maxlength':100, 'form':'category_new'}, required=true) }}
       </td>
       <td>
-        {{ form.select_plain('mode', enum_options(category_modes), prev.categories.new.mode??'', errors.categories.new['mode'],
+        {{ form.select_plain('mode', enum_options(category_modes), prev.categories.new.mode, errors.categories.new['mode'],
                              {'form':'category_new'}, required=true) }}
       </td>
       <td>

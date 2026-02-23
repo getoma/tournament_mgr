@@ -8,6 +8,9 @@ use Slim\Views\Twig;
 
 use Tournament\Repository\TournamentRepository;
 use Tournament\Model\Tournament\TournamentStatus;
+use Tournament\Model\Tournament\TournamentCollection;
+use Tournament\Policy\TournamentPolicy;
+
 use Base\Service\DbUpdateService;
 
 class IndexPageController
@@ -36,8 +39,13 @@ class IndexPageController
          // any exception thrown here just let it fall through to the normal error handler
          $out = $this->dbUpdateService->update();
          error_log("Database initialization output:\n" . $out);
-         $tournament_list = [];
+         $tournament_list = TournamentCollection::new();
       }
+
+      /* filter out the tournaments current user doesn't even have access to */
+      /** @var TournamentPolicy $policy */
+      $policy = $request->getAttribute('policy');
+      $tournament_list = $tournament_list->filter(fn($t) => $policy->hasTournamentAccess($t));
 
       /* provide a second list where tournaments are separated by their state */
       $tournaments_by_state = [];

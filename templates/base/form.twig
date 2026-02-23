@@ -66,8 +66,11 @@
     <select name="{{ name }}"
       {%- for attr, val in attributes %} {{ attr }}="{{ val }}"{% endfor -%}
       {%- if required %} required{% endif %}>
+      {% if selected is null and options[''] is not defined -%}
+      <option></option>
+      {%- endif %}
       {% for key, text in options %}
-      <option value="{{ key|e }}" {% if key==selected %}selected{% endif %}>{{ text|e }}</option>
+      <option value="{{ key|e }}" {% if selected is not null and key==selected %}selected{% endif %}>{{ text|e }}</option>
       {% endfor -%}
     </select>
     {% else -%}
@@ -85,8 +88,11 @@
 <select name="{{ name }}"
   {%- for attr, val in attributes %} {{ attr }}="{{ val }}"{% endfor -%}
   {%- if required %} required{% endif %}>
+  {% if selected is null and options[''] is not defined -%}
+  <option></option>
+  {%- endif %}
   {% for key, text in options %}
-  <option value="{{ key|e }}"{% if key==selected %} selected{% endif %}>{{ text|e }}</option>
+  <option value="{{ key|e }}"{% if selected is not null and key==selected %} selected{% endif %}>{{ text|e }}</option>
   {% endfor -%}
 </select>
 {%- if error is not empty %}

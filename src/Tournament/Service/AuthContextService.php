@@ -22,11 +22,11 @@ class AuthContextService
       if ($this->authService->isAuthenticated())
       {
          $currentUser = $this->authService->getCurrentUser();
-         $ctx = AuthContext::user($currentUser);
+         $ctx = AuthContext::as_user($currentUser);
       }
       else
       {
-         $ctx = AuthContext::anonymous();
+         $ctx = AuthContext::as_anonymous();
       }
 
       return $ctx;
