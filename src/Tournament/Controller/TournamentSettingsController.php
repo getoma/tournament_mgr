@@ -5,9 +5,9 @@ namespace Tournament\Controller;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
-use Slim\Routing\RouteContext;
 
 use Tournament\Repository\TournamentRepository;
+use Tournament\Repository\UserRepository;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
@@ -20,11 +20,15 @@ use Tournament\Service\TournamentStructureService;
 
 use Base\Service\PrgService;
 
+use Base\Service\DataValidationService;
+use Respect\Validation\Validator as v;
+
 class TournamentSettingsController
 {
    public function __construct(
       private Twig $view,
       private TournamentRepository $repo,
+      private UserRepository $user_repo,
       private TournamentStructureService $structureLoadService,
       private PrgService $prgService,
    ) {
@@ -72,23 +76,10 @@ class TournamentSettingsController
       // everything is ok, create the tournament
       $data['id'] = null;
       $tournament = new Tournament(...$data);
+      $tournament->owners[] = $request->getAttribute('auth_context')->user; // add current user as owner
       $this->repo->saveTournament($tournament);
 
       return $this->prgService->redirect($request, $response, 'show_tournament_config', ['tournamentId' => $tournament->id], 'tournament_created');
-   }
-
-   /**
-    * Show a tournament control panel
-    */
-   public function showControlPanel(Request $request, Response $response, array $args): Response
-   {
-      /** @var RouteArgsContext $ctx */
-      $ctx = $request->getAttribute('route_context');
-      $categories = $this->repo->getCategoriesByTournamentId($ctx->tournament->id);
-
-      return $this->view->render($response, 'tournament/navigation/controlpanel.twig', [
-         'categories' => $categories,
-      ]);
    }
 
    /**
@@ -101,10 +92,16 @@ class TournamentSettingsController
       $categories = $this->repo->getCategoriesByTournamentId($ctx->tournament->id);
       $areas = $this->repo->getAreasByTournamentId($ctx->tournament->id);
 
+      /* get list of owners that can be added */
+      $available_owners = $this->user_repo->getAllUsers()
+                           ->filter(fn($u) => !$ctx->tournament->owners->contains($u))
+                           ->column('display_name', 'id');
+
       return $this->view->render($response, 'tournament/settings/tournament.twig', [
          'areas' => $areas,
          'categories' => $categories,
          'category_modes' => CategoryMode::cases(),
+         'available_owners' => $available_owners,
          'errors' => $errors,
          'prev' => $prev,
       ]);
@@ -133,6 +130,61 @@ class TournamentSettingsController
       $this->repo->saveTournament($ctx->tournament);
 
       return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'tournament_updated');
+   }
+
+   /**
+    * add an owner
+    */
+   public function addOwner(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
+      /* get list of user ids */
+      $available_owners = $this->user_repo->getAllUsers();
+
+      /* generate the validator */
+      $rules = ['user_id' => v::intVal()->in($available_owners->column('id'))->setTemplate('Unbekannter Nutzer') ];
+
+      /* retrieve and validate the input */
+      $data = $request->getParsedBody();
+      $errors = DataValidationService::validate($data, $rules);
+
+      if( $errors )
+      {
+         return $this->showTournamentConfiguration($request, $response, $args, $errors, $data);
+      }
+
+      $ctx->tournament->owners[] = $available_owners[$data['user_id']];
+      $this->repo->saveTournament($ctx->tournament);
+
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'owner_updated');
+   }
+
+   /**
+    * remove an owner
+    */
+   public function removeOwner(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
+      /* generate the validator */
+      $rules = ['user_id' => v::intVal()->in($ctx->tournament->owners->column('id'))->setTemplate('Unbekannter Nutzer')];
+
+      /* retrieve and validate the input */
+      $data = $request->getParsedBody();
+      $errors = DataValidationService::validate($data, $rules);
+
+      if ($errors)
+      {
+         return $this->showTournamentConfiguration($request, $response, $args, $errors, $data);
+      }
+
+      unset($ctx->tournament->owners[$data['user_id']]);
+      $this->repo->saveTournament($ctx->tournament);
+
+      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'owner_updated');
    }
 
    public function changeTournamentStatus(Request $request, Response $response, array $args): Response

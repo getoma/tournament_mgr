@@ -7,8 +7,20 @@ use Tournament\Model\User\RoleCollection;
 use Tournament\Model\User\User;
 use Tournament\Model\User\UserCollection;
 
+use Base\Service\SessionService;
+
+use PDO;
+
 class UserRepository extends \Base\Repository\UserRepository
 {
+   private readonly UserCollection $users;
+
+   public function __construct(PDO $pdo, SessionService $session)
+   {
+      parent::__construct($pdo, $session);
+      $this->users = UserCollection::new();
+   }
+
    /**
     * save or update an user into the database.
     */
@@ -82,6 +94,11 @@ class UserRepository extends \Base\Repository\UserRepository
     */
    protected function createUserObject(array $data): User
    {
+      if( isset($this->users[$data['id']]) )
+      {
+         return $this->users[$data['id']];
+      }
+
       if( isset($data['admin']) )
       {
          /* legacy compatibility code - if data still contains an admin field, translate to the new role */
@@ -98,7 +115,7 @@ class UserRepository extends \Base\Repository\UserRepository
       }
 
       /* create the user */
-      return new \Tournament\Model\User\User(
+      $user = new \Tournament\Model\User\User(
          id: $data['id'],
          email: $data['email'],
          password_hash: $data['password_hash'],
@@ -108,6 +125,9 @@ class UserRepository extends \Base\Repository\UserRepository
          roles: $roles,
          is_active: $data['is_active'],
       );
+      $this->users[] = $user;
+
+      return $user;
    }
 
    public function registerLogin(User $user): void
