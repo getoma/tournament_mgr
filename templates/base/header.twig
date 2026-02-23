@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Tournament powered by Slim{% endblock %}</title>
+  <link rel="stylesheet" href="{{url_for('home')}}css/style.css">
+  {% for file in css -%}
+  <link rel="stylesheet" href="{{url_for('home')}}css/{{file}}">
+  {%- endfor %}
+</head>
+
+<body>
+
+  <header>
+    <h1>{{ heading|default(route_context.tournament.name)|default('Kendo Turniersoftware')}}</h1>
+    <nav class="user-menu" aria-label="Account">
+      {% if current_user -%}
+      <h2 class="user-menu-btn">👤 {{ current_user.display_name }} ▼</h2>
+      <ul class="user-menu-dropdown">
+        <li><a href="{{url_for('user_account')}}">Account</a></li>
+        <li><a href="{{url_for('logout')}}">Logout</a></li>
+      </ul>
+      {%-else-%}
+      <a href="{{url_for('login')}}" class="btn-login">Login</a>
+      {%-endif%}
+    </nav>
+  </header>
+
+  {% import 'base/nav.twig' as nav -%}
+  {% set navigation = buildNavigation(route_context, active_page|default('')) %}
+
+  <main>
+    {% if current_user -%}
+    {% if navigation.breadcrumbs is not empty -%}
+    {{ nav.breadcrumbs(navigation.breadcrumbs, nav_entry_label ?? null)}}
+    {%- endif %}
+
+    <aside id="pagemenu">
+      {{ nav.pagemenu(navigation.pagemenu) }}
+    </aside>
+    {%- endif %}
+
+    <div id="content">

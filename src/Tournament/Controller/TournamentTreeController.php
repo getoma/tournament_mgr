@@ -38,9 +38,51 @@ class TournamentTreeController
    }
 
    /**
-    * Show a specific category
+    * Show a specific category Pool
     */
-   public function showCategoryTree(Request $request, Response $response, array $args): Response
+   public function showCategoryPool(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
+      // Load the tournament structure for this category
+      $structure = $this->structureLoadService->load($ctx->category);
+
+      return $this->view->render($response, 'tournament/navigation/category_Pool.twig', [
+         'pools'      => $structure->pools,
+         'unmapped_participants' => $structure->unmapped_participants,
+      ]);
+   }
+
+   /**
+    * Show a specific category KO
+    */
+   public function showCategorytree(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
+      // Load the tournament structure for this category
+      $structure = $this->structureLoadService->load($ctx->category);
+
+      /* filter pool/ko display if we have a very large structure */
+      if ($structure->ko)
+      {
+         $ko = $structure->ko->getRounds(- ($structure->finale_rounds_cnt ?? 0));
+      }
+
+      return $this->view->render($response, 'tournament/navigation/category_KO.twig', [
+         'no_pools'   => $structure->pools->empty(),
+         'ko'         => $ko,
+         'chunks'     => $structure->chunks,
+         'unmapped_participants' => $structure->unmapped_participants,
+      ]);
+   }
+
+   /**
+    * Show a specific category home
+    */
+   public function showCategoryHome(Request $request, Response $response, array $args): Response
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
@@ -205,7 +247,7 @@ class TournamentTreeController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->structureLoadService->resetMatchRecords($ctx->category);
-      return $this->prgService->redirect($request, $response, 'show_category', $args, 'records_deleted');
+      return $this->prgService->redirect($request, $response, 'show_category_home', $args, 'records_deleted');
    }
 
    /**
@@ -216,7 +258,7 @@ class TournamentTreeController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->structureLoadService->populate($ctx->category);
-      return $this->prgService->redirect($request, $response, 'show_category', $args, 'repopulated');
+      return $this->prgService->redirect($request, $response, 'show_category_home', $args, 'repopulated');
    }
 
    public function showMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response

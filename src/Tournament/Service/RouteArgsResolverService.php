@@ -51,6 +51,14 @@ class RouteArgsResolverService
          $result->area = $this->tournamentRepo->getAreaById($args['areaId'])
                        ?? throw new EntityNotFoundException('Area not found');
       }
+      if (isset($args['pool']))
+      {
+         $result->pool_name = $args['pool'];
+      }
+      if (isset($args['matchName']))
+      {
+         $result->match_name = $args['matchName'];
+      }
       return $result;
    }
 

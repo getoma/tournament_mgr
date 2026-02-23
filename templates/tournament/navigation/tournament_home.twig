@@ -1,32 +1,31 @@
-{% extends 'base/layout.twig' %}
+{% include 'base/header.twig' with {
+  'active_page': 'show_tournament'
+} %}
 
-{% block nav_extension %}
-  {% if route_context.tournament is not null %}
-    <!-- Untermenü für die "Turnier-Hauptseite" -->
-    <ul class="submenu">
-      <li>
-        <a href="{{ url_for('tournament_control', route_context.args) }}">
-          Turnierleitung
-        </a>
-      </li>
-    </ul>
-  {% endif %}
-{% endblock %}
-
-
-{% block content %}
-<h1>Turnierkategorien</h1>
-
-<div class="nav-cards">
+<section>
+  <h2>Turnierkategorien</h2>
+  <nav class="nav-cards">
   {% for category in categories %}
-    <a href="{{ url_for('show_category', route_context.args|merge({'categoryId': category.id})) }}" class="card">
+    <a href="{{ url_for('show_category_home', route_context.args|merge({'categoryId': category.id})) }}" class="card">
       <h3>{{ category.name }}</h3>
       <p>Turnier ansehen</p>
     </a>
   {% endfor %}
-</div>
-{% endblock %}
+  </nav>
+</section>
 
+<section>
+  <h2>Setup</h2>
+  <nav class="nav-cards">
+    <a href="{{ url_for('show_participant_list', route_context.args) }}" class="card">
+      <h3>Anmeldungen</h3>
+      <p>Teilnehmerliste ansehen und verwalten</p>
+    </a>
+    <a href="{{ url_for('show_tournament_config', route_context.args) }}" class="card">
+      <h3>Turnier konfigurieren</h3>
+      <p>Turnier-Details, Kampfflächen & Kategorien bearbeiten</p>
+    </a>
+  </nav>
+</section>
 
-
-
+{% include 'base/footer.twig' %}

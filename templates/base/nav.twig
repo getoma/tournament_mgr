@@ -1,0 +1,49 @@
+{#
+  generate a breadcrumbs menu to the current page
+#}
+{% macro breadcrumbs(path, subentry = null) %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol>
+    {% for node in path -%}
+    {% if not loop.last or subentry is not null -%}
+    <li><a href="{{ url_for(node.route, node.args) }}">{{node.label}}</a></li>
+    {% else -%}
+    <li>{{node.label}}</li>
+    {% endif -%}
+    {%- endfor -%}
+    {% if subentry is not null -%}
+    <li>{{subentry}}</li>
+    {%- endif -%}
+  </ol>
+</nav>
+{% endmacro %}
+
+{#
+  generate a main page menu that shows the page structure down to a specific level
+#}
+{% macro pagemenu(nav_tree) %}
+<nav class="pagemenu" aria-label="Pagemenu">
+  {{ _self._render_menu(nav_tree, 1) }}
+</nav>
+{%endmacro%}
+
+{#
+  internal: generate a level of the main menu
+#}
+{% macro _render_menu(nav_tree, depth) %}
+<ul class="nav-level-{{ depth }}">
+{% for node in nav_tree -%}
+  {%- set classes = [
+    node.is_active? 'active' : null,
+    node.class ?? null
+  ]|filter(v=>v) -%}
+  <li{% if classes %} class="{{ classes|join(' ') }}"{% endif %}>
+    <a href="{{ url_for(node.route, node.args) }}">{{ node.label }}</a>
+    {% if node.children is defined -%}
+      {{ _self._render_menu(node.children, depth+1) }}
+    {%- endif %}
+  </li>
+{%- endfor %}
+</ul>
+{% endmacro %}
+

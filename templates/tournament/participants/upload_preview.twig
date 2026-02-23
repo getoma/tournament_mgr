@@ -1,12 +1,12 @@
-{% extends 'base/layout.twig' %}
 {% import 'base/form.twig' as form %}
 
-{% block special_links -%}
-<link rel="stylesheet" href="{{url_for('home')}}css/data_import_preview.css">
-{% endblock -%}
+{% include 'base/header.twig' with {
+  'css': ['data_import_preview.css'],
+  'active_page': 'show_participant_list',
+  'nav_entry_label': 'Teilnehmer importieren - Vorschau'
+}%}
 
-{% block content %}
-<section class="form-box">
+<section>
 <h2>Teilnehmer importieren - {{import.name}} - Vorschau</h2>
 <form method="POST" id="form_preview_attributes" action="{{ url_for('upload_participants_confirm_update', route_context.args) }}">
   {{ form.input('text', 'club', "Verband/Verein", club, errors.club, { 'maxlength': 100 }) }}
@@ -48,4 +48,5 @@
 </table>
 </div>
 </section>
-{% endblock %}
+
+{% include 'base/footer.twig' %}

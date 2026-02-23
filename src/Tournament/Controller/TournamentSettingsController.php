@@ -287,13 +287,11 @@ class TournamentSettingsController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
-      $data = ($request->getMethod() === 'POST') ? $request->getParsedBody() : $request->getQueryParams();
 
       return $this->view->render($response, 'tournament/settings/category.twig', [
          'category'  => $ctx->category,
          'errors'    => $errors,
          'prev'      => $prev,
-         'return_to' => $data['return_to'] ?? 'show_category',
          'category_modes' => CategoryMode::cases(),
       ]);
    }

@@ -23,8 +23,9 @@ return function (DI\Container $container)
    $container->set(Twig::class, function () use ($container)
    {
       $twig = Twig::create(__DIR__ . '/../templates', [
-         'cache' => false,
-         'debug' => config::$debug ?? false,
+         'cache'       => config::$TWIG_CACHE_DIR ?? false,
+         'auto_reload' => config::$TWIG_AUTO_RELOAD ?? false,
+         'debug'       => config::$debug ?? false,
       ]);
       if (config::$debug ?? false)
       {
@@ -33,6 +34,9 @@ return function (DI\Container $container)
       }
 
       $twig->addExtension(new \Tournament\Twig\TwigExtensions());
+      $twig->addExtension(new \Tournament\Twig\NavigationExtension(
+         $container->get(\Tournament\Service\NavigationStructureService::class))
+      );
 
       $twig->getEnvironment()->addGlobal('debug', config::$debug ?? false);
       $twig->getEnvironment()->addGlobal('test_interfaces', config::$test_interfaces ?? false);

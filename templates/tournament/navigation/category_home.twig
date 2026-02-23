@@ -1,81 +1,31 @@
-{% extends 'base/layout.twig' %}
 {% import 'base/form.twig' as form %}
 {% import 'base/match.twig' as part %}
 
-{% block nav_extension %}
-  {% if route_context.tournament is not null %}
-    <!-- Untermenü für die "Turnier-Hauptseite" -->
-    <ul class="submenu">
-      <li>
-        <a href="{{ url_for('tournament_control', route_context.args) }}">
-          Turnierleitung
-        </a>
-      </li>
-      <li>
-        <a href="{{ url_for('show_category_cfg', route_context.args) }}">
-          Kategorie konfigurieren
-        </a>
-      </li>
-    </ul>
-  {% endif %}
-{% endblock %}
+{% include 'base/header.twig' with {
+  'active_page': 'show_category_home'
+} %}
 
-
-{% block content %}
-<section>
-<h2>{{ route_context.category.name }} </h2>
+<nav class="nav-cards">
 {% if pools is not empty %}
+  <a href="{{ url_for('show_category_pools', route_context.args) }}" class="card">
+    <h3>Pools</h3>
+  </a>
+{% endif %}
+{% if ko is defined %}
+  <a href="{{ url_for('show_category_ko', route_context.args) }}" class="card">
+    <h3>KO-Baum</h3>
+  </a>
+{% endif %}
+  <a href="{{ url_for('show_category_cfg', route_context.args) }}" class="card">
+    <h3>Konfiguration</h3>
+  </a>
+</nav>
+
 <section>
-<h3>Pools</h3>
-<ul class="pool_list">
-  {% for pool in pools %}
-  <li>
-    <p class="pool_name"><a href="{{ url_for('show_pool', route_context.args|merge({pool: pool.getName})) }}">Pool {{pool.getName()}}</a></p>
-    <ul class="participant_list">
-      {% for slot in pool.participants %}
-      <li>{{slot.lastname}}, {{slot.firstname}}{% if slot.club %} ({{slot.club}}){%endif%}</li>
-      {% endfor %}
-    </ul>
-    <p class="fight_list">Kämpfe:</p>
-    <ul class="fight_list">
-      {% for match in pool.getMatchList() %}
-      <li>{{ part.printMatch(match) }}</li>
-      {% endfor %}
-    </ul>
-  </li>
-  {% endfor %}
-</ul>
+  <h2>Test-Optionen</h2>
+  <form action="{{url_for('reset_category_results', route_context.args)}}" method="post">
+    <button type="submit">Aktuellen Turnierfortschritt löschen</button>
+  </form>
 </section>
-{% endif %}
 
-{% if ko is not null %}
-<section>
-<h3>KO-Runde</h3>
-{{ part.printKo(ko, chunks, route_context.args) }}
-</section>
-{% endif %}
-
-{% if unmapped_participants is not empty %}
-<section>
-  <h3>Nicht zugewiesen</h3>
-  <ul>
-    {% for p in unmapped_participants %}
-    <li>{{p.lastname}}, {{p.firstname}}</li>
-    {% endfor %}
-  </ul>
-</section>
-{% endif %}
-
-<form action="{{url_for('reset_category_results', route_context.args)}}" method="post">
-  <button type="submit">Ergebnisse löschen</button>
-</form>
-
-{% if policy.isActionAllowed('ManageSetup') %}
-<form action="{{url_for('repopulate_category', route_context.args)}}" method="post">
-  <button type="submit">Teilnehmer neu verteilen</button>
-</form>
-{% endif %}
-
-</section>
-{% endblock %}
-
+{% include 'base/footer.twig' %}

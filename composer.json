@@ -16,7 +16,8 @@
         "psr-4": {
             "Base\\": "src/Base/",
             "Tournament\\": "src/Tournament/",
-            "Tests\\": "tests/"
+            "Tests\\": "tests/",
+            "Templates\\": "templates/"
         }
     },
 
