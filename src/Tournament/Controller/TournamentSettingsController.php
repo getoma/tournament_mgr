@@ -83,6 +83,18 @@ class TournamentSettingsController
    }
 
    /**
+    * Delete a tournament
+    */
+   public function deleteTournament(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $this->repo->deleteTournament($ctx->tournament->id);
+      return $this->prgService->redirect($request, $response, 'home', [], 'tournament_deleted');
+   }
+
+
+   /**
     * Show the configuration page of a tournament
     */
    public function showTournamentConfiguration(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response

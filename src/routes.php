@@ -102,6 +102,10 @@ return function (\Slim\App $app)
          $tgrp->post('/setstatus', [TournamentSettingsController::class, 'changeTournamentStatus'])->setName('update_tournament_status')
             ->add( $policyGuard->for(TournamentAction::TransitionState));
 
+         /* delete an tournament */
+         $tgrp->get('/delete', [TournamentSettingsController::class, 'deleteTournament'])->setName('tournament.delete')
+            ->add( $policyGuard->for(TournamentAction::DeleteTournament));
+
          /* tournament configuration pages */
          $tgrp->group('/configure', function (RouteCollectorProxy $tcfg) use ( $policyGuard, $navGuard)
          {

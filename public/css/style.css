@@ -94,7 +94,7 @@ div#content {
   padding: 0.35rem 0.9rem;
   color: #555;
   border-radius: 0.3rem;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.3s, color 0.3s;
 }
 
 #pagemenu .nav-level-2 a:hover {
@@ -119,7 +119,7 @@ div#content {
 #pagemenu .nav-level-3 a {
   color: #555;
   border-radius: 0.3rem;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.3s, color 0.3s;
 }
 
 #pagemenu .nav-level-3 a:hover {
@@ -211,7 +211,7 @@ nav.breadcrumbs ol li:last-child {
 .status-box ul li a {
   text-decoration: none;
   color: #667eea;
-  transition: color 0.2s;
+  transition: color 0.3s;
 }
 
 .status-box ul li a:hover {
@@ -273,7 +273,7 @@ nav.user-menu h2 {
   font-size: 0.95rem;
   cursor: pointer;
   color: #333;
-  transition: background 0.2s ease;
+  transition: background 0.3s, color 0.3s;
   line-height: 1.2; /* verhindert zusätzliche Höhe */
 }
 
@@ -301,7 +301,7 @@ nav.user-menu h2 {
   text-decoration: none;
   color: #333;
   border-radius: 4px;
-  transition: background 0.2s ease;
+  transition: background 0.3s, color 0.3s;
 }
 
 .user-menu-dropdown a:hover {
@@ -335,7 +335,7 @@ nav.user-menu:hover .user-menu-dropdown,
   text-align: center;
   text-decoration: none;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.3s, box-shadow 0.3s, color 0.3s;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -420,7 +420,7 @@ table.entry-list td a {
   text-decoration: none;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background 0.2s;
+  transition: background 0.3s, color 0.3s;
 }
 
 table.entry-list td a:hover {
@@ -483,7 +483,7 @@ button {
    border: 1px solid #ccc;
    border-radius: 6px;
    padding: 0.5rem 1rem;
-   transition: background 0.2s, color 0.2s;
+   transition: background 0.3s, color 0.3s;
 }
 
 input[type="submit"]:enabled,
@@ -543,13 +543,22 @@ textarea {
   border-radius: 6px;
   padding: 0.5rem 1rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.3s, color 0.3s;
   font-size: 0.9rem;
   text-decoration: none;
 }
 
 .form-btn:hover {
   background-color: #e0e0e0;
+}
+
+a.form-btn.disabled,
+input[type="submit"].disabled,
+input[type="submit"][disabled] button.disabled,
+button[disabled] {
+   cursor: not-allowed;
+   opacity: 0.5;
+   pointer-events: none;
 }
 
 /* Status Position*/
@@ -595,7 +604,7 @@ textarea {
   background: #f0f0f0;
   color: #333;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.3s, color 0.3s;
 }
 
 .tournament-status input[type="submit"]:hover {
@@ -640,4 +649,37 @@ p.ok, span.ok {
    padding: 0.75rem 1rem;
    border-radius: 4px;
    margin-bottom: 1rem;
+}
+
+dl.button-list {
+   padding: 1rem;
+}
+
+dl.button-list dt
+{
+   display:block;
+   max-width: 20em;
+   float: right;
+   clear: right;
+}
+
+dl.button-list dd
+{
+   margin:0;
+}
+
+/* buttons that trigger destructive actions */
+a.form-btn.danger,
+input[type="submit"].danger,
+button.danger {
+   color: #D73A49;
+   font-weight: bold;
+}
+
+a.form-btn.danger:hover,
+input[type="submit"].danger:hover,
+button.danger:hover {
+   background-color: #D73A49;
+   border-color: #A71D2A;
+   color: white;
 }
