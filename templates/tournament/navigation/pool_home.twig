@@ -4,25 +4,25 @@
 {% set route_parameters = route_context.args|merge({'pool': pool.getName()}) %}
 
 {% include 'base/header.twig' with {
-  'active_page': 'show_pool',
+  'active_page': 'tournaments.categories.pools.show',
   'css': ['match.css']
 } %}
 
 <section class="pool_match_list">
   <h2>Kämpfe - Pool {{pool.getName()}}</h2>
   <nav id="pool_match_nav" class="match_nav">
-    {{part.printMatchLinks(pool.getMatchList(), route_parameters, 'show_pool_match')}}
+    {{part.printMatchLinks(pool.getMatchList(), route_parameters, 'tournaments.categories.pools.matches.show')}}
   </nav>
   {% if error -%}
   <p class="error">{{ error }}</p>
   {%- endif %}
   {% if pool.needsDecisionRound() -%}
-  <form method="post" action="{{url_for('add_pool_tiebreak', route_parameters)}}" class="pool_control" id="tie_break_match_add">
+  <form method="post" action="{{url_for('tournaments.categories.pools.decision.add', route_parameters)}}" class="pool_control" id="tie_break_match_add">
     <button>Entscheidungsrunde hinzufügen</button>
   </form>
   {% endif %}
   {% if pool.getCurrentDecisionRound() -%}
-  <form method="post" action="{{url_for('delete_pool_tiebreak', route_parameters|merge({'decision_round': pool.getCurrentDecisionRound()})) }}" class="pool_control"
+  <form method="post" action="{{url_for('tournaments.categories.pools.decision.delete', route_parameters|merge({'decision_round': pool.getCurrentDecisionRound()})) }}" class="pool_control"
     id="tie_break_match_delete">
     <button>Letzte Entscheidungsrunde löschen</button>
   </form>

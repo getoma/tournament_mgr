@@ -182,7 +182,7 @@ class TournamentTreeController
       }
       else
       {
-         return $this->prgService->redirect($request, $response, 'show_pool', $args, 'tie_break_added');
+         return $this->prgService->redirect($request, $response, 'tournaments.categories.pools.show', $args, 'tie_break_added');
       }
    }
 
@@ -235,7 +235,7 @@ class TournamentTreeController
       }
       else
       {
-         return $this->prgService->redirect($request, $response, 'show_pool', $args, 'tie_break_deleted');
+         return $this->prgService->redirect($request, $response, 'tournaments.categories.pools.show', $args, 'tie_break_deleted');
       }
    }
 
@@ -247,7 +247,7 @@ class TournamentTreeController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->structureLoadService->resetMatchRecords($ctx->category);
-      return $this->prgService->redirect($request, $response, 'show_category_home', $args, 'records_deleted');
+      return $this->prgService->redirect($request, $response, 'tournaments.categories.show', $args, 'records_deleted');
    }
 
    /**
@@ -258,7 +258,7 @@ class TournamentTreeController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->structureLoadService->populate($ctx->category);
-      return $this->prgService->redirect($request, $response, 'show_category_home', $args, 'repopulated');
+      return $this->prgService->redirect($request, $response, 'tournaments.categories.show', $args, 'repopulated');
    }
 
    public function showMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response

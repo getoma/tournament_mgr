@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <title>{% block title %}Tournament powered by Slim{% endblock %}</title>
-  <link rel="stylesheet" href="{{url_for('home')}}css/style.css">
+  <link rel="stylesheet" href="{{url_for('tournaments.index')}}css/style.css">
   {% for file in css -%}
-  <link rel="stylesheet" href="{{url_for('home')}}css/{{file}}">
+  <link rel="stylesheet" href="{{url_for('tournaments.index')}}css/{{file}}">
   {%- endfor %}
 </head>
 
@@ -18,11 +18,11 @@
       {% if auth_context.isAuthenticated() -%}
       <h2 class="user-menu-btn">👤 {{ auth_context.user.display_name }} ▼</h2>
       <ul class="user-menu-dropdown">
-        <li><a href="{{url_for('user_account')}}">Account</a></li>
-        <li><a href="{{url_for('logout')}}">Logout</a></li>
+        <li><a href="{{url_for('account.show')}}">Account</a></li>
+        <li><a href="{{url_for('auth.logout')}}">Logout</a></li>
       </ul>
       {%-else-%}
-      <a href="{{url_for('login')}}" class="btn-login">Login</a>
+      <a href="{{url_for('auth.login.form')}}" class="btn-login">Login</a>
       {%-endif%}
     </nav>
   </header>

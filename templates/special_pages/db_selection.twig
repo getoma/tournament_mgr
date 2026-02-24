@@ -2,14 +2,14 @@
 
 {% include 'base/header.twig' with {
   'heading': 'Datenbank-Version anpassen',
-  'active_page': 'show_db_migrate'
+  'active_page': 'dbmigration.show'
 }%}
 
 {% if message is not empty %}
 <pre>{{message}}</pre>
 {% endif %}
 
-<form action="{{url_for('do_db_migrate')}}" method="post">
+<form action="{{url_for('dbmigration.update')}}" method="post">
   {{ form.select('version', 'DB-Version', versions, current, required=true) }}
   {{ form.submit('Aktualisieren')}}
 </form>

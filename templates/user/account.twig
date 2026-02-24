@@ -11,7 +11,7 @@
 {% if errors %}
 <p class="error">Daten konnten nicht übernommen werden!</p>
 {% endif %}
-<form method="post" action="{{ url_for('user_account_post') }}">
+<form method="post" action="{{ url_for('account.update') }}">
   <p class="info">
     E-Mail: <span>{{user.email}}</span>
   </p>

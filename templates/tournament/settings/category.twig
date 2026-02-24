@@ -1,13 +1,13 @@
 {% import 'base/form.twig' as form %}
 
 {% include 'base/header.twig' with {
-  'active_page': navigation_key|default('show_category_cfg')
+  'active_page': 'tournaments.categories.edit'
 } %}
 
 <section class="form-box">
 <h2>{{category.name}} - Konfiguration</h2>
 {% if prg_message %}<p class="ok">Daten übernommen und Turnierbaum neu generiert!</p>{% endif -%}
-<form action="{{url_for('update_category_cfg', route_context.args)}}" method="post">
+<form action="{{url_for('tournaments.categories.update', route_context.args)}}" method="post">
   {% set isActive = policy.isActionAllowed('ManageSetup') -%}
   {{ form.select('mode', 'Modus', enum_options(category_modes), prev.mode ?? category.mode.value, errors['mode'], required=true, active=isActive) }}
   {{ form.input('number', 'num_rounds', 'Anzahl KO-Runden', prev.num_rounds ?? category.config.num_rounds, errors['num_rounds'], {'min':2, 'max': 10}, active=isActive) }}

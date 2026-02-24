@@ -1,9 +1,9 @@
 {% import 'base/match.twig' as part %}
 
 {% if type == 'ko' %}
-{% set update_route, get_route = 'update_ko_match', 'show_ko_match' %}
+{% set update_route, get_route = 'tournaments.categories.ko.matches.update', 'tournaments.categories.ko.matches.show' %}
 {% else %}
-{% set update_route, get_route = 'update_pool_match', 'show_pool_match' %}
+{% set update_route, get_route = 'tournaments.categories.pools.matches.update', 'tournaments.categories.pools.matches.show' %}
 {% endif %}
 
 {% include 'base/header.twig' with {

@@ -63,7 +63,7 @@ class UserManagementController
          $this->repo->saveUser($user);
 
          // forward to user details
-         return $this->prgService->redirect($request, $response, 'show_user', ['userId' => $user->id], 'created');
+         return $this->prgService->redirect($request, $response, 'users.show', ['userId' => $user->id], 'created');
       }
       else
       {
@@ -116,9 +116,9 @@ class UserManagementController
          {
             $uri = $request->getUri();
 
-            // get the url for the pw_reset route, with token and email as GET parameters
+            // get the url for the password reset route, with token and email as GET parameters
             $resetUrl = RouteContext::fromRequest($request)->getRouteParser()
-               ->fullUrlFor($uri, 'pw_reset', [], ['email' => $user->email, 'token' => $token]);
+               ->fullUrlFor($uri, 'auth.password.reset.form', [], ['email' => $user->email, 'token' => $token]);
 
             // build an application name from our uri
             $app_name = $uri->getHost() . \config::$BASE_PATH ?? '';
@@ -141,7 +141,7 @@ class UserManagementController
             $this->mailService->send($user->email, $subject, $bodyHtml);
 
             // redirect-to-GET
-            return $this->prgService->redirect($request, $response, 'show_user', $args, 'mail_sent');
+            return $this->prgService->redirect($request, $response, 'users.show', $args, 'mail_sent');
          }
       }
 
@@ -196,7 +196,7 @@ class UserManagementController
       if( !$user->is_active ) $this->repo->destroySessionsForUser($user->id);
 
       // done, redirect-to-GET
-      return $this->prgService->redirect($request, $response, 'show_user', $args, 'updated');
+      return $this->prgService->redirect($request, $response, 'users.show', $args, 'updated');
    }
 
    public function deleteUser(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
@@ -207,7 +207,7 @@ class UserManagementController
 
       $this->repo->deleteUser($user->id);
 
-      return $this->prgService->redirect($request, $response, 'list_users', $args, 'user_deleted');
+      return $this->prgService->redirect($request, $response, 'users.index', $args, 'user_deleted');
    }
 
 }

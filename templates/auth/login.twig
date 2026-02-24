@@ -6,7 +6,7 @@
 <p class="error">{{ error }}</p>
 {% endif %}
 
-<form method="post" action="{{ url_for('login') }}">
+<form method="post" action="{{ url_for('auth.login.attempt') }}">
   <p>
     <label>E-Mail: <input type="text" name="email" value="{{email}}" required></label>
   </p>
@@ -15,7 +15,7 @@
   </p>
   <p>
     <button type="submit">Anmelden</button>
-    <a href="{{ url_for('pw_forgot') }}">Passwort vergessen?</a>
+    <a href="{{ url_for('auth.password.request.form') }}">Passwort vergessen?</a>
   </p>
 </form>
 

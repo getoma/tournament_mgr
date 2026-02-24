@@ -50,7 +50,7 @@ class AuthController
       if ($this->authService->login($email, $password))
       {
          /* prepare redirection of user after a successful login */
-         $redirect = $this->session->get('redirect_after_login') ?? RouteContext::fromRequest($request)->getRouteParser()->urlFor('home');
+         $redirect = $this->session->get('redirect_after_login') ?? RouteContext::fromRequest($request)->getRouteParser()->urlFor('tournaments.index');
          $this->session->remove('redirect_after_login');
 
          /* query the user instance to execute any login-hooks */
@@ -109,7 +109,7 @@ class AuthController
    {
       $this->authService->logout();
       return $response
-         ->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()->urlFor('home'))
+         ->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()->urlFor('tournaments.index'))
          ->withStatus(302);
    }
 
@@ -129,9 +129,9 @@ class AuthController
       {
          $uri = $request->getUri();
 
-         // get the url for the pw_reset route, with token and email as GET parameters
+         // get the url for the password reset form route, with token and email as GET parameters
          $resetUrl = RouteContext::fromRequest($request)->getRouteParser()
-            ->fullUrlFor($uri, 'pw_reset', [], ['email' => $email, 'token' => $token]);
+            ->fullUrlFor($uri, 'auth.password.reset.form', [], ['email' => $email, 'token' => $token]);
 
          // build an application name from our uri
          $app_name = $uri->getHost() . \config::$BASE_PATH ?? '';
