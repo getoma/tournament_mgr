@@ -53,101 +53,91 @@ return function (\Slim\App $app)
     */
 
    // create AuthGuard - enforce login on specific routes
-   $authGuard = \Base\Middleware\AuthMiddleware::create($app, 'login');
+   $authGuard = \Base\Middleware\AuthMiddleware::create($app, 'auth.login.form');
 
    // Add TournamentStatusGuardMiddleware - enforce tournament status based permissions
    $policyGuard = \Tournament\Middleware\TournamentPolicyGuardMiddleware::create($app);
-
-   // navigation key route handler, to inject a specific navigation identifier
-   $navGuard = \Tournament\Middleware\NavigationKeyMiddleware::create($app);
 
    /**********************
     * Route setup
     */
 
    /* login/logout/pw reset */
-   $app->get('/login',   [AuthController::class, 'showLogin'])->setName('login');
-   $app->post('/login',  [AuthController::class, 'login'])->setName('login_post');
-   $app->get('/logout',  [AuthController::class, 'logout'])->setName('logout');
-   $app->get('/forgot',  [AuthController::class, 'showForgotPassword'])->setName('pw_forgot');
-   $app->post('/forgot', [AuthController::class, 'requestPasswordReset'])->setName('pw_forgot_post');
-   $app->get('/reset',   [AuthController::class, 'showResetPassword'])->setName('pw_reset');
-   $app->post('/reset',  [AuthController::class, 'resetPassword'])->setName('pw_reset_post');
+   $app->get('/login',   [AuthController::class, 'showLogin'])->setName('auth.login.form');
+   $app->post('/login',  [AuthController::class, 'login'])->setName('auth.login.attempt');
+   $app->get('/logout',  [AuthController::class, 'logout'])->setName('auth.logout');
+   $app->get('/forgot',  [AuthController::class, 'showForgotPassword'])->setName('auth.password.request.form');
+   $app->post('/forgot', [AuthController::class, 'requestPasswordReset'])->setName('auth.password.request.send');
+   $app->get('/reset',   [AuthController::class, 'showResetPassword'])->setName('auth.password.reset.form');
+   $app->post('/reset',  [AuthController::class, 'resetPassword'])->setName('auth.password.reset.update');
 
    /***
     * Routes that need an active login
     */
-   $app->group('', function (RouteCollectorProxy $auth_grp) use ($policyGuard, $navGuard)
+   $app->group('', function (RouteCollectorProxy $auth_grp) use ($policyGuard)
    {
       /* navigation */
-      $auth_grp->get('/', [IndexPageController::class, 'index'])->setName('home');
+      $auth_grp->get('/', [IndexPageController::class, 'index'])->setName('tournaments.index');
 
       /* create tournament */
       $auth_grp->group('/tournament/create', function (RouteCollectorProxy $tgrp)
       {
-         $tgrp->get('', [TournamentSettingsController::class, 'showFormNewTournament'])->setName('new_tournament_form');
-         $tgrp->post('', [TournamentSettingsController::class, 'createTournament'])->setName('create_tournament');
+         $tgrp->get('', [TournamentSettingsController::class, 'showFormNewTournament'])->setName('tournaments.create');
+         $tgrp->post('', [TournamentSettingsController::class, 'createTournament'])->setName('tournaments.store');
       })
       ->add( $policyGuard->for(TournamentAction::CreateTournaments) );
 
       /**
        * Tournament routes
        */
-      $auth_grp->group('/tournament/{tournamentId:\d+}', function (RouteCollectorProxy $tgrp) use ($policyGuard, $navGuard)
+      $auth_grp->group('/tournament/{tournamentId:\d+}', function (RouteCollectorProxy $tgrp) use ($policyGuard)
       {
          /* tournament overview */
-         $tgrp->get('[/]',      [TournamentSettingsController::class, 'showTournament'])->setName('show_tournament');
+         $tgrp->get('[/]',      [TournamentSettingsController::class, 'showTournament'])->setName('tournaments.show');
 
          /* state transition */
-         $tgrp->post('/setstatus', [TournamentSettingsController::class, 'changeTournamentStatus'])->setName('update_tournament_status')
+         $tgrp->post('/setstatus', [TournamentSettingsController::class, 'changeTournamentStatus'])->setName('tournaments.setState')
             ->add( $policyGuard->for(TournamentAction::TransitionState));
 
          /* tournament configuration pages */
-         $tgrp->group('/configure', function (RouteCollectorProxy $tcfg) use ( $policyGuard, $navGuard)
+         $tgrp->group('/configure', function (RouteCollectorProxy $tcfg) use ( $policyGuard)
          {
-            $tcfg->get( '[/]', [TournamentSettingsController::class, 'showTournamentConfiguration'])->setName('show_tournament_config');
-            $tcfg->post('[/]', [TournamentSettingsController::class, 'updateTournament'])->setName('update_tournament_config')
+            $tcfg->get( '[/]', [TournamentSettingsController::class, 'showTournamentConfiguration'])->setName('tournaments.edit');
+            $tcfg->post('[/]', [TournamentSettingsController::class, 'updateTournament'])->setName('tournaments.update')
                ->add(  $policyGuard->for(TournamentAction::ManageDetails) );
 
-            $tcfg->post('/add_owner', [TournamentSettingsController::class, 'addOwner'])->setName('tournament.owner.add')
+            $tcfg->post('/add_owner', [TournamentSettingsController::class, 'addOwner'])->setName('tournaments.addOwner')
                ->add( $policyGuard->for(TournamentAction::ManageOwners));
-            $tcfg->post('/drop_owner', [TournamentSettingsController::class, 'removeOwner'])->setName('tournament.owner.remove')
+            $tcfg->post('/drop_owner', [TournamentSettingsController::class, 'removeOwner'])->setName('tournaments.removeOwner')
                ->add($policyGuard->for(TournamentAction::ManageOwners));
-
-            $tcfg->group('/category/{categoryId:\d+}', function (RouteCollectorProxy $ccfg) use ( $policyGuard)
-            {
-               $ccfg->get('',  [TournamentSettingsController::class, 'showCategoryConfiguration'])->setName('show_tournament_category_cfg');
-               $ccfg->post('', [TournamentSettingsController::class, 'updateCategoryConfiguration'])->setName('update_tournament_category_cfg')
-                  ->add( $policyGuard->for(TournamentAction::ManageSetup));
-            })
-            ->add( $navGuard->navkey('show_tournament_category_cfg') );
          });
 
          $tgrp->group('', function (RouteCollectorProxy $cgrp)
          {
-            $cgrp->post('/area/create', [TournamentSettingsController::class, 'createArea'])->setName('create_area');
-            $cgrp->post('/area/{areaId:\d+}/update', [TournamentSettingsController::class, 'updateArea'])->setName('update_area');
-            $cgrp->post('/area/{areaId:\d+}/delete', [TournamentSettingsController::class, 'deleteArea'])->setName('delete_area');
-            $cgrp->post('/category/create', [TournamentSettingsController::class, 'createCategory'])->setName('create_category');
-            $cgrp->post('/category/{categoryId:\d+}/update', [TournamentSettingsController::class, 'updateCategory'])->setName('update_category');
-            $cgrp->post('/category/{categoryId:\d+}/delete', [TournamentSettingsController::class, 'deleteCategory'])->setName('delete_category');
+            $cgrp->post('/area/create', [TournamentSettingsController::class, 'createArea'])->setName('tournaments.areas.store');
+            $cgrp->post('/area/{areaId:\d+}/update', [TournamentSettingsController::class, 'updateArea'])->setName('tournaments.areas.update');
+            $cgrp->post('/area/{areaId:\d+}/delete', [TournamentSettingsController::class, 'deleteArea'])->setName('tournaments.areas.delete');
+
+            $cgrp->post('/category/create', [TournamentSettingsController::class, 'createCategory'])->setName('tournaments.categories.store');
+            $cgrp->post('/category/{categoryId:\d+}/update', [TournamentSettingsController::class, 'updateCategory'])->setName('tournaments.categories.update');
+            $cgrp->post('/category/{categoryId:\d+}/delete', [TournamentSettingsController::class, 'deleteCategory'])->setName('tournaments.categories.delete');
          }
          )->add( $policyGuard->for(TournamentAction::ManageSetup) );
 
          /* participants */
-         $tgrp->get('/participants[/]', [ParticipantsDataController::class, 'showParticipantList'])->setName('show_participant_list');
-         $tgrp->get('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'showParticipant'])->setName('show_participant');
-         $tgrp->get('/participants/add', [RedirectHandler::class, 'show_participant_list']);
-         $tgrp->get('/participants/upload', [RedirectHandler::class, 'show_participant_list']);
+         $tgrp->get('/participants[/]', [ParticipantsDataController::class, 'showParticipantList'])->setName('tournaments.participants.index');
+         $tgrp->get('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'showParticipant'])->setName('tournaments.participants.show');
+         $tgrp->get('/participants/add', [RedirectHandler::class, 'tournaments.participants.index']);
+         $tgrp->get('/participants/upload', [RedirectHandler::class, 'tournaments.participants.index']);
          $tgrp->group('', function (RouteCollectorProxy $pgrp)
          {
-            $pgrp->post('/participants', [ParticipantsDataController::class, 'updateParticipantList'])->setName('update_participant_list');
-            $pgrp->post('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'updateParticipant'])->setName('update_participant');
-            $pgrp->post('/participants/{participantId:\d+}/delete', [ParticipantsDataController::class, 'deleteParticipant'])->setName('delete_participant');
-            $pgrp->post('/participants/add',    [ParticipantsDataController::class, 'addParticipants'])->setName('add_participants');
-            $pgrp->post('/participants/upload', [ParticipantsDataController::class, 'uploadParticipantFile'])->setName('upload_participants');
-            $pgrp->get('/participants/upload/confirm', [ParticipantsDataController::class, 'confirmUpload'])->setName('upload_participants_confirm');
-            $pgrp->post('/participants/upload/confirm', [ParticipantsDataController::class, 'confirmUpload'])->setName('upload_participants_confirm_update');
+            $pgrp->post('/participants', [ParticipantsDataController::class, 'updateParticipantList'])->setName('tournaments.participants.bulk.update');
+            $pgrp->post('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'updateParticipant'])->setName('tournaments.participants.update');
+            $pgrp->post('/participants/{participantId:\d+}/delete', [ParticipantsDataController::class, 'deleteParticipant'])->setName('tournaments.participants.delete');
+            $pgrp->post('/participants/add',    [ParticipantsDataController::class, 'addParticipants'])->setName('tournaments.participants.bulk.store');
+            $pgrp->post('/participants/upload', [ParticipantsDataController::class, 'uploadParticipantFile'])->setName('tournaments.participants.import.parse');
+            $pgrp->get('/participants/upload/confirm', [ParticipantsDataController::class, 'confirmUpload'])->setName('tournaments.participants.import.preview');
+            $pgrp->post('/participants/upload/confirm', [ParticipantsDataController::class, 'confirmUpload'])->setName('tournaments.participants.import.commit');
          }
          )->add( $policyGuard->for(TournamentAction::ManageParticipants) );
 
@@ -155,34 +145,34 @@ return function (\Slim\App $app)
          $tgrp->group('/category/{categoryId:\d+}', function (RouteCollectorProxy $cgrp) use ($policyGuard)
          {
             /* category management */
-            $cgrp->get('/configure', [TournamentSettingsController::class, 'showCategoryConfiguration'])->setName('show_category_cfg');
-            $cgrp->post('/configure', [TournamentSettingsController::class, 'updateCategoryConfiguration'])->setName('update_category_cfg')
+            $cgrp->get('/configure', [TournamentSettingsController::class, 'showCategoryConfiguration'])->setName('tournaments.categories.edit');
+            $cgrp->post('/configure', [TournamentSettingsController::class, 'updateCategoryConfiguration'])->setName('tournaments.categories.update')
                ->add($policyGuard->for(TournamentAction::ManageSetup));
 
-            $cgrp->post('/repopulate', [TournamentTreeController::class, 'repopulate'])->setName('repopulate_category')
+            $cgrp->post('/repopulate', [TournamentTreeController::class, 'repopulate'])->setName('tournaments.categories.shuffleParticipants')
                ->add($policyGuard->for(TournamentAction::ManageSetup));
 
             /* Tournament tree navigation */
-            $cgrp->get('/category', [TournamentTreeController::class, 'showCategoryHome'])->setName('show_category_home');
-            $cgrp->get('/pool', [TournamentTreeController::class, 'showCategoryPool'])->setName('show_category_pools');
-            $cgrp->get('/pool/{pool}', [TournamentTreeController::class, 'showPool'])->setName('show_pool');
-            $cgrp->get('/area/ko/{chunk}', [TournamentTreeController::class, 'showKoArea'])->setName('show_ko_area');
-            $cgrp->get('/ko', [TournamentTreeController::class, 'showCategorytree'])->setName('show_category_ko');
+            $cgrp->get('/category', [TournamentTreeController::class, 'showCategoryHome'])->setName('tournaments.categories.show');
+            $cgrp->get('/pool', [TournamentTreeController::class, 'showCategoryPool'])->setName('tournaments.categories.pools.index');
+            $cgrp->get('/pool/{pool}', [TournamentTreeController::class, 'showPool'])->setName('tournaments.categories.pools.show');
+            $cgrp->get('/area/ko/{chunk}', [TournamentTreeController::class, 'showKoArea'])->setName('tournaments.categories.ko.chunks.show');
+            $cgrp->get('/ko', [TournamentTreeController::class, 'showCategorytree'])->setName('tournaments.categories.ko.show');
 
             /* Match browsing */
-            $cgrp->get('/ko/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('show_ko_match');
-            $cgrp->get('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('show_pool_match');
-            $cgrp->get('/pool/{pool}/addTieBreak', [RedirectHandler::class, 'show_pool']);
-            $cgrp->get('/pool/{pool}/delete/{decision_round}', [RedirectHandler::class, 'show_pool']);
+            $cgrp->get('/ko/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('tournaments.categories.ko.matches.show');
+            $cgrp->get('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('tournaments.categories.pools.matches.show');
+            $cgrp->get('/pool/{pool}/addTieBreak', [RedirectHandler::class, 'tournaments.categories.pools.show']);
+            $cgrp->get('/pool/{pool}/delete/{decision_round}', [RedirectHandler::class, 'tournaments.categories.pools.show']);
 
             /* Match Result recording */
             $cgrp->group('', function (RouteCollectorProxy $mgrp) use ($policyGuard)
             {
-               $mgrp->post('/ko/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('update_ko_match');
-               $mgrp->post('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('update_pool_match');
-               $mgrp->post('/pool/{pool}/addTieBreak', [TournamentTreeController::class, 'addPoolTieBreak'])->setName('add_pool_tiebreak');
-               $mgrp->post('/pool/{pool}/delete/{decision_round}', [TournamentTreeController::class, 'deletePoolDecisionRound'])->setName('delete_pool_tiebreak');
-               $mgrp->post('resetResults', [TournamentTreeController::class, 'resetMatchRecords'])->setName('reset_category_results');
+               $mgrp->post('/ko/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('tournaments.categories.ko.matches.update');
+               $mgrp->post('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('tournaments.categories.pools.matches.update');
+               $mgrp->post('/pool/{pool}/addTieBreak', [TournamentTreeController::class, 'addPoolTieBreak'])->setName('tournaments.categories.pools.decision.add');
+               $mgrp->post('/pool/{pool}/delete/{decision_round}', [TournamentTreeController::class, 'deletePoolDecisionRound'])->setName('tournaments.categories.pools.decision.delete');
+               $mgrp->post('resetResults', [TournamentTreeController::class, 'resetMatchRecords'])->setName('tournaments.categories.resetMatchRecords');
             })
             ->add($policyGuard->for(TournamentAction::RecordResults));
          });
@@ -192,28 +182,28 @@ return function (\Slim\App $app)
       /* user management */
       $auth_grp->group('/users', function (RouteCollectorProxy $ugrp)
       {
-         $ugrp->get( '[/]',            [UserManagementController::class, 'listUsers'])->setName('list_users');
-         $ugrp->get( '/create',        [UserManagementController::class, 'showCreateUser'])->setName('show_create_user');
-         $ugrp->post('/create',        [UserManagementController::class, 'createUser'])->setName('do_create_user');
-         $ugrp->get( '/{userId:\d+}',  [UserManagementController::class, 'showUser'])->setName('show_user');
-         $ugrp->post('/{userId:\d+}',  [UserManagementController::class, 'updateUser'])->setName('update_user');
-         $ugrp->get( '/{userId:\d+}/delete', [UserManagementController::class, 'deleteUser'])->setName('delete_user');
-         $ugrp->get( '/{userId:\d+}/welcome_mail', [UserManagementController::class, 'sendNewUserMail'])->setName('welcome_user');
+         $ugrp->get( '[/]',            [UserManagementController::class, 'listUsers'])->setName('users.index');
+         $ugrp->get( '/create',        [UserManagementController::class, 'showCreateUser'])->setName('users.create');
+         $ugrp->post('/create',        [UserManagementController::class, 'createUser'])->setName('users.store');
+         $ugrp->get( '/{userId:\d+}',  [UserManagementController::class, 'showUser'])->setName('users.show');
+         $ugrp->post('/{userId:\d+}',  [UserManagementController::class, 'updateUser'])->setName('users.update');
+         $ugrp->get( '/{userId:\d+}/delete', [UserManagementController::class, 'deleteUser'])->setName('users.delete');
+         $ugrp->get( '/{userId:\d+}/welcome_mail', [UserManagementController::class, 'sendNewUserMail'])->setName('users.sendWelcome');
       })
       ->add($policyGuard->for(TournamentAction::ManageUsers));
 
       $auth_grp->group('/account', function (RouteCollectorProxy $agrp)
       {
-         $agrp->get('', [AccountController::class, 'showAccount'])->setName('user_account');
-         $agrp->post('', [AccountController::class, 'updateAccount'])->setName('user_account_post');
+         $agrp->get('', [AccountController::class, 'showAccount'])->setName('account.show');
+         $agrp->post('', [AccountController::class, 'updateAccount'])->setName('account.update');
       })
       ->add($policyGuard->for(TournamentAction::ManageAccount));
 
       /* db migration during development, only */
       if( config::$test_interfaces ?? false )
       {
-         $auth_grp->get('/dbmigrate', [TestController::class, 'showDbMigrationList'])->setName('show_db_migrate');
-         $auth_grp->post('/dbmigrate', [TestController::class, 'setDbMigration'])->setName('do_db_migrate');
+         $auth_grp->get('/dbmigrate', [TestController::class, 'showDbMigrationList'])->setName('dbmigration.show');
+         $auth_grp->post('/dbmigrate', [TestController::class, 'setDbMigration'])->setName('dbmigration.update');
       }
    })
    ->add($authGuard);

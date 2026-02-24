@@ -1,7 +1,7 @@
 {% import 'base/form.twig' as form %}
 
 {% include 'base/header.twig' with {
-  'active_page': 'list_users',
+  'active_page': 'users.index',
   'nav_entry_label': user.display_name
 }%}
 
@@ -20,7 +20,7 @@
   <p class="error">Fehler: {{ errors.error|default('Daten konnten nicht übernommen werden!') }}</p>
   {% if errors.policy %}<p class="error">{{ errors.policy }}</p>{%endif%}
   {% endif %}
-  <form method="post" action="{{ url_for('update_user', { 'userId': user.id }) }}">
+  <form method="post" action="{{ url_for('users.update', { 'userId': user.id }) }}">
     <p class="info">
       E-Mail: <span>{{user.email}}</span>
     </p>
@@ -35,9 +35,9 @@
       {% if form_active -%}
       <input type="submit" value="Speichern">
       {% if user.password_hash is empty -%}
-      <a class="form-btn" href="{{ url_for('welcome_user', {'userId': user.id}) }}">Willkommens-Mail schicken</a>
+      <a class="form-btn" href="{{ url_for('users.sendWelcome', {'userId': user.id}) }}">Willkommens-Mail schicken</a>
       {%- endif %}
-      <a class="form-btn" href="{{ url_for('delete_user', {'userId': user.id}) }}"
+      <a class="form-btn" href="{{ url_for('users.delete', {'userId': user.id}) }}"
          onclick="return confirm('{{user.display_name}} wirklich löschen?');">Nutzer löschen</a>
       {%- endif %}
     </p>

@@ -1,7 +1,7 @@
 {% import 'base/form.twig' as form %}
 
 {% include 'base/header.twig' with {
-  'active_page': 'list_users'
+  'active_page': 'users.index'
 }%}
 
 <section>
@@ -24,11 +24,11 @@
       <td>{{user.roles|map(r => r.value)|join(', ')|humanize}}</td>
       <td>{% if user.last_login %}{{user.last_login|date('d.m.Y H:i')}}{% else %}---{% endif %}</td>
       <td>{% set buttons_active = policy.canModifyUser(user) -%}
-          <a href="{{ url_for('show_user', {'userId': user.id}) }}" class="crud">
+          <a href="{{ url_for('users.show', {'userId': user.id}) }}" class="crud">
             {%- if buttons_active %}Bearbeiten{% else %}Details anzeigen{% endif -%}
           </a>
           {% if buttons_active -%}
-            <a href="{{ url_for('delete_user', {'userId': user.id}) }}" class="crud"
+            <a href="{{ url_for('users.delete', {'userId': user.id}) }}" class="crud"
                onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</a>
           {%- endif %}
       </td>
@@ -55,9 +55,9 @@
         <td>{{user.display_name}}</td>
         <td>{{user.email}}</td>
       <td>{% set buttons_active = policy.canModifyUser(user) -%}
-          <a href="{{ url_for('show_user', {'userId': user.id}) }}">{%if buttons_active%}Bearbeiten{%else%}Details anzeigen{%endif%}</a>
+          <a href="{{ url_for('users.show', {'userId': user.id}) }}">{%if buttons_active%}Bearbeiten{%else%}Details anzeigen{%endif%}</a>
           {% if buttons_active -%}
-          <a href="{{ url_for('delete_user', {'userId': user.id}) }}"
+          <a href="{{ url_for('users.delete', {'userId': user.id}) }}"
              onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</a>
           {%- endif %}
       </td>
@@ -69,7 +69,7 @@
 {% endif %}
 
 <section>
-  <p><a class="form-btn" href="{{url_for('show_create_user')}}">Neuen Benutzer anlegen</a></p>
+  <p><a class="form-btn" href="{{url_for('users.create')}}">Neuen Benutzer anlegen</a></p>
 </section>
 
 {% include 'base/footer.twig' %}

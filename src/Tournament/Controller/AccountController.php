@@ -66,7 +66,7 @@ class AccountController
       {
          $user->updateFromArray($data);
          $this->userRepository->saveUser($user);
-         return $this->prgService->redirect($request, $response, 'user_account', []);
+         return $this->prgService->redirect($request, $response, 'account.show', []);
       }
       else
       {

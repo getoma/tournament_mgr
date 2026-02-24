@@ -1,4 +1,4 @@
-{% include 'base/header.twig' with { 'active_page': 'home' } %}
+{% include 'base/header.twig' with { 'active_page': 'tournaments.index' } %}
 
 <ul class="tournament_list_by_state">
   {% for status, tournaments in tournaments_by_state %}
@@ -16,7 +16,7 @@
       <tr>
         <td>{{ tournament.date }}</td>
         <td>
-          <a href="{{ url_for('show_tournament', { tournamentId: tournament.id }) }}">
+          <a href="{{ url_for('tournaments.show', { tournamentId: tournament.id }) }}">
             {{ tournament.name }}
           </a>
         </td>
@@ -29,7 +29,7 @@
 
 {%- if policy.isActionAllowed('CreateTournaments') %}
 <section>
-  <p><a class="form-btn" href="{{url_for('new_tournament_form')}}">Neues Turnier anlegen</a></p>
+  <p><a class="form-btn" href="{{url_for('tournaments.create')}}">Neues Turnier anlegen</a></p>
 </section>
 {%- endif -%}
 

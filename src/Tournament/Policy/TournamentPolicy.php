@@ -174,6 +174,6 @@ final class TournamentPolicy
     */
    public function hasTournamentAccess(Tournament $tournament): bool
    {
-      return $tournament->owners->contains($this->auth_context->user);
+      return $this->auth_context->hasRole(Role::ADMIN) || $tournament->owners->contains($this->auth_context->user);
    }
 }

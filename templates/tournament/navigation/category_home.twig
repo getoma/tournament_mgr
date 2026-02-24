@@ -2,21 +2,21 @@
 {% import 'base/match.twig' as part %}
 
 {% include 'base/header.twig' with {
-  'active_page': 'show_category_home'
+  'active_page': 'tournaments.categories.show'
 } %}
 
 <nav class="nav-cards">
 {% if pools is not empty %}
-  <a href="{{ url_for('show_category_pools', route_context.args) }}" class="card">
+  <a href="{{ url_for('tournaments.categories.pools.index', route_context.args) }}" class="card">
     <h3>Pools</h3>
   </a>
 {% endif %}
 {% if ko is defined %}
-  <a href="{{ url_for('show_category_ko', route_context.args) }}" class="card">
+  <a href="{{ url_for('tournaments.categories.ko.show', route_context.args) }}" class="card">
     <h3>KO-Baum</h3>
   </a>
 {% endif %}
-  <a href="{{ url_for('show_category_cfg', route_context.args) }}" class="card">
+  <a href="{{ url_for('tournaments.categories.edit', route_context.args) }}" class="card">
     <h3>Konfiguration</h3>
   </a>
 </nav>
@@ -24,7 +24,7 @@
 {% if policy.isActionAllowed('RecordResults') %}
 <section>
   <h2>Test-Optionen</h2>
-  <form action="{{url_for('reset_category_results', route_context.args)}}" method="post">
+  <form action="{{url_for('tournaments.categories.resetMatchRecords', route_context.args)}}" method="post">
     <button type="submit">Aktuellen Turnierfortschritt löschen</button>
   </form>
 </section>

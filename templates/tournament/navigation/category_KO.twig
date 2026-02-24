@@ -2,7 +2,7 @@
 {% import 'base/match.twig' as part %}
 
 {% include 'base/header.twig' with {
-  'active_page': 'show_category_ko',
+  'active_page': 'tournaments.categories.ko.show',
   'css': ['tree.css']
 } %}
 
@@ -26,7 +26,7 @@
 
 {% if policy.isActionAllowed('ManageSetup') %}
 <section>
-<form action="{{url_for('repopulate_category', route_context.args)}}" method="post">
+<form action="{{url_for('tournaments.categories.shuffleParticipants', route_context.args)}}" method="post">
   <button type="submit">Teilnehmer neu verteilen</button>
 </form>
 </section>

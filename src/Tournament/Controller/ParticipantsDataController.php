@@ -166,7 +166,7 @@ class ParticipantsDataController
          $this->repo->setCategoryParticipants($category->id, $participantIds);
       }
 
-      return $this->prgService->redirect($request, $response, 'show_participant_list', $args, ['status' => 'updated']);
+      return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args, ['status' => 'updated']);
    }
 
    /**
@@ -214,7 +214,7 @@ class ParticipantsDataController
       // Process the uploaded file and import participants
       if ($import_ok )
       {
-         return $this->prgService->redirect($request, $response, 'show_participant_list', $args,
+         return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args,
             [ 'status'    => 'imported',
               'duplicates' => $import_report['duplicates']->column('id')
             ]
@@ -261,7 +261,7 @@ class ParticipantsDataController
             $this->storage->store($current_user->id, static::IMPORT_BUFFER_FILE, json_encode($parsed));
 
             return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-               ->urlFor('upload_participants_confirm', $args))
+               ->urlFor('tournaments.participants.import.preview', $args))
                ->withStatus(302);
          }
       }
@@ -281,7 +281,7 @@ class ParticipantsDataController
       if( !$json )
       {
          // there is no import ongoing right now, just re-direct to the participant list.
-         return $this->prgService->redirect($request,$response,'show_participant_list',$args,[]);
+         return $this->prgService->redirect($request,$response,'tournaments.participants.index',$args,[]);
       }
 
       /* try to parse it */
@@ -401,7 +401,7 @@ class ParticipantsDataController
 
          if( $import_ok )
          {
-            return $this->prgService->redirect($request, $response, 'show_participant_list', $args,
+            return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args,
                [ 'status'     => 'imported',
                  'duplicates' => $import_report['duplicates']->column('id')
                ]
@@ -438,7 +438,7 @@ class ParticipantsDataController
    {
       $current_user = $request->getAttribute('auth_context')->user;
       $this->storage->drop($current_user->id, static::IMPORT_BUFFER_FILE);
-      return $this->prgService->redirect($request, $response, 'show_participant_list', $args, false);
+      return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args, false);
    }
 
    /**
@@ -448,7 +448,7 @@ class ParticipantsDataController
    {
       if ($this->repo->deleteParticipant($request->getAttribute('route_context')->participant->id))
       {
-         return $this->prgService->redirect($request, $response, 'show_participant_list', $args, ['status' => 'deleted']);
+         return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args, ['status' => 'deleted']);
       }
       else
       {
@@ -525,7 +525,7 @@ class ParticipantsDataController
          // try to save
          if ($this->repo->saveParticipant($ctx->participant))
          {
-            return $this->prgService->redirect($request, $response, 'show_participant', $args, 'updated');
+            return $this->prgService->redirect($request, $response, 'tournaments.participants.show', $args, 'updated');
          }
          else
          {
