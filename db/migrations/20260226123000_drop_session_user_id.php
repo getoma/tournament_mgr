@@ -22,7 +22,7 @@ final class DropSessionUserId extends AbstractMigration
    {
       $this->table('sessions')
          ->addColumn('user_id', 'integer', ['signed' => false, 'after' => 'id'])
-         ->addForeignKey('user_id', 'users', 'id', ['delete' => 'CASCADE'])
+         ->addForeignKey('user_id', 'users', 'id', ['delete' => 'CASCADE', 'constraint' => 'session_user'])
          ->save();
 
       $this->table('users')

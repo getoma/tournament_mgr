@@ -20,6 +20,27 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
       return new static($data, $element_type);
    }
 
+   /**
+    * spawn a new object with the given content, skipping the offsetSet checks
+    */
+   protected function _spawn(iterable $data): static
+   {
+      $result = static::new([], $this->element_type);
+      $result->elements = $data;
+      return $result;
+   }
+
+   /**
+    * spawn a new ObjectCollection with the given content, skipping the offSet handling
+    * AND downgrading the class
+    */
+   protected function _downspawn(iterable $data): self
+   {
+      $result = self::new([], $this->element_type);
+      $result->elements = $data;
+      return $result;
+   }
+
    public function __construct(iterable $data = [], protected $element_type = null)
    {
       $this->element_type ??= static::DEFAULT_ELEMENTS_TYPE;
@@ -32,9 +53,7 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
 
    public function copy(): static
    {
-      $result = static::new([], $this->element_type);
-      $result->elements = $this->elements;
-      return $result;
+      return $this->_spawn($this->elements);
    }
 
    public function keyExists(int|string $key): bool
@@ -151,23 +170,19 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
 
    public function reverse(): static
    {
-      return static::new(array_reverse($this->elements));
+      return $this->_spawn(array_reverse($this->elements));
    }
 
    public function column_map(string $attr): self
    {
-      $result = self::new([], $this->element_type);
       $keys = array_column($this->elements, $attr);
-      $result->elements = array_combine($keys, $this->elements);
-      return $result;
+      return $this->_downspawn(array_combine($keys, $this->elements));
    }
 
    public function map_keys(callable $callback): self
    {
-      $result = self::new([], $this->element_type);
       $keys = array_map($callback, $this->elements);
-      $result->elements = array_combine($keys, $this->elements);
-      return $result;
+      return $this->_downspawn(array_combine($keys, $this->elements));
    }
 
    public function map(callable $callback): array
@@ -177,12 +192,12 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
 
    public function slice(int $offset, ?int $length = null): static
    {
-      return new static(array_slice($this->elements, $offset, $length), $this->element_type);
+      return $this->_spawn(array_slice($this->elements, $offset, $length));
    }
 
    public function filter(callable $callback): static
    {
-      return new static(array_filter($this->elements, $callback), $this->element_type);
+      return $this->_spawn(array_filter($this->elements, $callback));
    }
 
    public function any(callable $callback): bool
@@ -212,7 +227,7 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
 
    public function merge(iterable $other): static
    {
-      return static::new(array_merge($this->elements, $other), $this->element_type);
+      return $this->new(array_merge($this->elements, $other));
    }
 
    /**

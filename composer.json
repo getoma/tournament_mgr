@@ -9,7 +9,9 @@
         "respect/validation": "^2.4",
         "phpmailer/phpmailer": "^6.10",
         "robmorgan/phinx": "^0.16.10",
-        "phpoffice/phpspreadsheet": "^5.4"
+        "phpoffice/phpspreadsheet": "^5.4",
+        "skleeschulte/base32": "^0.0.2",
+        "nesbot/carbon": "^3.11"
     },
 
     "autoload": {

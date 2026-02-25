@@ -336,11 +336,11 @@ class PoolTest extends TestCase
       $this->assertEquals(1, $spy->count('generate'));
       $calls = $spy->callsOf('generate')[0];
       [$pl, $str] = $calls['args'];
-      $this->assertEquals($decision_participants, $pl);
+      $this->assertEquals($decision_participants->values(), $pl->values());
       $this->assertSame($this->strucHdl, $str);
 
       $this->assertEquals($decision_matches, $decision_nodes);
       $this->assertNotNull($dut->getCurrentDecisionRound());
-      $this->assertEquals($decision_matches, $dut->getDecisionMatches());
+      $this->assertEquals($decision_matches->values(), $dut->getDecisionMatches()->values());
    }
 }

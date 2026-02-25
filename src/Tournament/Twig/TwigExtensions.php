@@ -3,6 +3,8 @@
 namespace Tournament\Twig;
 
 use Twig\TwigFilter;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 
 class TwigExtensions extends \Twig\Extension\AbstractExtension
 {
@@ -10,6 +12,8 @@ class TwigExtensions extends \Twig\Extension\AbstractExtension
    {
       return [
          new TwigFilter('humanize', [$this, 'humanize']),
+         new TwigFilter('time_delta', [$this, 'timeDelta']),
+         new TwigFilter('split_code', [$this, 'splitCode']),
       ];
    }
 
@@ -34,5 +38,22 @@ class TwigExtensions extends \Twig\Extension\AbstractExtension
          $result[$case->value] = ucwords($case->value);
       }
       return $result;
+   }
+
+   public function timeDelta(\DateTimeInterface $until, array $options = []): string
+   {
+      $carbon = \Carbon\Carbon::instance($until)->locale('de');
+
+      return $carbon->diffForHumans($options + [
+         'parts'   => 2,
+         'minimumUnit' => 'min',
+         'short'   => true,
+         'options' => Carbon::JUST_NOW,
+      ]);
+   }
+
+   public function splitCode(string $code, int $cluster = 4): string
+   {
+      return implode('-', str_split($code, $cluster));
    }
 }

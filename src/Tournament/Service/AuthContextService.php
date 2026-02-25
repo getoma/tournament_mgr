@@ -2,18 +2,19 @@
 
 namespace Tournament\Service;
 
-use Psr\Http\Message\ServerRequestInterface;
-
-use Tournament\Model\User\AuthContext;
-
 use Base\Service\AuthService;
+use Tournament\Repository\TournamentRepository;
 
 /**
  * Service to create an authorization context for a request
  */
 class AuthContextService
 {
-   public function __construct(private AuthService $authService)
+   public function __construct(
+      private AuthService $authService,
+      private AreaDeviceAccountService $deviceService,
+      private TournamentRepository $tournamentRepo
+   )
    {
    }
 
@@ -23,6 +24,12 @@ class AuthContextService
       {
          $currentUser = $this->authService->getCurrentUser();
          $ctx = AuthContext::as_user($currentUser);
+      }
+      else if ($this->deviceService->isDeviceAccount() )
+      {
+         $area = $this->deviceService->getArea();
+         $tournament = $this->tournamentRepo->getTournamentByAreaId($area->id);
+         $ctx = AuthContext::as_device($tournament, $area);
       }
       else
       {

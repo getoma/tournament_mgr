@@ -73,6 +73,11 @@ class Navigation
                [  'label' => 'Konfiguration',
                   'route' => 'tournaments.edit',
                ],
+
+               [  'label' => 'Geräte-Zugänge',
+                  'route' => 'tournaments.areas.devices.index',
+                  'visible_if' => $policy->isActionAllowed(TournamentAction::ManageAreaDevices)
+               ]
             ],
          ],
       ];

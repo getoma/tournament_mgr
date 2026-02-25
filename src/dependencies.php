@@ -7,7 +7,7 @@ return function (DI\Container $container)
    // configure database connection
    $container->set(PDO::class, function ()
    {
-      return new PDO(
+      $pdo = new PDO(
          sprintf('mysql:dbname=%s;host=%s;charset=utf8', config::$DB_CONNECTION['db'], config::$DB_CONNECTION['server']),
          config::$DB_CONNECTION['user'],
          config::$DB_CONNECTION['pw'],
@@ -17,6 +17,8 @@ return function (DI\Container $container)
             PDO::ATTR_EMULATE_PREPARES => false,
          ]
       );
+      $pdo->exec("SET time_zone = '+00:00'");
+      return $pdo;
    });
 
    // configure Twig
@@ -40,6 +42,7 @@ return function (DI\Container $container)
 
       $twig->getEnvironment()->addGlobal('debug', config::$debug ?? false);
       $twig->getEnvironment()->addGlobal('test_interfaces', config::$test_interfaces ?? false);
+      $twig->getEnvironment()->addGlobal('timezone', new \DateTimeZone(config::$DEFAULT_TIME_ZONE ?? 'UTC'));
 
       return $twig;
    });

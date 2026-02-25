@@ -8,6 +8,7 @@ use Tournament\Controller\AccountController;
 use Tournament\Controller\TestController;
 use Tournament\Controller\TournamentTreeController;
 use Tournament\Controller\UserManagementController;
+use Tournament\Controller\AreaDeviceAuthController;
 
 use Tournament\Policy\TournamentAction;
 
@@ -77,7 +78,7 @@ return function (\Slim\App $app)
    $app->post('/reset',  [AuthController::class, 'resetPassword'])->setName('auth.password.reset.update');
 
    /***
-    * Routes that need an active login
+    * Routes that need an active user login
     */
    $app->group('', function (RouteCollectorProxy $auth_grp) use ($policyGuard)
    {
@@ -149,6 +150,16 @@ return function (\Slim\App $app)
          }
          )->add( $policyGuard->for(TournamentAction::ManageParticipants) );
 
+         /* area device account settings */
+         $tgrp->group('/areas/devices', function (RouteCollectorProxy $agrp)
+         {
+            $agrp->get('[/]', [AreaDeviceAuthController::class, 'showAreaDeviceStatus'])->setName('tournaments.areas.devices.index');
+            $agrp->post('/{areaId:\d+}/create_code', [AreaDeviceAuthController::class, 'createLoginCode'])->setName('tournaments.areas.devices.createLogin');
+            $agrp->post('/{areaId:\d+}/invalidate_code',[AreaDeviceAuthController::class, 'invalidateLoginCode'])->setName('tournaments.areas.devices.invalidateLogin');
+            $agrp->post('/{areaId:\d+}/disable',     [AreaDeviceAuthController::class, 'disableDevice'])->setName('tournaments.areas.devices.disable');
+         }
+         )->add( $policyGuard->for(TournamentAction::ManageAreaDevices) );
+
          /* category routes */
          $tgrp->group('/category/{categoryId:\d+}', function (RouteCollectorProxy $cgrp) use ($policyGuard)
          {
@@ -217,5 +228,19 @@ return function (\Slim\App $app)
       }
    })
    ->add($authGuard);
+
+   /**
+    * area device routes
+    */
+
+   /* device login via one-time-code */
+   $app->get('/device/login', [AreaDeviceAuthController::class, 'showLogin'])->setName('device.login.form');
+   $app->post('/device/login', [AreaDeviceAuthController::class, 'login'])->setName('device.login.attempt');
+   $app->get('/device/logout', [AreaDeviceAuthController::class, 'logout'])->setName('device.logout');
+
+   $app->group('/device', function (RouteCollectorProxy $device_grp) use ($policyGuard)
+   {
+      $device_grp->get('/dashboard', [TournamentTreeController::class, 'showAreaDashboard'])->setName('device.dashboard.show');
+   });
 };
 

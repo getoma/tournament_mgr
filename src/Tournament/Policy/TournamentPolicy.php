@@ -4,10 +4,11 @@ namespace Tournament\Policy;
 
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\Tournament\TournamentStatus;
-use Tournament\Model\User\AuthContext;
 use Tournament\Model\User\Role;
 use Tournament\Model\User\RoleCollection;
 use Tournament\Model\User\User;
+
+use Tournament\Service\AuthContext;
 use Tournament\Service\RouteArgsContext;
 
 /**
@@ -63,6 +64,12 @@ final class TournamentPolicy
             default => false
          },
 
+         TournamentAction::ManageAreaDevices => match($status)
+         {
+            TournamentStatus::Planned, TournamentStatus::Running => true,
+            default => false
+         },
+
          TournamentAction::RecordResults => match ($status)
          {
             /* actually record any match results */
@@ -107,6 +114,7 @@ final class TournamentPolicy
          case TournamentAction::ManageOwners:
          case TournamentAction::ManageSetup:
          case TournamentAction::ManageParticipants:
+         case TournamentAction::ManageAreaDevices:
          case TournamentAction::TransitionState:
          case TournamentAction::DeleteTournament:
             /* tournament specific actions: allowed if actual user with tournament ownership */
