@@ -14,6 +14,7 @@
   <p class="error">Daten konnten nicht übernommen werden!</p>
   {%- endif %}
   <form method="POST" action="{{ url_for('tournaments.participants.update', route_context.args) }}">
+    <input type="hidden" name="_METHOD" value="PATCH">
     {{ form.input('text', 'lastname', 'Nachname', prev.lastname ?? participant.lastname, errors.lastname, {'maxlength':100}, required=true) }}
     {{ form.input('text', 'firstname', 'Vorname', prev.firstname ?? participant.firstname, errors.firstname, {'maxlength':100}, required=true) }}
     {{ form.input('text', 'club', 'Verein/Verband', prev.club ?? participant.club, errors.club, {'maxlength':127}) }}
@@ -38,7 +39,7 @@
         {% if errors.categories %}<p class="error">{{errors.categories}}</p>{%endif%}
       </tbody>
     </table>
-    {{ form.submit('Speichern') }}
+    <button>Speichern</button>
   </form>
 </section>
 

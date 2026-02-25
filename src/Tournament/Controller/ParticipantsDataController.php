@@ -261,7 +261,7 @@ class ParticipantsDataController
             $this->storage->store($current_user->id, static::IMPORT_BUFFER_FILE, json_encode($parsed));
 
             return $response->withHeader('Location', RouteContext::fromRequest($request)->getRouteParser()
-               ->urlFor('tournaments.participants.import.preview', $args))
+               ->urlFor('tournaments.participants.import.show', $args))
                ->withStatus(302);
          }
       }
@@ -272,7 +272,7 @@ class ParticipantsDataController
    /**
     * confirm/adjust an upload of a file of participants
     */
-   public function confirmUpload(Request $request, Response $response, array $args)
+   public function handleImport(Request $request, Response $response, array $args)
    {
       $current_user = $request->getAttribute('auth_context')->user;
 
@@ -305,74 +305,60 @@ class ParticipantsDataController
       /* provide the category selection for the global category setting */
       $category_selection = ["" => "---"] + $categories->column('name', 'id');
 
-      if( $request->getMethod() === 'POST' )
+      /* get the import parsing parameters */
+      $data = $request->getMethod() === 'GET'? $request->getQueryParams() : $data = $request->getParsedBody();
+
+      /* for empty input, take over default values from import structure */
+      $data['start_row']  ??= $import['content_row'] + 1;
+      $data['column_map'] ??= array_combine(array_column($import['headers'], 'column'), array_keys($import['headers']));
+
+      /* validate input */
+      $unique_check = function($value)
       {
-         /* get the input */
-         $data = $request->getParsedBody();
+         $nonEmpty = array_filter($value);
+         return count($nonEmpty) === count(array_unique($nonEmpty));
+      };
+      $column_cross_check = function(string $global_value, array $columns, array $blocked)
+      {
+         // if a global value is set, no related column value shall be set
+         return !$global_value || !array_intersect($columns, $blocked);
+      };
 
-         /* check for abort action */
-         if( $data['action'] === 'abort' )
-         {
-            return $this->abortUpload($request, $response, $args);
-         }
+      $rules = [
+         'start_row'  => v::intVal()->min(1)->max(count($import['rows'])),
+         'club'       => v::optional(v::allOf(
+            v::stringType()->length(max: 100),
+            v::callback(fn($club) => $column_cross_check($club, $data['column_map'], ['club']))
+               ->setTemplate('Verband/Verein auch als Spalte gesetzt'),
+         )),
+         'category'   => v::optional(v::allOf(
+            v::intVal()->in(array_keys($category_selection)),
+            v::callback(fn($category) => $column_cross_check($category, $data['column_map'], $category_keys))
+               ->setTemplate('Globale Kategorie UND spaltenweise Kategorie-Zuordnung gesetzt')
+         )),
+         'column_map' => v::allOf(
+            v::arrayType()->each(v::in(array_keys($column_types))), // shall be an array that only contains known column types
+            v::callback($unique_check)->setTemplate('Jede Spaltenzuordnung darf nur einmal genutzt werden.'),
+            v::callback(fn(array $coldata) => $column_cross_check($data['category']??'', $coldata, $category_keys))
+               ->setTemplate('Kategorie-Zuordnung via Spalte nicht erlaubt wenn globale Kategorie gesetzt'),
+            v::callback(fn(array $coldata) => $column_cross_check($data['club']??'', $coldata, ['club']))
+               ->setTemplate('Club-Zuordnung via Spalte nicht erlaubt wenn Verein/Verband global gesetzt'),
+         ),
+      ];
+      $errors = DataValidationService::validate($data, $rules);
 
-         $unique_check = function($value)
+      if( !$errors )
+      {
+         /* update $import data for the find_participant_rows() call below */
+         $import['content_row'] = $data['start_row']-1; // user side row counting is 1-based
+         foreach( $data['column_map'] as $index => $name )
          {
-            $nonEmpty = array_filter($value);
-            return count($nonEmpty) === count(array_unique($nonEmpty));
-         };
-         $column_cross_check = function(string $global_value, array $columns, array $blocked)
-         {
-            // if a global value is set, no related column value shall be set
-            return !$global_value || !array_intersect($columns, $blocked);
-         };
-
-         /* validate input */
-         $rules = [
-            'start_row'  => v::intVal()->min(1)->max(count($import['rows'])),
-            'club'       => v::optional(v::allOf(
-               v::stringType()->length(max: 100),
-               v::callback(fn($club) => $column_cross_check($club, $data['column_map'], ['club']))
-                  ->setTemplate('Verband/Verein auch als Spalte gesetzt'),
-            )),
-            'category'   => v::optional(v::allOf(
-               v::intVal()->in(array_keys($category_selection)),
-               v::callback(fn($category) => $column_cross_check($category, $data['column_map'], $category_keys))
-                  ->setTemplate('Globale Kategorie UND spaltenweise Kategorie-Zuordnung gesetzt')
-            )),
-            'column_map' => v::allOf(
-               v::arrayType()->each(v::in(array_keys($column_types))), // shall be an array that only contains known column types
-               v::callback($unique_check)->setTemplate('Jede Spaltenzuordnung darf nur einmal genutzt werden.'),
-               v::callback(fn(array $coldata) => $column_cross_check($data['category']??'', $coldata, $category_keys))
-                  ->setTemplate('Kategorie-Zuordnung via Spalte nicht erlaubt wenn globale Kategorie gesetzt'),
-               v::callback(fn(array $coldata) => $column_cross_check($data['club']??'', $coldata, ['club']))
-                  ->setTemplate('Club-Zuordnung via Spalte nicht erlaubt wenn Verein/Verband global gesetzt'),
-            ),
-         ];
-         $errors = DataValidationService::validate($data, $rules);
-
-         if( !$errors )
-         {
-            /* update $import data for the find_participant_rows() call below */
-            $import['content_row'] = $data['start_row']-1; // user side row counting is 1-based
-            foreach( $data['column_map'] as $index => $name )
-            {
-               $import['headers'][$name] ??= [];
-               $import['headers'][$name]['column'] = $index;
-            }
+            $import['headers'][$name] ??= [];
+            $import['headers'][$name]['column'] = $index;
          }
       }
-      else
-      {
-         // take over the default values from the parsed $import structure
-         $data = [
-            'start_row'  => $import['content_row'] + 1,
-            'column_map' => array_combine(array_column($import['headers'], 'column'), array_keys($import['headers'])),
-            'action'     => '',
-         ];
-      }
 
-      if( $data['action'] === 'import' && !$errors )
+      if( $request->getMethod() === 'POST' && !$errors )
       {
          /* map column mapping values to their actual category */
          $category_map = ['category' => $categories ]; // initialize with the "select any category column"
@@ -416,7 +402,7 @@ class ParticipantsDataController
       }
       else
       {
-         /* provide the confirmation data */
+         /* provide the preview data */
          return $this->view->render($response, 'tournament/participants/upload_preview.twig', [
             'import'       => $import,
             'data_rows'    => $this->importService->findParticipantRows($import),

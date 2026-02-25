@@ -12,9 +12,12 @@
   {{ form.input('text', 'club', "Verband/Verein", club, errors.club, { 'maxlength': 100 }) }}
   {{ form.select('category', 'Kategorie (global)', category_sel, category, errors.category) }}
   {{ form.input('number', 'start_row', "Importieren ab Zeile", start_row, errors.start_row, {'min': 1, 'max': import.rows|length}, required=true)}}
-  {{ form.submit('Vorschau aktualisieren', 'action', 'update') }}
-  {{ form.submit('Importieren', 'action', 'import') }}
-  {{ form.submit('Abbrechen', 'action', 'abort')}}
+  <button formmethod="GET" formaction="{{ url_for('tournaments.participants.import.show', route_context.args) }}">Vorschau aktualisieren</button>
+  <button>Importieren</button>
+</form>
+<form method="post" action="{{ url_for('tournaments.participants.import.delete', route_context.args) }}">
+  <input type="hidden" name="_METHOD" value="DELETE">
+  <button>Import abbrechen</button>
 </form>
 <div class="scroll-frame">
 <table class="spreadsheet">

@@ -28,8 +28,10 @@
             {%- if buttons_active %}Bearbeiten{% else %}Details anzeigen{% endif -%}
           </a>
           {% if buttons_active -%}
-            <a href="{{ url_for('users.delete', {'userId': user.id}) }}" class="crud"
-               onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</a>
+          <form method="post" action="{{ url_for('users.delete', {'userId': user.id}) }}">
+            <input type="hidden" name="_METHOD" value="DELETE">
+            <button onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</button>
+          </form>
           {%- endif %}
       </td>
       </tr>
@@ -57,8 +59,10 @@
       <td>{% set buttons_active = policy.canModifyUser(user) -%}
           <a href="{{ url_for('users.show', {'userId': user.id}) }}">{%if buttons_active%}Bearbeiten{%else%}Details anzeigen{%endif%}</a>
           {% if buttons_active -%}
-          <a href="{{ url_for('users.delete', {'userId': user.id}) }}"
-             onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</a>
+          <form method="post" action="{{ url_for('users.delete', {'userId': user.id}) }}">
+            <input type="hidden" name="_METHOD" value="DELETE">
+            <button onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</button>
+          </form>
           {%- endif %}
       </td>
       </tr>
