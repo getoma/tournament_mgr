@@ -13,6 +13,7 @@ enum TournamentAction: string
    case ManageParticipants = "ManageParticipants"; // manage participants (add, edit, remove)
    case RecordResults      = "RecordResults";      // record results (matches)
    case TransitionState    = "TransitionState";    // change current state of the tournament
+   case DeleteTournament   = "DeleteTournament";   // delete a tournament
 
    case ManageUsers        = "ManageUsers";        // allow to create/manage user accounts
    case ManageAccount      = "ManageAccount";      // allow to manage own account

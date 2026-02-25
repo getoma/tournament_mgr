@@ -77,6 +77,13 @@ final class TournamentPolicy
             default => true
          },
 
+         TournamentAction::DeleteTournament => match($status)
+         {
+            /* only allow to delete tournaments that are either freshly created, or completed */
+            TournamentStatus::Planning, TournamentStatus::Completed => true,
+            default => false
+         },
+
          default => true // action is not dependend on tournament state, allow
       };
    }
@@ -101,6 +108,7 @@ final class TournamentPolicy
          case TournamentAction::ManageSetup:
          case TournamentAction::ManageParticipants:
          case TournamentAction::TransitionState:
+         case TournamentAction::DeleteTournament:
             /* tournament specific actions: allowed if actual user with tournament ownership */
             return  $this->auth_context->isUser()
                  && $this->route_context?->tournament?->owners->contains($this->auth_context->user) ?? false;

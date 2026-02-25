@@ -178,4 +178,20 @@
 {% endif -%}
 </section>
 
+<section id="danger_zone">
+  <h2>Gefährliche Aktionen</h2>
+  <dl class="button-list">
+    <dt>
+      <form action="{{url_for('tournaments.delete', route_context.args)}}" method="POST">
+        <input type="hidden" name="_METHOD" value="DELETE">
+        {{ form.submit('Turnier löschen',
+            confirm='Turnier wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden!',
+            active=policy.isActionAllowed('DeleteTournament'),
+            attributes={ 'class': 'danger'}) }}
+      </form>
+    </dt>
+    <dd>Turnier löschen ist nur möglich im "planning" oder "completed"-Status.</dd>
+  </dl>
+</section>
+
 {% include 'base/footer.twig' %}
