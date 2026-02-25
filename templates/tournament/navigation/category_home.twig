@@ -25,7 +25,7 @@
 <section>
   <h2>Test-Optionen</h2>
   <form action="{{url_for('tournaments.categories.resetMatchRecords', route_context.args)}}" method="post">
-    <button type="submit">Aktuellen Turnierfortschritt löschen</button>
+  {{ form.submit('Aktuellen Turnierfortschritt löschen')}}
   </form>
 </section>
 {% endif %}

@@ -12,7 +12,7 @@
   {% endif %}
   <form method="post" action="{{ url_for('users.store') }}">
     {{ form.input('email', 'email', 'E-Mail', prev.email, errors.email, {'maxlength':255}, required=true) }}
-    <p><button type="submit">Anlegen</button></p>
+    {{ form.submit('Anlegen')}}
   </form>
 </section>
 

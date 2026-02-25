@@ -39,7 +39,7 @@
         {% if errors.categories %}<p class="error">{{errors.categories}}</p>{%endif%}
       </tbody>
     </table>
-    <button>Speichern</button>
+    {{ form.submit('Speichern') }}
   </form>
 </section>
 
