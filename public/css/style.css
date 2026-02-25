@@ -427,16 +427,6 @@ table.entry-list td a:hover {
   background-color: #4455cc;
 }
 
-input[type="checkbox"] {
-  width: 1.2em;
-  height: 1.2em;
-  cursor: pointer;
-}
-
-label {
-   cursor: pointer;
-}
-
 .boxed-section {
   background-color: #fff;
   border: 1px solid #ddd;
@@ -458,7 +448,6 @@ label {
   gap: 1rem;
 }
 
-/* form box */
 #content > section {
   background-color: #fff;
   border: 1px solid #ddd;
@@ -477,22 +466,47 @@ h2 {
   padding-bottom: 0.5rem;
 }
 
-input[type="submit"],
+/* Formulare */
+.form-element {
+   margin: 1rem 0;
+}
+
+.form-element label>span:after {
+   /* erzwinge Zeilenumbruch nach jedem span-element */
+   content:" ";
+   display: block;
+}
+
+input[type="checkbox"] {
+   width: 1.2em;
+   height: 1.2em;
+   cursor: pointer;
+}
+
+label {
+   cursor: pointer;
+}
+
 button {
    background-color: #f0f0f0; /* neutral hellgrau */
    border: 1px solid #ccc;
    border-radius: 6px;
    padding: 0.5rem 1rem;
    transition: background 0.3s, color 0.3s;
+   margin-top: 1rem;
+   margin-right: 1rem;
 }
 
-input[type="submit"]:enabled,
+table button,
+dl button {
+   margin-top: 0;
+}
+
 button:enabled {
   color: #333;                 /* dunkler Text */
   cursor: pointer;
 }
 
-input[type="submit"]:enabled:hover,
 button:enabled:hover {
   background-color: #e0e0e0;   /* etwas dunkler beim Hover */
   color: #111;
@@ -670,14 +684,12 @@ dl.button-list dd
 
 /* buttons that trigger destructive actions */
 a.form-btn.danger,
-input[type="submit"].danger,
 button.danger {
    color: #D73A49;
    font-weight: bold;
 }
 
 a.form-btn.danger:hover,
-input[type="submit"].danger:hover,
 button.danger:hover {
    background-color: #D73A49;
    border-color: #A71D2A;

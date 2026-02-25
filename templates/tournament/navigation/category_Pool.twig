@@ -2,7 +2,7 @@
 {% import 'base/match.twig' as part %}
 
 {% include 'base/header.twig' with {
-'active_page': 'show_category_pools',
+'active_page': 'tournaments.categories.pools.index',
 'css': ['tree.css']
 } %}
 
@@ -11,7 +11,7 @@
 <ul class="pool_list">
   {% for pool in pools %}
   <li>
-    <p class="pool_name"><a href="{{url_for('show_pool', route_context.args|merge({'pool': pool.getName()}))}}">Pool {{pool.getName()}}
+    <p class="pool_name"><a href="{{url_for('tournaments.categories.pools.show', route_context.args|merge({'pool': pool.getName()}))}}">Pool {{pool.getName()}}
       {%- if pool.area is not empty %} ({{ pool.area.name }}){% endif -%}
       </a></p>
     <ul class="participant_list">
@@ -37,8 +37,8 @@
 
 {% if policy.isActionAllowed('ManageSetup') %}
 <section>
-<form action="{{url_for('repopulate_category', route_context.args)}}" method="post">
-  <button type="submit">Teilnehmer neu verteilen</button>
+<form action="{{url_for('tournaments.categories.shuffleParticipants', route_context.args)}}" method="post">
+{{ form.submit('Teilnehmer neu verteilen')}}
 </form>
 </section>
 {% endif %}

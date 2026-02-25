@@ -5,7 +5,7 @@
 } %}
 
 <div class="form-box">
-<form action="{{url_for('create_tournament')}}" method="post">
+<form action="{{url_for('tournaments.store')}}" method="post">
    {{ form.input('text', 'name', 'Name', prev.tournament.name, errors.tournament['name'], {'maxlength':100},
    required=true) }}
    {{ form.input('date', 'date', 'Datum', prev.tournament.date, errors.tournament['date'], required=true) }}

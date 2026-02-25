@@ -1,7 +1,7 @@
 {% import 'base/form.twig' as form %}
 
 {% include 'base/header.twig' with {
-  'active_page': 'list_users',
+  'active_page': 'users.index',
   'nav_entry_label': user.display_name
 }%}
 
@@ -18,9 +18,10 @@
   {%- endif %}
   {% if errors %}
   <p class="error">Fehler: {{ errors.error|default('Daten konnten nicht übernommen werden!') }}</p>
-  {% if errors.policy %}<p class="error">{{ errors.policy }}</p>{%endif%}
+  {% if errors.policy %}<p class="error">{{ errors.policy }}</p>{% endif %}
   {% endif %}
-  <form method="post" action="{{ url_for('update_user', { 'userId': user.id }) }}">
+  <form method="post" action="{{ url_for('users.update', { 'userId': user.id }) }}">
+    <input type="hidden" name="_METHOD" value="PATCH">
     <p class="info">
       E-Mail: <span>{{user.email}}</span>
     </p>
@@ -31,17 +32,21 @@
       {%- endfor %}
     </fieldset>
     {{ form.checkbox('is_active', 'Benutzer aktiv', true, prev? prev.is_active : user.is_active, active: form_active)}}
-    <p>
-      {% if form_active -%}
-      <input type="submit" value="Speichern">
-      {% if user.password_hash is empty -%}
-      <a class="form-btn" href="{{ url_for('welcome_user', {'userId': user.id}) }}">Willkommens-Mail schicken</a>
-      {%- endif %}
-      <a class="form-btn" href="{{ url_for('delete_user', {'userId': user.id}) }}"
-         onclick="return confirm('{{user.display_name}} wirklich löschen?');">Nutzer löschen</a>
-      {%- endif %}
-    </p>
+    {% if form_active -%}
+    {{ form.submit('Speichern')}}
+    {%- endif %}
   </form>
+  {% if form_active -%}
+    {% if user.password_hash is empty -%}
+    <form action="{{ url_for('users.sendWelcome', {'userId': user.id}) }}" method="post">
+    {{ form.submit('Willkommens-Mail schicken')}}
+    </form>
+    {%- endif %}
+    <form method="post" action="{{ url_for('users.delete', {'userId': user.id}) }}">
+      <input type="hidden" name="_METHOD" value="DELETE">
+      {{ form.submit('Nutzer löschen', confirm=user.display_name ~ ' wirklich löschen?') }}
+    </form>
+  {%- endif %}
 </section>
 
 {% include 'base/footer.twig' %}

@@ -79,7 +79,7 @@ class TournamentSettingsController
       $tournament->owners[] = $request->getAttribute('auth_context')->user; // add current user as owner
       $this->repo->saveTournament($tournament);
 
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', ['tournamentId' => $tournament->id], 'tournament_created');
+      return $this->prgService->redirect($request, $response, 'tournaments.edit', ['tournamentId' => $tournament->id], 'tournament_created');
    }
 
    /**
@@ -90,7 +90,7 @@ class TournamentSettingsController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->repo->deleteTournament($ctx->tournament->id);
-      return $this->prgService->redirect($request, $response, 'home', [], 'tournament_deleted');
+      return $this->prgService->redirect($request, $response, 'tournaments.index', [], 'tournament_deleted');
    }
 
 
@@ -141,7 +141,7 @@ class TournamentSettingsController
       $ctx->tournament->updateFromArray($data);
       $this->repo->saveTournament($ctx->tournament);
 
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'tournament_updated');
+      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'tournament_updated');
    }
 
    /**
@@ -170,7 +170,7 @@ class TournamentSettingsController
       $ctx->tournament->owners[] = $available_owners[$data['user_id']];
       $this->repo->saveTournament($ctx->tournament);
 
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'owner_updated');
+      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'owner_updated');
    }
 
    /**
@@ -196,7 +196,7 @@ class TournamentSettingsController
       unset($ctx->tournament->owners[$data['user_id']]);
       $this->repo->saveTournament($ctx->tournament);
 
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'owner_updated');
+      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'owner_updated');
    }
 
    public function changeTournamentStatus(Request $request, Response $response, array $args): Response
@@ -218,7 +218,7 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, $err);
       }
 
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'tournament_status');
+      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'tournament_status');
    }
 
    /**
@@ -242,7 +242,7 @@ class TournamentSettingsController
       $area = new Area(null, $ctx->tournament->id, $data['name']);
       $this->repo->saveArea($area);
 
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'area_created');
+      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'area_created');
    }
 
    /**
@@ -266,7 +266,7 @@ class TournamentSettingsController
       $ctx->area->updateFromArray($data);
       $this->repo->saveArea($ctx->area);
 
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'area_updated');
+      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'area_updated');
    }
 
    /**
@@ -277,7 +277,7 @@ class TournamentSettingsController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->repo->deleteArea($ctx->area->id);
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'area_deleted');
+      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'area_deleted');
    }
 
    /**
@@ -312,34 +312,7 @@ class TournamentSettingsController
          return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
       }
 
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'category_created');
-   }
-
-   /**
-    * Update an existing category for the tournament from the list of categories
-    */
-   public function updateCategory(Request $request, Response $response, array $args): Response
-   {
-      /** @var RouteArgsContext $ctx */
-      $ctx = $request->getAttribute('route_context');
-
-      $data = $request->getParsedBody();
-      $errors = Category::validateArray($data);
-
-      if (count($errors) > 0)
-      {
-         $prev = ['categories' => [$ctx->category->id => $data]];
-         $err = ['categories' => [$ctx->category->id => $errors]];
-         return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
-      }
-
-      $ctx->category->updateFromArray($data);
-      if (!$this->repo->saveCategory($ctx->category))
-      {
-         return $this->showTournamentConfiguration($request, $response, $args, ['category' => ['update' => 'Failed to update category']], $data);
-      }
-
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'category_updated');
+      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'category_created');
    }
 
    /**
@@ -368,7 +341,6 @@ class TournamentSettingsController
 
       /* parse input */
       $data = $request->getParsedBody();
-      $data['name'] = $ctx->category->name; // name is not part of the form, just take it over from the DB
       $errors = Category::validateArray($data);
 
       /* return form if there are errors */
@@ -385,7 +357,7 @@ class TournamentSettingsController
       $this->structureLoadService->populate($ctx->category);
 
       /* forward to category page */
-      return $this->prgService->redirect($request, $response, 'show_category_cfg', $args);
+      return $this->prgService->redirect($request, $response, 'tournaments.categories.edit', $args);
    }
 
    /**
@@ -396,6 +368,6 @@ class TournamentSettingsController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $this->repo->deleteCategory($ctx->category->id);
-      return $this->prgService->redirect($request, $response, 'show_tournament_config', $args, 'category_deleted');
+      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'category_deleted');
    }
 }

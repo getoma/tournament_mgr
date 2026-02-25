@@ -1,6 +1,6 @@
 {% import 'base/form.twig' as form %}
 
-{% include 'base/header.twig' with { 'active_page': 'show_participant_list' } %}
+{% include 'base/header.twig' with { 'active_page': 'tournaments.participants.index' } %}
 
 <section>
   <h2>Teilnehmer</h2>
@@ -40,9 +40,10 @@
       {% for participant in participants %}
       <tr>
         <td>
-          <a href="{{ url_for('show_participant', route_context.args|merge({'participantId': participant.id})) }}">Bearbeiten</a>
-          <form method="POST" action="{{ url_for('delete_participant', route_context.args|merge({'participantId': participant.id})) }}">
-            <input type="submit" value="Löschen" onclick="return confirm('{{ participant.lastname }}, {{ participant.firstname }} wirklich löschen?');">
+          <a href="{{ url_for('tournaments.participants.show', route_context.args|merge({'participantId': participant.id})) }}">Bearbeiten</a>
+          <form method="POST" action="{{ url_for('tournaments.participants.delete', route_context.args|merge({'participantId': participant.id})) }}">
+            <input type="hidden" name="_METHOD" value="DELETE">
+            {{ form.submit('Löschen', confirm='%s, %s wirklich löschen?'|format(participant.lastname, participant.firstname)) }}
           </form>
         </td>
         <td>{{ participant.lastname }}, {{ participant.firstname }}</td>
@@ -59,22 +60,23 @@
       {% endfor %}
     </tbody>
   </table>
-  <form method="POST" action="{{ url_for('update_participant_list', route_context.args) }}" id="participant_list_form">
+  <form method="POST" action="{{ url_for('tournaments.participants.bulk.update', route_context.args) }}" id="participant_list_form">
+    <input type="hidden" name="_METHOD" value="PATCH">
     {{ form.submit('Speichern') }}
   </form>
 </section>
 
 <section>
 <h2>Teilnehmer importieren</h2>
-<form method="POST" action="{{ url_for('upload_participants', { 'tournamentId': tournament.id }) }}" id="participant_upload_form" enctype="multipart/form-data">
+<form method="POST" action="{{ url_for('tournaments.participants.import.store', { 'tournamentId': tournament.id }) }}" id="participant_upload_form" enctype="multipart/form-data">
   {{ form.input('file', 'participant_file', 'Datei (CSV oder Excel)', '', errors.file, attributes={'accept':".csv,.xlsx,.xls,.ods"}) }}
-  {{ form.submit('Importieren', attributes={'class':'form-btn'}) }}
+  {{ form.submit('Importieren') }}
 </form>
 </section>
 
 <section>
 <h2>Teilnehmer hinzufügen</h2>
-  <form method="POST" action="{{ url_for('add_participants', route_context.args) }}" id="participant_add_form">
+  <form method="POST" action="{{ url_for('tournaments.participants.bulk.store', route_context.args) }}" id="participant_add_form">
     {{ form.textarea('participants', 'Direkteingabe', prev.participants ?? '', errors.participants, attributes={'rows':10, 'cols': 50, 'id':'participants', 'placeholder':'Vorname Nachname pro Zeile'}) }}
     {{ form.input('text', 'club', 'Verein/Verband', prev.club ?? '', errors.club, attributes={'maxlength':100}) }}
     <fieldset class="category-fieldset">
@@ -88,8 +90,7 @@
       <p class="error">{{errors.categories}}</p>
       {%endif-%}
     </fieldset>
-
-    {{ form.submit('Hinzufügen', attributes={'class':'form-btn'}) }}
+    {{ form.submit('Hinzufügen') }}
   </form>
 </section>
 

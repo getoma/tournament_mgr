@@ -2,19 +2,25 @@
 
 {% include 'base/header.twig' with {
   'css': ['data_import_preview.css'],
-  'active_page': 'show_participant_list',
+  'active_page': 'tournaments.participants.index',
   'nav_entry_label': 'Teilnehmer importieren - Vorschau'
 }%}
 
 <section>
 <h2>Teilnehmer importieren - {{import.name}} - Vorschau</h2>
-<form method="POST" id="form_preview_attributes" action="{{ url_for('upload_participants_confirm_update', route_context.args) }}">
+<form method="POST" id="form_preview_attributes" action="{{ url_for('tournaments.participants.import.commit', route_context.args) }}">
   {{ form.input('text', 'club', "Verband/Verein", club, errors.club, { 'maxlength': 100 }) }}
   {{ form.select('category', 'Kategorie (global)', category_sel, category, errors.category) }}
   {{ form.input('number', 'start_row', "Importieren ab Zeile", start_row, errors.start_row, {'min': 1, 'max': import.rows|length}, required=true)}}
-  {{ form.submit('Vorschau aktualisieren', 'action', 'update') }}
-  {{ form.submit('Importieren', 'action', 'import') }}
-  {{ form.submit('Abbrechen', 'action', 'abort')}}
+  {{ form.submit('Vorschau aktualisieren', attributes={
+        formmethod: "GET",
+        formaction: url_for('tournaments.participants.import.show', route_context.args)
+  })}}
+  {{ form.submit('Importieren') }}
+</form>
+<form method="post" action="{{ url_for('tournaments.participants.import.delete', route_context.args) }}">
+  <input type="hidden" name="_METHOD" value="DELETE">
+  {{ form.submit('Import abbrechen') }}
 </form>
 <div class="scroll-frame">
 <table class="spreadsheet">

@@ -18,7 +18,7 @@
 {%-endif%}
 {% endmacro %}
 
-{% macro printMatchLinks(matchList, route_parameters, route_name='show_ko_match') -%}
+{% macro printMatchLinks(matchList, route_parameters, route_name='tournaments.categories.ko.matches.show') -%}
 <table>
   <thead>
     <tr>
@@ -51,7 +51,7 @@
   <li><span class="round_caption">Kampfflächen</span>
     <ul class="fight_round">
       {% for name, chunk in chunks %}
-      <li><span class="fight_name"><a href="{{ url_for('show_ko_area', route_param|merge({'chunk': name})) }}">Gewinner {{chunk.name}}</a></span>
+      <li><span class="fight_name"><a href="{{ url_for('tournaments.categories.ko.chunks.show', route_param|merge({'chunk': name})) }}">Gewinner {{chunk.name}}</a></span>
           <span class="fight_participant">{{_self.printChunkWinner(chunk)}}</span>
       </li>
       {% endfor %}
@@ -63,7 +63,7 @@
     <ul class="fight_round">
       {% for node in round %}
       <li><span class="fight_name">
-        {%- if node.isReal() %}<a href="{{ url_for('show_ko_match', route_param|merge({'matchName': node.name})) }}">{%endif-%}
+        {%- if node.isReal() %}<a href="{{ url_for('tournaments.categories.ko.matches.show', route_param|merge({'matchName': node.name})) }}">{%endif-%}
           Kampf {{node.name}}{% if node.area is defined %} ({{node.area.name}}){%endif%}
         {%- if node.isReal() %}</a>{% endif -%}
         </span>

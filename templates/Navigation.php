@@ -14,37 +14,37 @@ class Navigation
    {
       return [
          [  'label' => 'Turniere',
-            'route' => 'home'
+            'route' => 'tournaments.index'
          ],
 
          [  'label'      => 'Benutzerverwaltung',
-            'route'      => 'list_users',
+            'route'      => 'users.index',
             'visible_if' => $policy->isActionAllowed(TournamentAction::ManageUsers),
          ],
 
          [  'label' => 'DB-Migration',
-            'route' => 'show_db_migrate',
+            'route' => 'dbmigration.show',
             'visible_if' => \config::$test_interfaces,
          ],
 
          [  'label' => $ctx?->tournament?->name,
-            'route' => 'show_tournament',
+            'route' => 'tournaments.show',
             'class' => 'separated',
             'children' => [
                [  'foreach'   => $ctx?->tournament?->categories,
-                  'route'     => 'show_category_home',
+                  'route'     => 'tournaments.categories.show',
                   'label'     => fn($c) => $c->name,
                   'active_if' => fn($c) => $ctx?->category === $c,
                   'args'      => fn($c) => [ 'categoryId' => $c->id ],
                   'children'  => [
                      [  'label' => 'Pools',
-                        'route' => 'show_category_pools',
+                        'route' => 'tournaments.categories.pools.index',
                         'children' => [
                            [  'label' => 'Pool ' . $ctx?->pool_name,
-                              'route' => 'show_pool',
+                              'route' => 'tournaments.categories.pools.show',
                               'children' => [
                                  [  'label' => 'Kampf ' . $ctx?->match_name,
-                                    'route' => 'show_pool_match'
+                                    'route' => 'tournaments.categories.pools.matches.show'
                                  ]
                               ]
                            ]
@@ -52,31 +52,26 @@ class Navigation
                      ],
 
                      [  'label'    => 'KO-Baum',
-                        'route'    => 'show_category_ko',
+                        'route'    => 'tournaments.categories.ko.show',
                         'children' => [
                            [  'label' => 'Kampf '.$ctx?->match_name,
-                              'route' => 'show_ko_match'
+                              'route' => 'tournaments.categories.ko.matches.show'
                            ]
                         ]
                      ],
 
                      [  'label' => 'Konfiguration',
-                        'route' => 'show_category_cfg'
+                        'route' => 'tournaments.categories.edit'
                      ],
                   ],
                ],
 
                [  'label' => 'Anmeldungen',
-                  'route' => 'show_participant_list'
+                  'route' => 'tournaments.participants.index'
                ],
 
                [  'label' => 'Konfiguration',
-                  'route' => 'show_tournament_config',
-                  'children' => [
-                     [  'label' => $ctx?->category?->name,
-                        'route' => 'show_tournament_category_cfg'
-                     ]
-                  ]
+                  'route' => 'tournaments.edit',
                ],
             ],
          ],

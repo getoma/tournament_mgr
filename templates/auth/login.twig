@@ -1,22 +1,20 @@
-{% include 'base/header.twig' with {
-  'heading': 'Login'
-}%}
+{% import 'base/form.twig' as form %}
 
-{% if error %}
-<p class="error">{{ error }}</p>
-{% endif %}
+{% include 'base/header.twig' %}
 
-<form method="post" action="{{ url_for('login') }}">
-  <p>
-    <label>E-Mail: <input type="text" name="email" value="{{email}}" required></label>
-  </p>
-  <p>
-    <label>Passwort: <input type="password" name="password" required></label>
-  </p>
-  <p>
-    <button type="submit">Anmelden</button>
-    <a href="{{ url_for('pw_forgot') }}">Passwort vergessen?</a>
-  </p>
-</form>
+<section>
+  <h2>Login</h2>
+
+  {% if error %}
+  <p class="error">{{ error }}</p>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('auth.login.attempt') }}">
+    {{ form.input('text', 'email', 'E-Mail', email, required=true)}}
+    {{ form.input('password', 'password', 'Passwort', required=true)}}
+    {{ form.submit('Anmelden')}}
+    <a href="{{ url_for('auth.password.request.form') }}">Passwort vergessen?</a>
+  </form>
+</section>
 
 {% include 'base/footer.twig' %}

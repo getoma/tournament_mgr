@@ -1,9 +1,10 @@
 {% import 'base/match.twig' as part %}
+{% import 'base/form.twig' as form %}
 
 {% if type == 'ko' %}
-{% set update_route, get_route = 'update_ko_match', 'show_ko_match' %}
+{% set update_route, get_route = 'tournaments.categories.ko.matches.update', 'tournaments.categories.ko.matches.show' %}
 {% else %}
-{% set update_route, get_route = 'update_pool_match', 'show_pool_match' %}
+{% set update_route, get_route = 'tournaments.categories.pools.matches.update', 'tournaments.categories.pools.matches.show' %}
 {% endif %}
 
 {% include 'base/header.twig' with {
@@ -13,15 +14,14 @@
 
 {% macro printControls(node,participant,possible_pts,undo,update_route,route_parameters) -%}
 <form method="post" action="{{url_for(update_route, route_parameters)}}" class="match_control">
+  <input type="hidden" name="_METHOD" value="PATCH">
   <input type="hidden" name="participant" value="{{participant.id}}">
   <input type="hidden" name="undo" value="{{undo.id}}">
   {% for name, pt in possible_pts -%}
-  <button name="action" value="{{pt}}">{{pt}}</button>
+  {{ form.submit(pt, 'action', pt) }}
   {% endfor -%}
-  <button name="action" value="undo"{%if undo is null%} disabled{%endif%}>Undo{%if undo is not null%} ({{undo.point}}){%endif%}</button>
-  <button name="action" value="winner"
-    {%- if not node.isModifiable() or node.getWinner() is same as(participant) %} disabled{%endif-%}
-  >Als Gewinner setzen</button>
+  {{ form.submit('Undo' ~ (undo? '(%s)'|format(undo.point) : ''), 'action', 'undo', active=undo is not null)}}
+  {{ form.submit('Als Gewinner setzen', 'action', 'winner', active=node.isModifiable() and node.getWinner() is not same as(participant)) }}
 </form>
 {% endmacro -%}
 
@@ -76,9 +76,8 @@
       <td colspan="2" class="controls noside">
         {% if node.tiesAllowed() -%}
         <form method="post" action="{{url_for(update_route, route_context.args)}}" class="match_control">
-            <button name="action" value="tie"
-            {%- if not node.isModifiable() or node.isTied() %} disabled{%endif-%}
-            >Unentschieden</button>
+          <input type="hidden" name="_METHOD" value="PATCH">
+          {{ form.submit('Unentschieden', 'action', 'tie', active=node.isModifiable() and not node.isTied()) }}
         {%- endif %}
       </td>
       <td colspan="3" class="controls whiteside">
