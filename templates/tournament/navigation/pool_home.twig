@@ -24,6 +24,7 @@
   {% if pool.getCurrentDecisionRound() -%}
   <form method="post" action="{{url_for('tournaments.categories.pools.decision.delete', route_parameters|merge({'decision_round': pool.getCurrentDecisionRound()})) }}" class="pool_control"
     id="tie_break_match_delete">
+    <input type="hidden" name="_METHOD" value="DELETE">
     <button>Letzte Entscheidungsrunde löschen</button>
   </form>
   {% endif %}

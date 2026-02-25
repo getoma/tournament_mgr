@@ -5,10 +5,12 @@
 } %}
 
 <section class="form-box">
-<h2>{{category.name}} - Konfiguration</h2>
+<h2>Kategorie: Einstellungen</h2>
 {% if prg_message %}<p class="ok">Daten übernommen und Turnierbaum neu generiert!</p>{% endif -%}
 <form action="{{url_for('tournaments.categories.update', route_context.args)}}" method="post">
+  <input type="hidden" name="_METHOD" value="PATCH">
   {% set isActive = policy.isActionAllowed('ManageSetup') -%}
+  {{ form.input('text', 'name', 'Name', prev.name ?? category.name, errors['name'], {'maxlength':100}, required=true, active=isActive) }}
   {{ form.select('mode', 'Modus', enum_options(category_modes), prev.mode ?? category.mode.value, errors['mode'], required=true, active=isActive) }}
   {{ form.input('number', 'num_rounds', 'Anzahl KO-Runden', prev.num_rounds ?? category.config.num_rounds, errors['num_rounds'], {'min':2, 'max': 10}, active=isActive) }}
   {{ form.input('number', 'pool_winners', 'Anzahl Pool-Sieger', prev.pool_winners ?? category.config.pool_winners, errors['pool_winners'], {'max': 3, 'min': 1}, active=isActive) }}

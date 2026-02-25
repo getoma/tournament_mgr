@@ -13,6 +13,7 @@
   <h2>Turnier-Details</h2>
   <div class="tournament-status">
     <form action="{{ url_for('tournaments.setState', route_context.args) }}" method="post">
+      <input type="hidden" name="_METHOD" value="PATCH">
       <ul id="new_status_list">
         {% for status in route_context.tournament.getStateHandler().getPossibleTransitions() %}
           <li>{{ form.submit(status.value, 'status', status.value) }}</li>
@@ -21,6 +22,7 @@
     </form>
   </div>
 <form action="{{url_for('tournaments.update', route_context.args)}}" method="post">
+  <input type="hidden" name="_METHOD" value="PATCH">
   {% set isActive=policy.isActionAllowed('ManageDetails') -%}
   {% if isActive -%}
   {{ form.input('text', 'name', 'Name', prev.tournament.name ?? route_context.tournament.name, errors.tournament['name'],
@@ -48,6 +50,7 @@
       {% for owner in route_context.tournament.owners -%}
       <tr><td>{{ owner.display_name }}</td>
           <td><form method="POST" action="{{url_for('tournaments.removeOwner', route_context.args)}}">
+            <input type="hidden" name="_METHOD" value="PATCH">
             <input type="hidden" name="user_id" value="{{owner.id}}">
             {{ form.submit('Entfernen', active=policy.isActionAllowed('ManageOwners')) }}</form>
           </td>
@@ -56,6 +59,7 @@
       {% if policy.isActionAllowed('ManageOwners') -%}
       <tr><td>{{ form.select_plain("user_id", available_owners, attributes: { 'form': 'add_owner_form' }) }}</td>
           <td><form method="POST" action="{{url_for('tournaments.addOwner', route_context.args)}}" id="add_owner_form">
+            <input type="hidden" name="_METHOD" value="PATCH">
             {{ form.submit('Hinzufügen') }}</form>
           </td>
       </tr>
@@ -83,9 +87,11 @@
         {'maxlength':100, 'form': 'area_update_' ~ area.id}, required=true) }}</td>
       <td>
         <form method="POST" action="{{url_for('tournaments.areas.update', route_context.args|merge({'areaId': area.id}))}}" id="area_update_{{ area.id }}">
+          <input type="hidden" name="_METHOD" value="PATCH">
           {{ form.submit('Speichern') }}
         </form>
         <form method="POST" action="{{url_for('tournaments.areas.delete', route_context.args|merge({'areaId': area.id}))}}">
+          <input type="hidden" name="_METHOD" value="DELETE">
           {{ form.submit('Löschen') }}
         </form>
       </td>
@@ -127,21 +133,12 @@
   <tbody>
     {% for category in categories %}
     <tr>
-      <td>
-        {{ form.input_plain('text', 'name', prev.categories[category.id].name ?? category.name,
-           errors.categories[category.id]['name'], {'maxlength':100, 'form': 'category_update_' ~ category.id},
-        required=true) }}
-      </td>
-      <td>
-        {{ form.select_plain('mode', enum_options(category_modes), prev.categories[category.id].mode ?? category.mode.value,
-           errors.categories[category.id]['mode'], {'form': 'category_update_' ~ category.id}, required=true) }}
-      </td>
+      <td>{{category.name}}</td>
+      <td>{{category.mode.value}}</td>
       <td>
         <a href="{{url_for('tournaments.categories.edit', route_context.args|merge({'categoryId': category.id}))}}">Bearbeiten</a>
-        <form method="POST" action="{{url_for('tournaments.categories.update', route_context.args|merge({'categoryId': category.id}))}}" id="category_update_{{ category.id }}">
-          {{ form.submit('Speichern') }}
-        </form>
         <form method="POST" action="{{url_for('tournaments.categories.delete', route_context.args|merge({'categoryId': category.id}))}}">
+          <input type="hidden" name="_METHOD" value="DELETE">
           {{ form.submit('Löschen') }}
         </form>
       </td>

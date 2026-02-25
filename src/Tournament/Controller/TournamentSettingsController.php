@@ -304,33 +304,6 @@ class TournamentSettingsController
    }
 
    /**
-    * Update an existing category for the tournament from the list of categories
-    */
-   public function updateCategory(Request $request, Response $response, array $args): Response
-   {
-      /** @var RouteArgsContext $ctx */
-      $ctx = $request->getAttribute('route_context');
-
-      $data = $request->getParsedBody();
-      $errors = Category::validateArray($data);
-
-      if (count($errors) > 0)
-      {
-         $prev = ['categories' => [$ctx->category->id => $data]];
-         $err = ['categories' => [$ctx->category->id => $errors]];
-         return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
-      }
-
-      $ctx->category->updateFromArray($data);
-      if (!$this->repo->saveCategory($ctx->category))
-      {
-         return $this->showTournamentConfiguration($request, $response, $args, ['category' => ['update' => 'Failed to update category']], $data);
-      }
-
-      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'category_updated');
-   }
-
-   /**
     * Render the form to configure a category in detail
     */
    public function showCategoryConfiguration(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
@@ -356,7 +329,6 @@ class TournamentSettingsController
 
       /* parse input */
       $data = $request->getParsedBody();
-      $data['name'] = $ctx->category->name; // name is not part of the form, just take it over from the DB
       $errors = Category::validateArray($data);
 
       /* return form if there are errors */

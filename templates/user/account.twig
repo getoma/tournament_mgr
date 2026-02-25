@@ -12,6 +12,7 @@
 <p class="error">Daten konnten nicht übernommen werden!</p>
 {% endif %}
 <form method="post" action="{{ url_for('account.update') }}">
+  <input type="hidden" name="_METHOD" value="PATCH">
   <p class="info">
     E-Mail: <span>{{user.email}}</span>
   </p>

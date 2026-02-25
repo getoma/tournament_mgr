@@ -13,6 +13,7 @@
 
 {% macro printControls(node,participant,possible_pts,undo,update_route,route_parameters) -%}
 <form method="post" action="{{url_for(update_route, route_parameters)}}" class="match_control">
+  <input type="hidden" name="_METHOD" value="PATCH">
   <input type="hidden" name="participant" value="{{participant.id}}">
   <input type="hidden" name="undo" value="{{undo.id}}">
   {% for name, pt in possible_pts -%}
@@ -76,9 +77,10 @@
       <td colspan="2" class="controls noside">
         {% if node.tiesAllowed() -%}
         <form method="post" action="{{url_for(update_route, route_context.args)}}" class="match_control">
-            <button name="action" value="tie"
-            {%- if not node.isModifiable() or node.isTied() %} disabled{%endif-%}
-            >Unentschieden</button>
+          <input type="hidden" name="_METHOD" value="PATCH">
+          <button name="action" value="tie"
+          {%- if not node.isModifiable() or node.isTied() %} disabled{%endif-%}
+          >Unentschieden</button>
         {%- endif %}
       </td>
       <td colspan="3" class="controls whiteside">
