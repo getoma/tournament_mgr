@@ -33,20 +33,18 @@
     </fieldset>
     {{ form.checkbox('is_active', 'Benutzer aktiv', true, prev? prev.is_active : user.is_active, active: form_active)}}
     {% if form_active -%}
-      <p>
-        <input type="submit" value="Speichern">
-      </p>
+    {{ form.submit('Speichern')}}
     {%- endif %}
   </form>
   {% if form_active -%}
     {% if user.password_hash is empty -%}
     <form action="{{ url_for('users.sendWelcome', {'userId': user.id}) }}" method="post">
-      <button>Willkommens-Mail schicken</button>
+    {{ form.submit('Willkommens-Mail schicken')}}
     </form>
     {%- endif %}
     <form method="post" action="{{ url_for('users.delete', {'userId': user.id}) }}">
       <input type="hidden" name="_METHOD" value="DELETE">
-      <button onclick="return confirm('{{user.display_name}} wirklich löschen?');">Nutzer löschen</button>
+      {{ form.submit('Nutzer löschen', confirm=user.display_name ~ ' wirklich löschen?') }}
     </form>
   {%- endif %}
 </section>

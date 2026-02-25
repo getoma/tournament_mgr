@@ -49,18 +49,26 @@
     <tbody>
       {% for owner in route_context.tournament.owners -%}
       <tr><td>{{ owner.display_name }}</td>
-          <td><form method="POST" action="{{url_for('tournaments.removeOwner', route_context.args)}}">
+          {% if policy.isActionAllowed('ManageOwners') -%}
+          <td>
+            <form method="POST" action="{{url_for('tournaments.removeOwner', route_context.args)}}">
             <input type="hidden" name="_METHOD" value="PATCH">
             <input type="hidden" name="user_id" value="{{owner.id}}">
-            {{ form.submit('Entfernen', active=policy.isActionAllowed('ManageOwners')) }}</form>
+            {{ form.submit('Entfernen')}}
+            </form>
           </td>
+          {%- else -%}
+          <td>---</td>
+          {%- endif %}
       </tr>
       {%- endfor %}
       {% if policy.isActionAllowed('ManageOwners') -%}
       <tr><td>{{ form.select_plain("user_id", available_owners, attributes: { 'form': 'add_owner_form' }) }}</td>
-          <td><form method="POST" action="{{url_for('tournaments.addOwner', route_context.args)}}" id="add_owner_form">
+          <td>
+            <form method="POST" action="{{url_for('tournaments.addOwner', route_context.args)}}" id="add_owner_form">
             <input type="hidden" name="_METHOD" value="PATCH">
-            {{ form.submit('Hinzufügen') }}</form>
+            {{ form.submit('Hinzufügen') }}
+            </form>
           </td>
       </tr>
       {%- endif %}

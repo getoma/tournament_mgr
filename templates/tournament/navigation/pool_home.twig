@@ -18,14 +18,14 @@
   {%- endif %}
   {% if pool.needsDecisionRound() -%}
   <form method="post" action="{{url_for('tournaments.categories.pools.decision.add', route_parameters)}}" class="pool_control" id="tie_break_match_add">
-    <button>Entscheidungsrunde hinzufügen</button>
+  {{ form.submit('Entscheidungsrunde hinzufügen') }}
   </form>
   {% endif %}
   {% if pool.getCurrentDecisionRound() -%}
   <form method="post" action="{{url_for('tournaments.categories.pools.decision.delete', route_parameters|merge({'decision_round': pool.getCurrentDecisionRound()})) }}" class="pool_control"
     id="tie_break_match_delete">
-    <input type="hidden" name="_METHOD" value="DELETE">
-    <button>Letzte Entscheidungsrunde löschen</button>
+  <input type="hidden" name="_METHOD" value="DELETE">
+  {{ form.submit('Letzte Entscheidungsrunde löschen') }}
   </form>
   {% endif %}
 </section>

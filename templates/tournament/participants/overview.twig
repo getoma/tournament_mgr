@@ -43,7 +43,7 @@
           <a href="{{ url_for('tournaments.participants.show', route_context.args|merge({'participantId': participant.id})) }}">Bearbeiten</a>
           <form method="POST" action="{{ url_for('tournaments.participants.delete', route_context.args|merge({'participantId': participant.id})) }}">
             <input type="hidden" name="_METHOD" value="DELETE">
-            <button onclick="return confirm('{{ participant.lastname }}, {{ participant.firstname }} wirklich löschen?');">Löschen</button>
+            {{ form.submit('Löschen', confirm='%s, %s wirklich löschen?'|format(participant.lastname, participant.firstname)) }}
           </form>
         </td>
         <td>{{ participant.lastname }}, {{ participant.firstname }}</td>
@@ -70,7 +70,7 @@
 <h2>Teilnehmer importieren</h2>
 <form method="POST" action="{{ url_for('tournaments.participants.import.store', { 'tournamentId': tournament.id }) }}" id="participant_upload_form" enctype="multipart/form-data">
   {{ form.input('file', 'participant_file', 'Datei (CSV oder Excel)', '', errors.file, attributes={'accept':".csv,.xlsx,.xls,.ods"}) }}
-  {{ form.submit('Importieren', attributes={'class':'form-btn'}) }}
+  {{ form.submit('Importieren') }}
 </form>
 </section>
 
@@ -90,8 +90,7 @@
       <p class="error">{{errors.categories}}</p>
       {%endif-%}
     </fieldset>
-
-    {{ form.submit('Hinzufügen', attributes={'class':'form-btn'}) }}
+    {{ form.submit('Hinzufügen') }}
   </form>
 </section>
 

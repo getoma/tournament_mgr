@@ -1,110 +1,108 @@
-{%- macro input(type, name, label, value, error='', attributes={}, required=false, active=true) -%}
-<p>
-  <label><span class="label_text">{{ label }}</span>
-  {% if active -%}
+{%- macro input(type, name, label, value='', error='', attributes={}, required=false, active=true) -%}
+<div class="form-element">
+  <label>
+    <span>{{ label }}</span>
     <input type="{{ type }}" name="{{ name }}" value="{{ value|e }}"
       {%- for attr, val in attributes %} {{attr}}="{{ val }}" {% endfor %}
-      {%- if required %} required{% endif %}>
-  {% else -%}
-    <span class="input_text">{{value|e|default('n/a')}}</span>
-  {% endif %}
+      {%- if required %} required{% endif -%}
+      {%- if not active %} disabled{% endif %}>
   </label>
   {%- if error is not empty %}
   <span class="error">{{ error|e|nl2br }}</span>
   {%- endif %}
-</p>
+</div>
 {%- endmacro %}
 
-{%- macro input_plain(type, name, value, error='', attributes={}, required=false, active=true) -%}
-{% if active %}
-<input type="{{ type }}" name="{{ name }}" value="{{ value|e }}"
-  {%- for attr, val in attributes %} {{attr}}="{{ val }}" {% endfor %}
-  {%- if required %} required{% endif %}>
-{%- if error is not empty %}
-<span class="error">{{ error|e|nl2br }}</span>
-{%- endif %}
-{% else -%}
-<span class="input_text">{{value|e|default('n/a')}}</span>
-{% endif %}
+{%- macro input_plain(type, name, value='', error='', attributes={}, required=false, active=true) -%}
+<div class="form-element-plain">
+  <input type="{{ type }}" name="{{ name }}" value="{{ value|e }}"
+    {%- for attr, val in attributes %} {{attr}}="{{ val }}" {% endfor %}
+    {%- if required %} required{% endif -%}
+    {%- if not active %} disabled{% endif %}>
+  {%- if error is not empty %}
+  <span class="error">{{ error|e|nl2br }}</span>
+  {%- endif %}
+</div>
 {%- endmacro %}
 
 {%- macro checkbox(name, label, value, checked=false, error='', attributes={}, active=true) -%}
-<p>
+<div class="form-element">
   <label>
     <input type="checkbox" name="{{ name }}" value="{{ value }}"
       {%- for attr, val in attributes %} {{attr }}="{{ val }}"{% endfor %}
       {%- if checked %} checked{% endif %}
-      {%- if not active %} disabled{%endif%}>
+      {%- if not active %} disabled{% endif %}>
     <span>{{ label }}</span></label>
   {%- if error is not empty %}
   <span class="error">{{ error|e|nl2br }}</span>
   {%- endif %}
-</p>
+</div>
 {%- endmacro %}
 
-{%- macro textarea(name, label, value, error='', attributes={}, required=false, active=true) -%}
-<p>
-  <label><span>{{ label }}</span>
-  {% if active -%}
+{%- macro textarea(name, label, value='', error='', attributes={}, required=false, active=true) -%}
+<div class="form-element">
+  <label>
+    <span>{{ label }}</span>
     <textarea name="{{ name }}"
-      {%- for attr, val in attributes %} {{ attr }}="{{ val }}" {% endfor -%}
-      {%- if required %} required{% endif-%}>{{ value|e }}</textarea>
-  {% else -%}
-    <span class="textarea_text">{{ value|e }}</span>
-  {% endif -%}
+      {%- for attr, val in attributes %} {{ attr }}="{{ val }}" {% endfor %}
+      {%- if required %} required{% endif %}
+      {%- if not active %} disabled{% endif -%}
+      >{{ value|e }}</textarea>
   </label>
-  {%- if error is not empty %}
+  {% if error is not empty -%}
   <span class="error">{{ error|e|nl2br }}</span>
   {%- endif %}
-</p>
+</div>
 {%- endmacro %}
 
 {%- macro select(name, label, options, selected=null, error='', attributes={}, required=false, active=true) -%}
-<p>
-  <label><span>{{ label }}</span>
-    {% if active -%}
+<div class="form-element">
+  <label>
+    <span>{{ label }}</span>
     <select name="{{ name }}"
       {%- for attr, val in attributes %} {{ attr }}="{{ val }}"{% endfor -%}
-      {%- if required %} required{% endif %}>
+      {%- if required %} required{% endif %}
+      {%- if not active %} disabled{% endif %}>
       {% if selected is null and options[''] is not defined -%}
       <option></option>
       {%- endif %}
-      {% for key, text in options %}
+      {% for key, text in options -%}
+      {% if active or (selected is not null and key==selected) -%}
       <option value="{{ key|e }}" {% if selected is not null and key==selected %}selected{% endif %}>{{ text|e }}</option>
-      {% endfor -%}
+      {%- endif %}
+      {%- endfor %}
     </select>
-    {% else -%}
-    <span class="input_text">{{ options[selected]|e|default('n/a') }}</span>
-    {% endif -%}
   </label>
   {%- if error is not empty %}
   <span class="error">{{ error|e|nl2br }}</span>
   {%- endif %}
-</p>
+</div>
 {%- endmacro %}
 
 {%- macro select_plain(name, options, selected=null, error='', attributes={}, required=false, active=true) -%}
-{% if active -%}
 <select name="{{ name }}"
   {%- for attr, val in attributes %} {{ attr }}="{{ val }}"{% endfor -%}
-  {%- if required %} required{% endif %}>
+  {%- if required %} required{% endif %}
+  {%- if not active %} disabled{% endif %}>
   {% if selected is null and options[''] is not defined -%}
   <option></option>
   {%- endif %}
-  {% for key, text in options %}
-  <option value="{{ key|e }}"{% if selected is not null and key==selected %} selected{% endif %}>{{ text|e }}</option>
-  {% endfor -%}
+  {% for key, text in options -%}
+  {% if active or (selected is not null and key==selected) -%}
+  <option value="{{ key|e }}" {% if selected is not null and key==selected %}selected{% endif %}>{{ text|e }}</option>
+  {%- endif %}
+  {%- endfor %}
 </select>
 {%- if error is not empty %}
 <span class="error">{{ error|e|nl2br }}</span>
 {%- endif %}
-{% else -%}
-<span class="input_text">{{ options[selected]|e|default('n/a') }}</span>
-{% endif -%}
 {%- endmacro %}
 
-{%- macro submit(label, name=null, value=null, active=true) -%}
-{% if active -%}
-<p><button type="submit" {%- if name is not empty %} name="{{name}}" value="{{value??label}}"{%endif%}>{{ label }}</button></p>
-{% endif -%}
+{%- macro submit(label, name='', value='', attributes={}, confirm='', active=true) -%}
+<button
+  {%- if name is not empty %} name="{{name}}" value="{{value}}"{% endif -%}
+  {%- for attr, val in attributes %} {{ attr }}="{{ val }}"{% endfor -%}
+  {%- if confirm is not empty %} onclick="return confirm('{{ confirm }}');"{% endif -%}
+  {%- if not active %} disabled{% endif -%}
+  >{{ label }}</button>
 {%- endmacro %}

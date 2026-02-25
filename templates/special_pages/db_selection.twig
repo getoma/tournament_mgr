@@ -12,7 +12,7 @@
 <form action="{{url_for('dbmigration.update')}}" method="post">
   <input type="hidden" name="_METHOD" value="PATCH">
   {{ form.select('version', 'DB-Version', versions, current, required=true) }}
-  <button>Aktualisieren</button>
+  {{ form.submit('Aktualisieren') }}
 </form>
 
 </section>

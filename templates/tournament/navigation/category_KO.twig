@@ -27,7 +27,7 @@
 {% if policy.isActionAllowed('ManageSetup') %}
 <section>
 <form action="{{url_for('tournaments.categories.shuffleParticipants', route_context.args)}}" method="post">
-  <button type="submit">Teilnehmer neu verteilen</button>
+{{ form.submit('Teilnehmer neu verteilen')}}
 </form>
 </section>
 {% endif %}

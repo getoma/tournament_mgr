@@ -30,7 +30,7 @@
           {% if buttons_active -%}
           <form method="post" action="{{ url_for('users.delete', {'userId': user.id}) }}">
             <input type="hidden" name="_METHOD" value="DELETE">
-            <button onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</button>
+            {{ form.submit('Löschen', confirm='%s wirklich löschen?'|format(user.display_name)) }}
           </form>
           {%- endif %}
       </td>
@@ -61,7 +61,7 @@
           {% if buttons_active -%}
           <form method="post" action="{{ url_for('users.delete', {'userId': user.id}) }}">
             <input type="hidden" name="_METHOD" value="DELETE">
-            <button onclick="return confirm('{{user.display_name}} wirklich löschen?');">Löschen</button>
+            {{ form.submit('Löschen', confirm='%s wirklich löschen?'|format(user.display_name)) }}
           </form>
           {%- endif %}
       </td>
