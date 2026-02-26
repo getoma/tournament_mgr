@@ -5,17 +5,25 @@ namespace Base\Model;
 /**
  * a basic collection class to manage objects of same type
  */
-abstract class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
+class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
 {
+   /**
+    * enforced elements type
+    * can be set by derived classes to form a specific collection
+    */
+   protected const DEFAULT_ELEMENTS_TYPE = null;
+
    protected array $elements = [];
 
-   public static function new(iterable $data = []): static
+   public static function new(iterable $data = [], $element_type = null): static
    {
-      return new static($data);
+      return new static($data, $element_type);
    }
 
-   public function __construct(iterable $data = [])
+   public function __construct(iterable $data = [], protected $element_type = null)
    {
+      $this->element_type ??= static::DEFAULT_ELEMENTS_TYPE;
+
       foreach ($data as $value)
       {
          $this->offsetSet(null, $value);
@@ -24,12 +32,10 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 
    public function copy(): static
    {
-      $result = static::new();
+      $result = static::new([], $this->element_type);
       $result->elements = $this->elements;
       return $result;
    }
-
-   abstract static protected function elements_type(): string;
 
    public function keyExists(int|string $key): bool
    {
@@ -93,8 +99,7 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 
    public function offsetSet($offset, $value): void
    {
-      $type = $this->elements_type();
-      if ($value instanceof $type)
+      if (!$this->element_type || ($value instanceof $this->element_type))
       {
          if( isset($offset) )
          {
@@ -107,7 +112,7 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
       }
       else
       {
-         throw new \InvalidArgumentException("invalid value: must be instance of " . $type . ", found " . get_class($value));
+         throw new \InvalidArgumentException("invalid value: must be instance of " . $this->element_type . ", found " . get_class($value));
       }
    }
 
@@ -151,7 +156,7 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 
    public function column_map(string $attr): self
    {
-      $result = self::new();
+      $result = self::new([], $this->element_type);
       $keys = array_column($this->elements, $attr);
       $result->elements = array_combine($keys, $this->elements);
       return $result;
@@ -159,7 +164,7 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 
    public function map_keys(callable $callback): self
    {
-      $result = self::new();
+      $result = self::new([], $this->element_type);
       $keys = array_map($callback, $this->elements);
       $result->elements = array_combine($keys, $this->elements);
       return $result;
@@ -172,12 +177,12 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 
    public function slice(int $offset, ?int $length = null): static
    {
-      return new static(array_slice($this->elements, $offset, $length));
+      return new static(array_slice($this->elements, $offset, $length), $this->element_type);
    }
 
    public function filter(callable $callback): static
    {
-      return new static(array_filter($this->elements, $callback));
+      return new static(array_filter($this->elements, $callback), $this->element_type);
    }
 
    public function any(callable $callback): bool
@@ -207,7 +212,7 @@ abstract class ObjectCollection implements \IteratorAggregate, \Countable, \Arra
 
    public function merge(iterable $other): static
    {
-      return static::new(array_merge($this->elements, $other));
+      return static::new(array_merge($this->elements, $other), $this->element_type);
    }
 
    /**

@@ -6,7 +6,7 @@ namespace Base\Model;
  * a collection class to manage objects that have an attribute "id"
  * and should be identified via their id, as well.
  */
-abstract class IdObjectCollection extends ObjectCollection
+class IdObjectCollection extends ObjectCollection
 {
    static protected function get_id($value): mixed
    {
@@ -51,6 +51,6 @@ abstract class IdObjectCollection extends ObjectCollection
 
    public function reverse(): static
    {
-      return $this->new(array_reverse($this->elements, true));
+      return static::new(array_reverse($this->elements, true), $this->element_type);
    }
 }

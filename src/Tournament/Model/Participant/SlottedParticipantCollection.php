@@ -4,17 +4,14 @@ namespace Tournament\Model\Participant;
 
 class SlottedParticipantCollection extends \Base\Model\ObjectCollection
 {
+   protected const DEFAULT_ELEMENTS_TYPE = Participant::class;
+
    public readonly ParticipantCollection $unslotted;
 
    function __construct(iterable $data = [])
    {
       $this->unslotted = ParticipantCollection::new();
       parent::__construct($data);
-   }
-
-   protected static function elements_type(): string
-   {
-      return Participant::class;
    }
 
    public function offsetSet($offset, $value): void

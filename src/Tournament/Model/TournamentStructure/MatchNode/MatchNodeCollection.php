@@ -4,10 +4,7 @@ namespace Tournament\Model\TournamentStructure\MatchNode;
 
 class MatchNodeCollection extends \Base\Model\ObjectCollection
 {
-   static protected function elements_type(): string
-   {
-      return MatchNode::class;
-   }
+   protected const DEFAULT_ELEMENTS_TYPE = MatchNode::class;
 
    public function getIterator(): MatchNodeIterator
    {

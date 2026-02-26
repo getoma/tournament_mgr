@@ -6,10 +6,7 @@ use Tournament\Model\Category\Category;
 
 class CategoryAssignmentCollection extends \Base\Model\IdObjectCollection
 {
-   static protected function elements_type(): string
-   {
-      return CategoryAssignment::class;
-   }
+   protected const DEFAULT_ELEMENTS_TYPE = CategoryAssignment::class;
 
    static protected function get_id($value): mixed
    {
