@@ -45,9 +45,10 @@ class AuthController
       $data = (array)$request->getParsedBody();
       $email = trim($data['email'] ?? '');
       $password = $data['password'];
+      $keepAlive = (bool)$data['keep_alive'] ?? false;
       $error = null;
 
-      if ($this->authService->login($email, $password))
+      if ($this->authService->login($email, $password, $keepAlive))
       {
          /* prepare redirection of user after a successful login */
          $redirect = $this->session->get('redirect_after_login') ?? RouteContext::fromRequest($request)->getRouteParser()->urlFor('tournaments.index');
