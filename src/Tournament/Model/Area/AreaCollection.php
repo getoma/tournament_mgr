@@ -4,8 +4,5 @@ namespace Tournament\Model\Area;
 
 class AreaCollection extends \Base\Model\IdObjectCollection
 {
-   protected static function elements_type(): string
-   {
-      return Area::class;
-   }
+   protected const DEFAULT_ELEMENTS_TYPE = Area::class;
 }

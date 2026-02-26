@@ -4,10 +4,7 @@ namespace Tournament\Model\TournamentStructure\MatchSlot;
 
 class MatchSlotCollection extends \Base\Model\IdObjectCollection
 {
-   static protected function elements_type(): string
-   {
-      return MatchSlot::class;
-   }
+   protected const DEFAULT_ELEMENTS_TYPE = MatchSlot::class;
 
    static protected function get_id($value): mixed
    {

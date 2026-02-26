@@ -4,8 +4,5 @@ namespace Tournament\Model\Category;
 
 class CategoryCollection extends \Base\Model\IdObjectCollection
 {
-   protected static function elements_type(): string
-   {
-      return Category::class;
-   }
+   protected const DEFAULT_ELEMENTS_TYPE = Category::class;
 }

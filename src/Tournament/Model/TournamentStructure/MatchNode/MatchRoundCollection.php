@@ -2,14 +2,9 @@
 
 namespace Tournament\Model\TournamentStructure\MatchNode;
 
-use Base\Model\ObjectCollection;
-
-class MatchRoundCollection extends ObjectCollection
+class MatchRoundCollection extends \Base\Model\ObjectCollection
 {
-   static protected function elements_type(): string
-   {
-      return MatchNodeCollection::class;
-   }
+   protected const DEFAULT_ELEMENTS_TYPE = MatchNodeCollection::class;
 
    public function flatten(): MatchNodeCollection
    {

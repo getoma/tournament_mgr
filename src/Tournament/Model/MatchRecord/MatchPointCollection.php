@@ -8,10 +8,7 @@ class MatchPointCollection extends \Base\Model\IdObjectCollection
 {
    private array $dropped = [];
 
-   protected static function elements_type(): string
-   {
-      return MatchPoint::class;
-   }
+   protected const DEFAULT_ELEMENTS_TYPE = MatchPoint::class;
 
    public function for(Participant $p): static
    {

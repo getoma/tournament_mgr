@@ -7,10 +7,7 @@ namespace Tournament\Model\MatchRecord;
  */
 class MatchRecordCollection extends \Base\Model\IdObjectCollection
 {
-   protected static function elements_type(): string
-   {
-      return MatchRecord::class;
-   }
+   protected const DEFAULT_ELEMENTS_TYPE = MatchRecord::class;
 
    static protected function get_id($value): mixed
    {
