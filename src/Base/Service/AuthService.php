@@ -16,6 +16,7 @@ class AuthService
    /** buffer currently logged in user */
    private ?User $user = null;
 
+   /** login issue feedback */
    private int $login_issue = 0;
    public const NO_ISSUE          =  0;
    public const USER_NOT_FOUND    = -1;
@@ -23,12 +24,21 @@ class AuthService
    public const NO_PASSWORD_SET   = -3;
    public const USER_DISABLED     = -5;
 
+   /** session keys used by this service */
+   protected const KEY_SESSION_VERSION = '_auth.SESSION_VERSION';
+   protected const KEY_USER_ID         = '_auth.USER_ID';
+
    /**
     * Constructor for AuthService
     * @param UserRepository $repo
     * @param PasswordHasher $hasher
     */
-   public function __construct(private UserRepository $repo, private PasswordHasher $hasher, private SessionService $session)
+   public function __construct(
+      private UserRepository $repo,
+      private PasswordHasher $hasher,
+      private SessionService $session,
+      private int $keepAliveTime_s = 7*24*3600 // 1wk
+   )
    {
    }
 
@@ -49,7 +59,7 @@ class AuthService
     * @param string $password
     * @return bool Returns true if login is successful, false otherwise.
     */
-   public function login(string $email, string $password): bool
+   public function login(string $email, string $password, bool $keepAlive = false): bool
    {
       $user = $this->repo->findUser(['email' => $email]);
       if( !$user )
@@ -72,8 +82,16 @@ class AuthService
       {
          $this->login_issue = self::NO_ISSUE;
 
+         // regenerate the session
+         $this->session->regenerateSession(
+            keepAlive:  $keepAlive,
+            lifetime_s: $keepAlive? $this->keepAliveTime_s : null,
+            set_token:  true,
+         );
+
          // login successful, store user in session
-         $this->repo->setSessionUserId($user->id);
+         $this->session->set(static::KEY_USER_ID, $user->id);
+         $this->session->set(static::KEY_SESSION_VERSION, $user->session_version);
          $this->user = $user;
 
          // check for the need to rehash the password now that we have the unencrypted password
@@ -97,8 +115,8 @@ class AuthService
    {
       // destroy current session
       $this->session->clear();
-      // also destroy all other sessions for this user
-      $this->repo->destroySessionsForUser($this->user->id);
+      // invalidate all user sessions
+      $this->repo->rotateUserSession($this->user->id);
       // clear buffer
       $this->user = null;
    }
@@ -118,18 +136,38 @@ class AuthService
     */
    public function getCurrentUser(): ?User
    {
-      if( $this->user === null )
+      if( $this->user === null && $this->session->sessionActive() && $this->session->has(static::KEY_USER_ID) )
       {
          try
          {
-            $this->user = $this->repo->getSessionUser();
+            $this->user = $this->repo->findUser(['id' => $this->session->get(static::KEY_USER_ID)]);
          }
          catch( \Exception $e )
          {
             // session user could not be retrieved, log an error
             error_log("Session user could not be retrieved: " . $e->getMessage());
          }
+
+         /* validate the session version */
+         if( $this->user && $this->user->session_version !== $this->session->get(static::KEY_SESSION_VERSION) )
+         {
+            /* it does not fit - destroy this session */
+            $this->session->clear();
+            $this->user = null;
+         }
       }
       return $this->user;
+   }
+
+   /**
+    * rotate the session version - this will invalidate any active logins in other sessions
+    * keep the current session active, though
+    */
+   public function rotateSessionVersion(): void
+   {
+      $user = $this->getCurrentUser();
+      $new_session_version = $this->repo->rotateUserSession($user->id);
+      $user->session_version = $new_session_version;
+      $this->session->set(static::KEY_SESSION_VERSION, $new_session_version);
    }
 }

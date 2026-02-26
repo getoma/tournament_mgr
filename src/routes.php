@@ -40,6 +40,9 @@ return function (\Slim\App $app)
    // Add AuthContextMiddleWare
    $app->add(\Tournament\Middleware\AuthContextMiddleware::create($app));
 
+   // Add Session Validation
+   $app->add(\Base\Middleware\SessionValidationMiddleware::create($app));
+
    // twig middleware to support various extensions in templates
    $app->add(Slim\Views\TwigMiddleware::create($app, $container->get(Slim\Views\Twig::class)));
 

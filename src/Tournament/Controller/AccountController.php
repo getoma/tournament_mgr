@@ -9,6 +9,7 @@ use Slim\Views\Twig;
 use Tournament\Repository\UserRepository;
 use Tournament\Model\User\User;
 
+use Base\Service\AuthService;
 use Base\Service\PasswordHasher;
 use Base\Service\PrgService;
 
@@ -17,6 +18,7 @@ class AccountController
    public function __construct(
       private Twig $twig,
       private UserRepository $userRepository,
+      private AuthService $authService,
       private PasswordHasher $hasher,
       private PrgService $prgService,
    )
@@ -56,7 +58,7 @@ class AccountController
                $new_password = $this->hasher->hash($data['new_password']);
                $this->userRepository->updateUserPassword($user->id, $new_password);
                // invalidate all other sessions for this user
-               $this->userRepository->destroySessionsForUser($user->id, true);
+               $this->authService->rotateSessionVersion();
             }
          }
       }

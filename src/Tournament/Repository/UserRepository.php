@@ -124,6 +124,7 @@ class UserRepository extends \Base\Repository\UserRepository
          last_login: isset($data['last_login'])? new \DateTime($data['last_login']) : null,
          roles: $roles,
          is_active: $data['is_active'],
+         session_version: $data['session_version'] ?? 1
       );
       $this->users[] = $user;
 

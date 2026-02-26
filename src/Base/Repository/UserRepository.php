@@ -3,17 +3,13 @@
 namespace Base\Repository;
 
 use Base\Model\User;
-use Base\Service\SessionService;
 use PDO;
 
 class UserRepository
 {
-   /* buffer of session user lookups to avoid multiple DB queries in one request */
-   private $sessionUsers = [];
-
    protected const BASE_SELECT_USER_QUERY = "SELECT * FROM users";
 
-   public function __construct(protected \PDO $pdo, private SessionService $session)
+   public function __construct(protected \PDO $pdo)
    {
    }
 
@@ -97,45 +93,12 @@ class UserRepository
       return $stmt->execute(['token_hash' => $tokenHash]);
    }
 
-   public function setSessionUserId(int $userId, ?string $sessionId = null): bool
+   public function rotateUserSession(int $userId): int
    {
-      if ($sessionId === null)
-      {
-         $sessionId = $this->session->id();
-      }
-      $stmt = $this->pdo->prepare("UPDATE sessions SET user_id = :user_id WHERE id = :sid");
-      return $stmt->execute([
-         'user_id' => $userId,
-         'sid' => $sessionId
-      ]);
-   }
-
-   public function getSessionUser(?string $sessionId = null): ?User
-   {
-      if ($sessionId === null)
-      {
-         $sessionId = $this->session->id();
-      }
-      if (isset($this->sessionUsers[$sessionId]))
-      {
-         return $this->sessionUsers[$sessionId];
-      }
-      $stmt = $this->pdo->prepare("SELECT u.* FROM users u JOIN sessions s ON u.id = s.user_id WHERE s.id = :sid");
-      $stmt->execute(['sid' => $sessionId]);
-      $data = $stmt->fetch();
-      $user = $data ? $this->createUserObject($data) : null;
-      $this->sessionUsers[$sessionId] = $user;
-      return $user;
-   }
-
-   public function destroySessionsForUser(int $userId, bool $keepCurrent = false): bool
-   {
-      $stmt = $this->pdo->prepare("DELETE FROM sessions WHERE user_id = :user_id" . ($keepCurrent ? " AND id != :current_sid" : ""));
-      $params = ['user_id' => $userId];
-      if ($keepCurrent)
-      {
-         $params['current_sid'] = $this->session->id();
-      }
-      return $stmt->execute($params);
+      $stmt = $this->pdo->prepare("UPDATE users SET session_version = session_version + 1 WHERE id=?");
+      $stmt->execute([$userId]);
+      $stmt = $this->pdo->prepare("SELECT session_version FROM users WHERE id=?");
+      $stmt->execute([$userId]);
+      return (int)$stmt->fetchColumn();
    }
 }
