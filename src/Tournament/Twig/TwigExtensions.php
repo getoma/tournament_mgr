@@ -24,6 +24,13 @@ class TwigExtensions extends \Twig\Extension\AbstractExtension
       ];
    }
 
+   public function getTests(): array
+   {
+      return [
+         new \Twig\TwigTest('instanceof', [$this, 'hasClassName'])
+      ];
+   }
+
    /* turn code-like strings into "nicer" text */
    public function humanize(string $value): string
    {
@@ -55,5 +62,10 @@ class TwigExtensions extends \Twig\Extension\AbstractExtension
    public function splitCode(string $code, int $cluster = 4): string
    {
       return implode('-', str_split($code, $cluster));
+   }
+
+   public function hasClassName($obj, $className): bool
+   {
+      return (new \ReflectionClass($obj))->getShortName() === $className;
    }
 }

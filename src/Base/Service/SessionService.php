@@ -184,6 +184,7 @@ class SessionService
          if( $e->critical || $this->strict_session_validation )
          {
             $this->clear();
+            throw $e;
          }
          else
          {

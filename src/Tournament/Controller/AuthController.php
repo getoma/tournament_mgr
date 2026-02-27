@@ -45,7 +45,7 @@ class AuthController
       $data = (array)$request->getParsedBody();
       $email = trim($data['email'] ?? '');
       $password = $data['password'];
-      $keepAlive = (bool)$data['keep_alive'] ?? false;
+      $keepAlive = (bool)($data['keep_alive'] ?? false);
       $error = null;
 
       if ($this->authService->login($email, $password, $keepAlive))

@@ -151,9 +151,10 @@ class AuthService
          /* validate the session version */
          if( $this->user && $this->user->session_version !== $this->session->get(static::KEY_SESSION_VERSION) )
          {
-            /* it does not fit - destroy this session */
+            /* it does not fit - destroy this session and throw session validation issue */
             $this->session->clear();
             $this->user = null;
+            throw new SessionValidationIssue('session expired');
          }
       }
       return $this->user;

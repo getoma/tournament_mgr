@@ -9,7 +9,7 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\AreaDevices\AreaDeviceSession;
 
 use Base\Service\SessionService;
-
+use Base\Service\SessionValidationIssue;
 use SKleeschulte\Base32;
 
 
@@ -48,6 +48,7 @@ class AreaDeviceAccountService
       {
          /* no valid session, drop the session identifier */
          $this->session->remove(static::KEY_DEVICE_SESSION_ID);
+         throw new SessionValidationIssue('session expired');
       }
    }
 
@@ -67,7 +68,7 @@ class AreaDeviceAccountService
       $code = substr( Base32::encodeByteStrToCrockford($seed), 0, $code_len );
 
       /* destroy any previous sessions or login tokens */
-      $this->logout($area);
+      $this->invalidateSession($area);
       $this->invalidateLoginCode($area);
 
       /* store this login code */
@@ -131,6 +132,10 @@ class AreaDeviceAccountService
       if( $this->session->has(static::KEY_DEVICE_SESSION_ID) )
       {
          $this->repo->invalidateSession($this->session->get(static::KEY_DEVICE_SESSION_ID));
+      }
+      else
+      {
+         throw new \LogicException('device logout called for non-device-area session');
       }
    }
 
