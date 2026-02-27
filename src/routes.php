@@ -59,7 +59,7 @@ return function (\Slim\App $app)
     */
 
    // create AuthGuard - enforce login on specific routes
-   $authGuard = \Base\Middleware\AuthMiddleware::create($app, 'auth.login.form');
+   $authGuard = \Tournament\Middleware\AuthContextGuard::create($app, 'auth.login.form');
 
    // Add TournamentStatusGuardMiddleware - enforce tournament status based permissions
    $policyGuard = \Tournament\Middleware\TournamentPolicyGuardMiddleware::create($app);
@@ -227,7 +227,7 @@ return function (\Slim\App $app)
          $auth_grp->patch('/dbmigrate', [TestController::class, 'setDbMigration'])->setName('dbmigration.update');
       }
    })
-   ->add($authGuard);
+   ->add($authGuard->check( fn($ctx) => $ctx->isUser() ) );
 
    /**
     * area device routes
@@ -241,6 +241,7 @@ return function (\Slim\App $app)
    $app->group('/device', function (RouteCollectorProxy $device_grp) use ($policyGuard)
    {
       $device_grp->get('/dashboard', [TournamentTreeController::class, 'showAreaDashboard'])->setName('device.dashboard.show');
-   });
+   })
+   ->add($authGuard->check( fn($ctx) => $ctx->isDevice(), 'Diese Seite ist nur für Zugriff von Kampfflächen-Geräten gültig' ));
 };
 
