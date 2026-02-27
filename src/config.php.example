@@ -18,6 +18,8 @@ class config
 
    public static $BASE_PATH = null;
 
+   public static $HTTPS_ONLY = true;
+
    public static $MAIL_FROM_ADDRESS = 'do-not-reply@example.com';
    public static $MAIL_FROM_NAME = 'Tournament Software';
    public static $SMTP_SETTINGS = []; // set it but keep it empty -> defaults to mailpit settings

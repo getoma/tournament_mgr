@@ -27,9 +27,9 @@
     {% elseif errors.password -%}
     <p class="error">{{ errors.password }}</p>
     {%- endif %}
-    {{ form.input('password', 'current_password', 'Aktuelles Passwort', required=true)}}
-    {{ form.input('password', 'new_password', 'Neues Passwort', required=true)}}
-    {{ form.input('password', 'new_password_repeat', 'Neues Passwort wiederholen', required=true)}}
+    {{ form.input('password', 'current_password', 'Aktuelles Passwort')}}
+    {{ form.input('password', 'new_password', 'Neues Passwort')}}
+    {{ form.input('password', 'new_password_repeat', 'Neues Passwort wiederholen')}}
   </fieldset>
   {{ form.submit('Aktualisieren')}}
 </form>

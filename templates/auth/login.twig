@@ -12,6 +12,7 @@
   <form method="post" action="{{ url_for('auth.login.attempt') }}">
     {{ form.input('text', 'email', 'E-Mail', email, required=true)}}
     {{ form.input('password', 'password', 'Passwort', required=true)}}
+    {{ form.checkbox('keep_alive', 'Angemeldet bleiben')}}
     {{ form.submit('Anmelden')}}
     <a href="{{ url_for('auth.password.request.form') }}">Passwort vergessen?</a>
   </form>

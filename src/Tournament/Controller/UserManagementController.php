@@ -56,8 +56,6 @@ class UserManagementController
             id: null,
             email: $data['email'],
             display_name: $data['email'],
-            password_hash: '',
-            is_active: true,
             created_at: new \DateTime()
             );
          $this->repo->saveUser($user);
@@ -189,11 +187,12 @@ class UserManagementController
       }
 
       // all fine, save updates and return normal formular
+      $was_active = $user->is_active;
       $user->updateFromArray($data);
       $this->repo->saveUser($user);
 
-      // if user was disabled, log him out immediately
-      if( !$user->is_active ) $this->repo->destroySessionsForUser($user->id);
+      // if user was disabled, invalidate all his current sessions
+      if( $was_active && !$user->is_active ) $this->repo->rotateUserSession($user->id);
 
       // done, redirect-to-GET
       return $this->prgService->redirect($request, $response, 'users.show', $args, 'updated');
