@@ -26,8 +26,7 @@ class RouteArgsResolverMiddleware implements MiddlewareInterface
 
    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
    {
-      $routeArgs    = RouteContext::fromRequest($request)->getRoute()->getArguments();
-      $routeContext = $this->resolver->resolve($routeArgs);
+      $routeContext = $this->resolver->resolve($request);
       $request = $request->withAttribute('route_context', $routeContext);
       $this->twig?->getEnvironment()->addGlobal('route_context', $routeContext);
       return $handler->handle($request);

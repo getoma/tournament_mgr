@@ -7,6 +7,10 @@ use Tournament\Repository\TournamentRepository;
 
 use Tournament\Exception\EntityNotFoundException;
 
+use Psr\Http\Message\ServerRequestInterface;
+
+use Slim\Routing\RouteContext;
+
 /**
  * This class implements the logic to fetch the corresponding data classes from the
  * repo that are referenced in the route parameters.
@@ -15,7 +19,7 @@ use Tournament\Exception\EntityNotFoundException;
 class RouteArgsResolverService
 {
    public function __construct(
-      private TournamentRepository $tournamentRepo,
+      private TournamentRepository  $tournamentRepo,
       private ParticipantRepository $participantRepo
    )
    {
@@ -28,28 +32,29 @@ class RouteArgsResolverService
     * @return array An associative array with keys 'tournament', 'category', 'participant', 'area' depending on which IDs were present in $args
     * @return null if any entry could not be found
     */
-   public function resolve(array $args): RouteArgsContext
+   public function resolve(ServerRequestInterface $request): RouteArgsContext
    {
+      $args   = RouteContext::fromRequest($request)->getRoute()->getArguments();
       $result = new RouteArgsContext(args: $args);
       if( isset($args['tournamentId']) )
       {
          $result->tournament = $this->tournamentRepo->getTournamentById($args['tournamentId'])
-                             ?? throw new EntityNotFoundException('Tournament not found');
+                             ?? throw new EntityNotFoundException($request, 'Tournament not found');
       }
       if (isset($args['categoryId']))
       {
          $result->category = $this->tournamentRepo->getCategoryById($args['categoryId'])
-                           ?? throw new EntityNotFoundException('Category not found');
+                           ?? throw new EntityNotFoundException($request, 'Category not found');
       }
       if (isset($args['participantId']))
       {
          $result->participant = $this->participantRepo->getParticipantById($args['participantId'])
-                              ?? throw new EntityNotFoundException('Participant not found');
+                              ?? throw new EntityNotFoundException($request, 'Participant not found');
       }
       if (isset($args['areaId']))
       {
          $result->area = $this->tournamentRepo->getAreaById($args['areaId'])
-                       ?? throw new EntityNotFoundException('Area not found');
+                       ?? throw new EntityNotFoundException($request, 'Area not found');
       }
       if (isset($args['pool']))
       {

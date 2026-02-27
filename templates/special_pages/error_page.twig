@@ -1,0 +1,17 @@
+{% include 'base/header.twig' %}
+
+{%- set header_dict = {
+  403: 'Zugriff nicht erlaubt',
+  404: 'Seite oder Eintrag nicht gefunden'
+}-%}
+
+<section>
+  <h2>{{ header_dict[code]|default('Unerwarteter Fehler (' ~ code ~ ')') }}</h2>
+  <p class="error">{{message}}</p>
+  {% if code == 500 and debug %}
+  <h2>Traceback</h2>
+  <pre>{{ exception.getTraceAsString() }}</pre>
+  {% endif %}
+</section>
+
+{% include 'base/footer.twig' %}

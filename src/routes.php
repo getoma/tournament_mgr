@@ -10,8 +10,6 @@ use Tournament\Controller\TournamentTreeController;
 use Tournament\Controller\UserManagementController;
 
 use Tournament\Policy\TournamentAction;
-use Tournament\Exception\EntityNotFoundException;
-use Tournament\Middleware\EntityNotFoundHandler;
 
 use Base\Service\RedirectHandler;
 use Slim\Middleware\MethodOverrideMiddleware;
@@ -46,10 +44,11 @@ return function (\Slim\App $app)
    // method override: support overriding the HTTP method - needed for html clients that only support GET/POST
    $app->add(new MethodOverrideMiddleware());
 
-   // Add Error Handling Middleware
-   $errMW = $app->addErrorMiddleware(config::$debug ?? false, true, false);
-   // Add custom handler for EntityNotFoundException
-   $errMW->setErrorHandler(EntityNotFoundException::class, EntityNotFoundHandler::create($app));
+   // Add Error Handling Middleware, and register our error page renderer
+   $app->addErrorMiddleware(config::$debug ?? false, true, false)
+       ->getDefaultErrorHandler()
+       ->registerErrorRenderer('text/html', \Base\Middleware\ErrorPageRenderer::create($app, 'special_pages/error_page.twig'));
+
 
    /**********************
     * Local MiddleWare Initialization
