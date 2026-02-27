@@ -114,7 +114,7 @@ class TournamentTreeController
 
       // Load the tournament structure for this category and fetch the specific chunk
       $structure = $this->structureLoadService->load($ctx->category);
-      $chunk = $structure->chunks[$args['chunk']] ?? throw new EntityNotFoundException('Chunk not found');
+      $chunk = $structure->chunks[$args['chunk']] ?? throw new EntityNotFoundException($request, 'Chunk not found');
 
       return $this->view->render($response, 'tournament/navigation/area_ko.twig', [
          'ko'         => $chunk->root->getRounds(),
@@ -132,7 +132,7 @@ class TournamentTreeController
       // Load the tournament structure for this category and fetch the specific chunk
       $structure ??= $this->structureLoadService->load($ctx->category);
       /** @var Pool $pool */
-      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found');
+      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found');
 
       return $this->view->render($response, 'tournament/navigation/pool_home.twig', [
          'pool' => $pool,
@@ -152,7 +152,7 @@ class TournamentTreeController
       $structure = $this->structureLoadService->load($ctx->category);
 
       /** @var Pool $pool */
-      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
+      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found: ' . $args['pool']);
 
       if( !$pool->needsDecisionRound() )
       {
@@ -198,7 +198,7 @@ class TournamentTreeController
       $structure = $this->structureLoadService->load($ctx->category);
 
       /** @var Pool $pool */
-      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
+      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found: ' . $args['pool']);
       /* get the list of current decision matches */
       $matches = $pool->getDecisionMatches($args['decision_round']);
 
@@ -272,18 +272,18 @@ class TournamentTreeController
       if( isset($args['pool']) )
       {
          /** @var Pool $pool */
-         $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
+         $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found: ' . $args['pool']);
          /* get the ordered list of matches in the current pool */
          $nav_match_list = $pool->getMatchList();
          /* get the current match node */
-         $node = $nav_match_list->findNode($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+         $node = $nav_match_list->findNode($args['matchName']) ?? throw new EntityNotFoundException($request, 'Match not found: ' . $args['matchName']);
       }
       else
       {
          /* get the ordered list of matches in the current area.
           * include non-real matches as the current match might be non-real */
          $root = $structure->ko;
-         $node = $root->findByName($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+         $node = $root->findByName($args['matchName']) ?? throw new EntityNotFoundException($request, 'Match not found: ' . $args['matchName']);
          $nav_match_list = $root->getMatchList()->filter(fn(MatchNode $e) => $e->area == $node->area);
       }
 
@@ -346,16 +346,16 @@ class TournamentTreeController
       if (isset($args['pool']))
       {
          /** @var Pool $pool */
-         $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException('Pool not found: ' . $args['pool']);
+         $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found: ' . $args['pool']);
          /* get the ordered list of matches in the current pool */
-         $node = $pool->getMatchList()->findNode($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+         $node = $pool->getMatchList()->findNode($args['matchName']) ?? throw new EntityNotFoundException($request, 'Match not found: ' . $args['matchName']);
       }
       else
       {
          /* get the ordered list of matches in the current area.
           * include non-real matches as the current match might be non-real */
          $root = $structure->ko;
-         $node = $root->findByName($args['matchName']) ?? throw new EntityNotFoundException('Match not found: ' . $args['matchName']);
+         $node = $root->findByName($args['matchName']) ?? throw new EntityNotFoundException($request, 'Match not found: ' . $args['matchName']);
       }
 
       /* prepare error message */
@@ -407,7 +407,7 @@ class TournamentTreeController
             }
             else
             {
-               $participant = $this->p_repo->getParticipantById($data['participant']) ?? throw new EntityNotFoundException('Unknown Participant');
+               $participant = $this->p_repo->getParticipantById($data['participant']) ?? throw new EntityNotFoundException($request, 'Unknown Participant');
 
                if( $data['action'] === 'winner' )
                {

@@ -85,7 +85,7 @@ class UserManagementController
    public function showUser(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
    {
       $user = isset($args['userId'])? $this->repo->findUser(['id' => $args['userId']]) : null;
-      if(!isset($user)) throw new EntityNotFoundException('user not found');
+      if(!isset($user)) throw new EntityNotFoundException($request, 'user not found');
 
       return $this->twig->render($response, 'user/user_details.twig', [
          'user'   => $user,
@@ -97,7 +97,7 @@ class UserManagementController
    {
       /** @var User $user */
       $user = isset($args['userId']) ? $this->repo->findUser(['id' => $args['userId']]) : null;
-      if (!isset($user)) throw new EntityNotFoundException('user not found');
+      if (!isset($user)) throw new EntityNotFoundException($request, 'user not found');
 
       // only allow to send a "new user mail" as long as no password is set
       if ($user->password_hash)
@@ -156,7 +156,7 @@ class UserManagementController
    {
       /** @var User $user */
       $user = isset($args['userId']) ? $this->repo->findUser(['id' => $args['userId']]) : null;
-      if (!isset($user)) throw new EntityNotFoundException('user not found');
+      if (!isset($user)) throw new EntityNotFoundException($request, 'user not found');
 
       /** @var TournamentPolicy $policy */
       $policy = $request->getAttribute('policy');
@@ -203,7 +203,7 @@ class UserManagementController
    {
       /** @var User $user */
       $user = isset($args['userId']) ? $this->repo->findUser(['id' => $args['userId']]) : null;
-      if (!isset($user)) throw new EntityNotFoundException('user not found');
+      if (!isset($user)) throw new EntityNotFoundException($request, 'user not found');
 
       $this->repo->deleteUser($user->id);
 
