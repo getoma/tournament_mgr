@@ -8,7 +8,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Slim\Views\Twig;
 use Tournament\Repository\AreaDeviceAccountRepository;
 use Tournament\Repository\TournamentRepository;
-use Tournament\Service\AreaDeviceAccountService;
+use Tournament\Service\AreaDeviceService;
 use Tournament\Service\RouteArgsContext;
 
 class AreaDeviceAuthController
@@ -16,7 +16,7 @@ class AreaDeviceAuthController
    const LOGIN_CODE_LEN = 8;
 
    public function __construct(
-      private AreaDeviceAccountService $service,
+      private AreaDeviceService $service,
       private AreaDeviceAccountRepository $repo,
       private TournamentRepository $tournament_repo,
       private PrgService $prgService,

@@ -13,7 +13,7 @@ use Base\Service\SessionValidationIssue;
 use SKleeschulte\Base32;
 
 
-class AreaDeviceAccountService
+class AreaDeviceService
 {
    private ?Area $area = null;
    private ?AreaDeviceSession $device = null;

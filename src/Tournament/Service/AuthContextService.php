@@ -12,7 +12,7 @@ class AuthContextService
 {
    public function __construct(
       private AuthService $authService,
-      private AreaDeviceAccountService $deviceService,
+      private AreaDeviceService $deviceService,
       private TournamentRepository $tournamentRepo
    )
    {
