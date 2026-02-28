@@ -200,12 +200,17 @@ class SessionService
 
    public function clear(): void
    {
-      if( $this->sessionActive() )
+      /* delete the token cookie if set */
+      if (isset($_COOKIE[static::TOKEN_COOKIE_NAME]))
       {
-         $_SESSION = [];
-         session_destroy();
-         setcookie(session_name(), '', time() - 42000);
+         setcookie(static::TOKEN_COOKIE_NAME, '', time() - 600);
+         unset($_COOKIE[static::TOKEN_COOKIE_NAME]);
       }
+
+      /* delete the session contents */
+      $_SESSION = [];
+      session_destroy();
+      setcookie(session_name(), '', time() - 600);
    }
 
    public function get(string $key, mixed $default = null): mixed

@@ -131,10 +131,14 @@ class AreaDeviceAccountService
    {
       if( $this->session->has(static::KEY_DEVICE_SESSION_ID) )
       {
+         // mark the area device session as invalidated in the DB
          $this->repo->invalidateSession($this->session->get(static::KEY_DEVICE_SESSION_ID));
+         // clear the current php session
+         $this->session->clear();
       }
       else
       {
+         // logout should never be called if this is no device session, so notify about this program flow issue
          throw new \LogicException('device logout called for non-device-area session');
       }
    }
