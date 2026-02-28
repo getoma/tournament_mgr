@@ -21,13 +21,16 @@
     <li>{{p.lastname}}, {{p.firstname}}</li>
     {% endfor %}
   </ul>
+  <form action="{{url_for('tournaments.categories.assignParticipants', route_context.args)}}" method="post">
+  {{ form.submit('Diese Teilnehmer einsortieren')}}
+  </form>
 </section>
 {% endif %}
 
 {% if policy.isActionAllowed('ManageSetup') %}
 <section>
 <form action="{{url_for('tournaments.categories.shuffleParticipants', route_context.args)}}" method="post">
-{{ form.submit('Teilnehmer neu verteilen')}}
+{{ form.submit('Teilnehmer neu verteilen', confirm="Wirklich alle Teilnehmer neu verteilen?")}}
 </form>
 </section>
 {% endif %}

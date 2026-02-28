@@ -40,6 +40,17 @@ class KoNode extends MatchNode
       if ($this->slotWhite instanceof ParticipantSlot) $this->slotWhite->slotName = $name . 'w';
    }
 
+   /**
+    * extract the Node name from a KoNode slot - defined here to keep this knowledge on one place
+    * (see above in setName() where slot names are constructed)
+    */
+   public static function getNodeNameFromSlotName(string $slotName, bool $throw_if_invalid = true): ?string
+   {
+      if( in_array(substr($slotName, -1), ['w', 'r']) ) return substr($slotName, 0, -1);
+      if( $throw_if_invalid ) throw new \InvalidArgumentException("'$slotName' is not a valid KoNode slot name");
+      return null;
+   }
+
    /* KO matches always need a winner to be completed */
    public function tiesAllowed(): bool
    {

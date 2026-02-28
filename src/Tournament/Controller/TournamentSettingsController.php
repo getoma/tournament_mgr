@@ -353,9 +353,6 @@ class TournamentSettingsController
       $ctx->category->updateFromArray($data);
       $this->repo->saveCategory($ctx->category);
 
-      /* reshuffle the participants into the new configuration */
-      $this->structureLoadService->populate($ctx->category);
-
       /* forward to category page */
       return $this->prgService->redirect($request, $response, 'tournaments.categories.edit', $args);
    }

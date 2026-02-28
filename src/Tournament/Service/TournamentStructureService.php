@@ -3,6 +3,7 @@
 namespace Tournament\Service;
 
 use Tournament\Model\Category\Category;
+use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\TournamentStructure\TournamentStructure;
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
@@ -26,7 +27,7 @@ class TournamentStructureService
     */
    public function load(Category $category): TournamentStructure
    {
-      $participants = $this->participantRepo->getParticipantsWithSlotByCategoryId($category->id);
+      $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
       $matchRecords = $this->matchDataRepo->getMatchRecordsByCategoryId($category->id);
 
       $struc = $this->initialize($category);
@@ -36,14 +37,31 @@ class TournamentStructureService
    }
 
    /**
-    * populate a tournament structure by shuffling in all participants
+    * repopulate a tournament structure by shuffling in all participants again from scratch
     */
-   public function populate(Category $category): TournamentStructure
+   public function repopulate(Category $category): TournamentStructure
    {
       $struc = $this->initialize($category);
       $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
       $slot_assignment = $struc->getParticipantHandler()->populate($participants);
       $this->participantRepo->updateAllParticipantSlots($category->id, $slot_assignment);
+      return $struc;
+   }
+
+   /**
+    * add a new list of participants to an already populated structure
+    * @param Category|TournamentStructure $struc - the tournament structure to add participants to (optionally identified by the category)
+    * @param ParticipantCollection $participants - the participants to add, defaults to $struc->unmapped_participants
+    */
+   public function addParticipants(Category|TournamentStructure $struc, ?ParticipantCollection $participants = null): TournamentStructure
+   {
+      if ($struc instanceof Category)
+      {
+         $struc = $this->load($struc);
+      }
+      $participants  ??= $struc->unmapped_participants->copy();
+      $slot_assignment = $struc->getParticipantHandler()->populate($participants);
+      $this->participantRepo->updateAllParticipantSlots($struc->category->id, $slot_assignment);
       return $struc;
    }
 

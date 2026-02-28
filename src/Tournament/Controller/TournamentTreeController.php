@@ -253,12 +253,23 @@ class TournamentTreeController
    /**
     * reroll all participants
     */
-   public function repopulate(Request $request, Response $response, array $args): Response
+   public function repopulate(Request $request, Response $response): Response
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
-      $this->structureLoadService->populate($ctx->category);
-      return $this->prgService->redirect($request, $response, 'tournaments.categories.show', $args, 'repopulated');
+      $this->structureLoadService->repopulate($ctx->category);
+      return $this->prgService->redirectBack($request, $response, 'repopulated');
+   }
+
+   /**
+    * assign unslotted participants into the structure
+    */
+   public function addUnslottedParticipants(Request $request, Response $response): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $this->structureLoadService->addParticipants($ctx->category);
+      return $this->prgService->redirectBack($request, $response, 'add_unslotted');
    }
 
    public function showMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response

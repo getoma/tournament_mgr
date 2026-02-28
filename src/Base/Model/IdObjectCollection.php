@@ -53,4 +53,13 @@ class IdObjectCollection extends ObjectCollection
    {
       return static::new(array_reverse($this->elements, true), $this->element_type);
    }
+
+   public function intersect(ObjectCollection $other, ?callable $cmp = null): static
+   {
+      // in case of IdObjectCollection, we can use the ID for the sorting, and make this
+      // method also functional out-of-the box for non-stringable objects
+      // no need to check whether $other is of the same class, that is done in parent::intersect() anyway
+      $cmp ??= fn($a, $b) => static::get_id($a) <=> static::get_id($b);
+      return parent::intersect($other, $cmp);
+   }
 }

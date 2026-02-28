@@ -10,12 +10,16 @@ class CategoryAssignmentCollection extends \Base\Model\IdObjectCollection
 
    static protected function get_id($value): mixed
    {
-      return $value->category->id;
+      return $value->categoryId;
    }
 
    public function offsetSet($offset, $value): void
    {
       if( $value instanceof Category )
+      {
+         $value = new CategoryAssignment($value->id);
+      }
+      else if( is_int($value) )
       {
          $value = new CategoryAssignment($value);
       }

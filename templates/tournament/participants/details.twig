@@ -26,9 +26,9 @@
         {% for category in categories -%}
         <tr>
           <td>{{category.name}}
-            <input type="hidden" name="categories[]" value="{{category.id}}">
+            <input type="hidden" name="category_list[]" value="{{category.id}}">
           </td>
-          <td><input type="checkbox" name="category_selection[]" value="{{category.id}}" title="{{category.name}}"
+          <td><input type="checkbox" name="categories[]" value="{{category.id}}" title="{{category.name}}"
               {%- if prev.categories is not null?(category.id in prev.categories):(participant.categories[category.id]??false) %} checked{%endif%}>
           </td>
           <td>

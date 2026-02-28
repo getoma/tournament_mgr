@@ -98,11 +98,12 @@
 {%- endif %}
 {%- endmacro %}
 
-{%- macro submit(label, name='', value='', attributes={}, confirm='', active=true) -%}
+{%- macro submit(label, name='', value='', attributes={}, confirm='', action='', active=true) -%}
 <button
   {%- if name is not empty %} name="{{name}}" value="{{value}}"{% endif -%}
   {%- for attr, val in attributes %} {{ attr }}="{{ val }}"{% endfor -%}
   {%- if confirm is not empty %} onclick="return confirm('{{ confirm }}');"{% endif -%}
+  {%- if action is not empty %} formaction="{{action}}"{% endif -%}
   {%- if not active %} disabled{% endif -%}
   >{{ label }}</button>
 {%- endmacro %}
