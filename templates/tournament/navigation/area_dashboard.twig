@@ -6,14 +6,20 @@
   'header': area.name,
 } %}
 
-{% for section, matches in match_list -%}
+{% for category in categories -%}
 <section>
-<h2>{{ section }}</h2>
-  <ul>
-  {% for node in matches -%}
-  <li>{{part.printMatch(node)}}</li>
-  {%- endfor %}
-  </ul>
+  <h2>{{ category.name }}</h2>
+
+  {% for section, matches in match_lists[category.id] -%}
+  <section>
+  <h3>{{ section }}</h3>
+    <ul>
+    {% for node in matches -%}
+    <li>{{part.printMatch(node)}}</li>
+    {%- endfor %}
+    </ul>
+  </section>
+  {% endfor %}
 </section>
 {% endfor %}
 

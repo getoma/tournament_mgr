@@ -496,25 +496,32 @@ class TournamentTreeController
       $area = $ctx->area ?? $auth_ctx->area;
 
       /* load the structure */
-      $structure = $this->structureLoadService->load($tournament->categories->front());
-
-      $match_list = []; // array of MatchNodeCollections for each section of the tournament
-
-      /* load all assigned pool matches */
-      foreach( $structure->pools as $pool )
+      $category_data = [];
+      foreach( $tournament->categories as $category )
       {
-         /** @var Pool $pool */
-         $pool_matches = $pool->getMatchList()->filter(fn($m) => $m->area === $area);
-         if( $pool_matches->count() ) $match_list[$pool->getName()] = $pool_matches;
-      }
+         $structure = $this->structureLoadService->load($category);
 
-      /* load all assigned KO matches */
-      $match_list['ko'] = $structure->ko->getMatchList()->filter(fn($m) => $m->area === $area);
+         $match_list = []; // array of MatchNodeCollections for each section of the tournament
+
+         /* load all assigned pool matches */
+         foreach( $structure->pools as $pool )
+         {
+            /** @var Pool $pool */
+            $pool_matches = $pool->getMatchList()->filter(fn($m) => $m->area === $area);
+            if( $pool_matches->count() ) $match_list['Pool ' . $pool->getName()] = $pool_matches;
+         }
+
+         /* load all assigned KO matches */
+         $match_list['KO'] = $structure->ko->getMatchList()->filter(fn($m) => $m->area === $area);
+
+         $category_data[$category->id] = $match_list;
+      }
 
       /* done */
       return $this->view->render($response, 'tournament/navigation/area_dashboard.twig', [
-         'area'       => $area,
-         'match_list' => $match_list
+         'area'        => $area,
+         'categories'  => $tournament->categories,
+         'match_lists' => $category_data,
       ]);
    }
 }
