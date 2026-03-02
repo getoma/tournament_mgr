@@ -4,7 +4,6 @@ namespace Tournament\Twig;
 
 use Twig\TwigFilter;
 use Carbon\Carbon;
-use Carbon\CarbonInterface;
 
 class TwigExtensions extends \Twig\Extension\AbstractExtension
 {

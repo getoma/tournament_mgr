@@ -6,17 +6,11 @@
 }-%}
 
 <section>
-  {% if exception is instanceof('SessionValidationIssue') %}
-  <h2>Abgemeldet</h2>
-  <p>Du wurdest aus Sicherheitsgründen abgemeldet.</p>
-  <p><a href="{{ url_for('auth.login.form') }}">Neu anmelden</a></p>
-  {% else %}
   <h2>{{ header_dict[code]|default('Unerwarteter Fehler (' ~ code ~ ')') }}</h2>
   <p class="error">{{message}}</p>
   {% if code == 500 and debug %}
   <h2>Traceback</h2>
   <pre>{{ exception.getTraceAsString() }}</pre>
-  {% endif %}
   {% endif %}
 </section>
 

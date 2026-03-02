@@ -13,6 +13,7 @@ use Tournament\Controller\AreaDeviceAuthController;
 use Tournament\Policy\TournamentAction;
 
 use Base\Service\RedirectHandler;
+use Base\Service\SessionValidationIssue;
 use Slim\Middleware\MethodOverrideMiddleware;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -49,9 +50,11 @@ return function (\Slim\App $app)
    $app->add(new MethodOverrideMiddleware());
 
    // Add Error Handling Middleware, and register our error page renderer
-   $app->addErrorMiddleware(config::$debug ?? false, true, false)
-       ->getDefaultErrorHandler()
-       ->registerErrorRenderer('text/html', \Base\Middleware\ErrorPageRenderer::create($app, 'special_pages/error_page.twig'));
+   $errMW = $app->addErrorMiddleware(config::$debug ?? false, true, false);
+   $errMW->getDefaultErrorHandler()
+         ->registerErrorRenderer('text/html', \Base\Middleware\ErrorPageRenderer::create($app, 'special_pages/error_page.twig'));
+   // also correctly handle SessionValidationIssues by just showing an error page about the occurred logout */
+   $errMW->setErrorHandler(SessionValidationIssue::class, SessionValidationIssue::getSlimErrorHandler($app, 'special_pages/forced_logout.twig'));
 
 
    /**********************

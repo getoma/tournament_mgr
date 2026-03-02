@@ -2,16 +2,6 @@
 
 namespace Base\Service;
 
-use SessionHandlerInterface;
-
-class SessionValidationIssue extends \RuntimeException
-{
-   public function __construct(string $message = "", public bool $critical = true)
-   {
-      parent::__construct($message);
-   }
-}
-
 /**
  * Service to manage user sessions.
  */
@@ -37,7 +27,7 @@ class SessionService
    private readonly array $cookie_options;
 
    public function __construct(
-      ?SessionHandlerInterface $handler = null,
+      ?\SessionHandlerInterface $handler = null,
       array $cookie_options = [],
       private bool $strict_session_validation = false,
       private int $rotation_interval_s = 3600, // once per hour
@@ -49,7 +39,7 @@ class SessionService
       ini_set('session.use_only_cookies', 1);
       session_set_cookie_params($this->cookie_options);
 
-      if( !self::$handler_set )
+      if( !self::$handler_set && isset($handler) )
       {
          session_set_save_handler($handler, true);
          self::$handler_set = true;
