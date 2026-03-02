@@ -60,7 +60,8 @@ class ParticipantHandler
     */
    private static function getPoolIdFromSlotNameInt(string $slotName): string
    {
-      return array_first(explode('.', $slotName));
+      list ($poolId) = (explode('.', $slotName));
+      return $poolId;
    }
 
    /**
