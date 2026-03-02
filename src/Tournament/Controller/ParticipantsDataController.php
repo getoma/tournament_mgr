@@ -167,7 +167,7 @@ class ParticipantsDataController
       }
 
       // if requested, reseed all participants
-      if( $data['shuffle_in'] ?: false )
+      if( $data['shuffle_in'] ?? false )
       {
          foreach( $categories as $c )
          {
