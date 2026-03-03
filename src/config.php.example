@@ -10,6 +10,8 @@ class config
       'pw'     => ''
    ];
 
+   public static $DEFAULT_TIME_ZONE = 'Europe/Berlin';
+
    public static $TWIG_CACHE_DIR = '';
    public static $TWIG_AUTO_RELOAD = true;
 

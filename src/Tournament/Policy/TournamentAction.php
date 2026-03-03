@@ -11,6 +11,7 @@ enum TournamentAction: string
    case ManageOwners       = "ManageOwners";       // allow to assign owners to a tournament
    case ManageSetup        = "ManageSetup";        // manage tournament setup (categories, areas, structure, shuffle participants)
    case ManageParticipants = "ManageParticipants"; // manage participants (add, edit, remove)
+   case ManageAreaDevices  = "ManageAreaDevices";  // create login codes for area devices, and be able to disable them
    case RecordResults      = "RecordResults";      // record results (matches)
    case TransitionState    = "TransitionState";    // change current state of the tournament
    case DeleteTournament   = "DeleteTournament";   // delete a tournament

@@ -2,16 +2,6 @@
 
 namespace Base\Service;
 
-use SessionHandlerInterface;
-
-class SessionValidationIssue extends \RuntimeException
-{
-   public function __construct(string $message = "", public bool $critical = true)
-   {
-      parent::__construct($message);
-   }
-}
-
 /**
  * Service to manage user sessions.
  */
@@ -23,8 +13,8 @@ class SessionService
 
    protected const DEFAULT_COOKIE_OPTIONS = [
       'secure'   => true,
-      'httponly' => false,
-      'samesite' => 'Lax'
+      'httponly' => true,
+      'samesite' => 'Strict'
    ];
 
    protected const KEY_EXPIRES         = '_session.EXPIRES';
@@ -37,7 +27,7 @@ class SessionService
    private readonly array $cookie_options;
 
    public function __construct(
-      ?SessionHandlerInterface $handler = null,
+      ?\SessionHandlerInterface $handler = null,
       array $cookie_options = [],
       private bool $strict_session_validation = false,
       private int $rotation_interval_s = 3600, // once per hour
@@ -49,7 +39,7 @@ class SessionService
       ini_set('session.use_only_cookies', 1);
       session_set_cookie_params($this->cookie_options);
 
-      if( !self::$handler_set )
+      if( !self::$handler_set && isset($handler) )
       {
          session_set_save_handler($handler, true);
          self::$handler_set = true;
@@ -101,7 +91,9 @@ class SessionService
       if (!$this->has(static::KEY_USER_AGENT_HASH) || $reload) $this->set(static::KEY_USER_AGENT_HASH, hash('sha256', $_SERVER['HTTP_USER_AGENT']));
 
       /* set a client token in a separate cookie as additional session hijacking protection */
-      if( $set_token && (!$this->has(static::KEY_TOKEN_HASH) || $reload) )
+      if( ($set_token && !$this->has(static::KEY_TOKEN_HASH)) // token creation requested
+        ||($keepAlive &&  $this->has(static::KEY_TOKEN_HASH)) // keep alive - need to create a new one as we cannot reset the old one
+        )
       {
          /* create the device token for additional security */
          $deviceToken = bin2hex(random_bytes(32));
@@ -135,24 +127,39 @@ class SessionService
    {
       if( !$this->sessionActive() ) return;
 
+      if ($this->has(static::KEY_TOKEN_HASH))
+      {
+         /* validate the session token */
+         try
+         {
+            if (!isset($_COOKIE[static::TOKEN_COOKIE_NAME]))
+            {
+               throw new SessionValidationIssue('no client token provided');
+            }
+            $tokenHash = hash('sha256', $_COOKIE[static::TOKEN_COOKIE_NAME]);
+            if ($tokenHash !== $this->get(static::KEY_TOKEN_HASH))
+            {
+               throw new SessionValidationIssue('client token mismatch detected');
+            }
+         }
+         catch( SessionValidationIssue $e )
+         {
+            /* on a token issue, we assume someone hijacked the PHP_SESSION_ID.
+             * We do not delete the original session, but trigger a session regeneration
+             * next time someone with a valid token tries to use it.
+             */
+            $this->set(static::KEY_LAST_ROTATION, time() - 2 * $this->rotation_interval_s);
+            setcookie(session_name(), '', time() - 600); // also try to delete the session cookie for this client
+            throw $e;
+         }
+      }
+
+      /* validate all other session meta data */
       try
       {
          if ($this->has(static::KEY_EXPIRES) && $this->get(static::KEY_EXPIRES) < time())
          {
             throw new SessionValidationIssue('attempt to use expired session');
-         }
-
-         if ($this->has(static::KEY_TOKEN_HASH))
-         {
-            if( !isset($_COOKIE[static::TOKEN_COOKIE_NAME]) )
-            {
-               throw new SessionValidationIssue('no client token provided');
-            }
-            $tokenHash = hash('sha256', $_COOKIE[static::TOKEN_COOKIE_NAME]);
-            if( $tokenHash !== $this->get(static::KEY_TOKEN_HASH) )
-            {
-               throw new SessionValidationIssue('client token mismatch detected');
-            }
          }
 
          if ($this->has(static::KEY_IP_ADDRESS) && $this->get(static::KEY_IP_ADDRESS) !== $_SERVER['REMOTE_ADDR'])
@@ -183,10 +190,13 @@ class SessionService
          error_log("session: " . $e->getMessage());
          if( $e->critical || $this->strict_session_validation )
          {
+            /* on a critical session validation issue, destroy this session */
             $this->clear();
+            throw $e;
          }
          else
          {
+            /* on a non-critical issue, reload the session - the issue is only logged */
             $this->regenerateSession(reload: true);
          }
       }
@@ -199,12 +209,17 @@ class SessionService
 
    public function clear(): void
    {
-      if( $this->sessionActive() )
+      /* delete the token cookie if set */
+      if (isset($_COOKIE[static::TOKEN_COOKIE_NAME]))
       {
-         $_SESSION = [];
-         session_destroy();
-         setcookie(session_name(), '', time() - 42000);
+         setcookie(static::TOKEN_COOKIE_NAME, '', time() - 600);
+         unset($_COOKIE[static::TOKEN_COOKIE_NAME]);
       }
+
+      /* delete the session contents */
+      $_SESSION = [];
+      session_destroy();
+      setcookie(session_name(), '', time() - 600);
    }
 
    public function get(string $key, mixed $default = null): mixed

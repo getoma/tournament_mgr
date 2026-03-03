@@ -12,7 +12,7 @@ use Slim\Routing\RouteContext;
 use Slim\Exception\HttpNotFoundException;
 
 /**
- * Perform user authentication and check if user may access the requested page
+ * Check if client is authenticated.
  * If no authentication available, forward to login prompt.
  */
 class AuthMiddleware implements MiddlewareInterface

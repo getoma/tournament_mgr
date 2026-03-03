@@ -24,6 +24,7 @@ use Tournament\Exception\EntityNotFoundException;
 use Respect\Validation\Validator as v;
 use Base\Service\DataValidationService;
 use Base\Service\PrgService;
+use Tournament\Service\AuthContext;
 
 class TournamentTreeController
 {
@@ -492,5 +493,46 @@ class TournamentTreeController
          $route = RouteContext::fromRequest($request)->getRoute()->getName();
          return $this->prgService->redirect($request, $response, $route, $args, 'match_updated');
       }
+   }
+
+   public function showAreaDashboard(Request $request, Response $response, array $args)
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      /** @var AuthContext $auth_ctx */
+      $auth_ctx = $request->getAttribute('auth_context');
+
+      /* get the tournament and area, either from route parameters, or auth_context */
+      $tournament = $ctx->tournament ?? $auth_ctx->tournament;
+      $area = $ctx->area ?? $auth_ctx->area;
+
+      /* load the structure */
+      $category_data = [];
+      foreach( $tournament->categories as $category )
+      {
+         $structure = $this->structureLoadService->load($category);
+
+         $match_list = []; // array of MatchNodeCollections for each section of the tournament
+
+         /* load all assigned pool matches */
+         foreach( $structure->pools as $pool )
+         {
+            /** @var Pool $pool */
+            $pool_matches = $pool->getMatchList()->filter(fn($m) => $m->area === $area);
+            if( $pool_matches->count() ) $match_list['Pool ' . $pool->getName()] = $pool_matches;
+         }
+
+         /* load all assigned KO matches */
+         $match_list['KO'] = $structure->ko->getMatchList()->filter(fn($m) => $m->area === $area);
+
+         $category_data[$category->id] = $match_list;
+      }
+
+      /* done */
+      return $this->view->render($response, 'tournament/navigation/area_dashboard.twig', [
+         'area'        => $area,
+         'categories'  => $tournament->categories,
+         'match_lists' => $category_data,
+      ]);
    }
 }

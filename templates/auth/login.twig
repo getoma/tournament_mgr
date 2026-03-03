@@ -14,8 +14,14 @@
     {{ form.input('password', 'password', 'Passwort', required=true)}}
     {{ form.checkbox('keep_alive', 'Angemeldet bleiben')}}
     {{ form.submit('Anmelden')}}
-    <a href="{{ url_for('auth.password.request.form') }}">Passwort vergessen?</a>
   </form>
+
+  <nav id="login_nav">
+    <ul>
+      <li><a href="{{ url_for('auth.password.request.form') }}">Passwort vergessen?</a></li>
+      <li><a href="{{ url_for('device.login.form') }}">Mit Einmal-Code anmelden</a></li>
+    </ul>
+  </nav>
 </section>
 
 {% include 'base/footer.twig' %}

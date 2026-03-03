@@ -174,6 +174,14 @@ class TournamentRepository
       return $this->areas[$id] ?? null;
    }
 
+   public function getTournamentByAreaId($id): ?Tournament
+   {
+      $stmt = $this->pdo->prepare("SELECT t.* FROM tournaments t JOIN areas a ON t.id = a.tournament_id WHERE a.id = :id");
+      $stmt->execute(['id' => $id]);
+      $data = $stmt->fetch(PDO::FETCH_ASSOC);
+      return $data? $this->createTournamentObject($data) : null;
+   }
+
    public function saveArea(Area $area): bool
    {
       $result = false;

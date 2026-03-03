@@ -1,12 +1,25 @@
 <?php
 
-namespace Tournament\Model\User;
+namespace Tournament\Service;
+
+use Tournament\Model\Area\Area;
+use Tournament\Model\Tournament\Tournament;
+use Tournament\Model\User\User;
+use Tournament\Model\User\Role;
+
+enum AuthType
+{
+   case USER;
+   case DEVICE;
+}
 
 final class AuthContext
 {
    private function __construct(
       private readonly ?AuthType $authtype = null,
       public readonly ?User $user = null,
+      public readonly ?Tournament $tournament = null,
+      public readonly ?Area $area = null,
    )
    {}
 
@@ -47,8 +60,8 @@ final class AuthContext
    }
 
    /* device account */
-   static public function as_device(): static
+   static public function as_device(Tournament $tournament, Area $area): static
    {
-      return new static(authtype: AuthType::DEVICE);
+      return new static(authtype: AuthType::DEVICE, tournament: $tournament, area: $area);
    }
 }

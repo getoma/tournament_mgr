@@ -24,7 +24,7 @@ class AuthContextMiddleware implements MiddlewareInterface
 
    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
    {
-      $ctx = $this->ctxService->createContext($request);
+      $ctx = $this->ctxService->createContext();
       $this->twig->getEnvironment()->addGlobal('auth_context', $ctx);
       $request = $request->withAttribute('auth_context', $ctx);
       return $handler->handle($request);

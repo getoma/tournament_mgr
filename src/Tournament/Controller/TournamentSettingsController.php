@@ -42,9 +42,11 @@ class TournamentSettingsController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $categories = $this->repo->getCategoriesByTournamentId($ctx->tournament->id);
+      $areas = $this->repo->getAreasByTournamentId($ctx->tournament->id);
 
       return $this->view->render($response, 'tournament/navigation/tournament_home.twig', [
          'categories' => $categories,
+         'areas'      => $areas,
       ]);
    }
 

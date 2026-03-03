@@ -4,10 +4,11 @@ namespace Tournament\Policy;
 
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\Tournament\TournamentStatus;
-use Tournament\Model\User\AuthContext;
 use Tournament\Model\User\Role;
 use Tournament\Model\User\RoleCollection;
 use Tournament\Model\User\User;
+
+use Tournament\Service\AuthContext;
 use Tournament\Service\RouteArgsContext;
 
 /**
@@ -17,7 +18,7 @@ final class TournamentPolicy
 {
    function __construct(
       private readonly AuthContext $auth_context,       // auth_context is always available
-      private readonly ?RouteArgsContext $route_context // policy must be accessible/usable even if no RouteArgsContext available
+      private readonly RouteArgsContext $route_context // policy must be accessible/usable even if no RouteArgsContext available
    )
    {
    }
@@ -38,7 +39,7 @@ final class TournamentPolicy
     */
    private function checkStatePolicy(TournamentAction $action): bool
    {
-      $status = $this->route_context?->tournament?->status ?? null;
+      $status = $this->route_context->tournament?->status ?? null;
       return match ($action)
       {
          TournamentAction::ManageDetails => match($status)
@@ -60,6 +61,12 @@ final class TournamentPolicy
             /* adding/removing/editing single participants - always allowed           */
             /* completely reshuffling participants is part of the ManageSetup action! */
             TournamentStatus::Planning, TournamentStatus::Planned, TournamentStatus::Running => true,
+            default => false
+         },
+
+         TournamentAction::ManageAreaDevices => match($status)
+         {
+            TournamentStatus::Planned, TournamentStatus::Running => true,
             default => false
          },
 
@@ -100,23 +107,24 @@ final class TournamentPolicy
       {
          case TournamentAction::BrowseTournament:
             /* allow if has access to this tournament in any way */
-            return $this->route_context?->tournament
+            return $this->route_context->tournament
                 && $this->hasTournamentAccess($this->route_context->tournament);
 
          case TournamentAction::ManageDetails:
          case TournamentAction::ManageOwners:
          case TournamentAction::ManageSetup:
          case TournamentAction::ManageParticipants:
+         case TournamentAction::ManageAreaDevices:
          case TournamentAction::TransitionState:
          case TournamentAction::DeleteTournament:
             /* tournament specific actions: allowed if actual user with tournament ownership */
             return  $this->auth_context->isUser()
-                 && $this->route_context?->tournament?->owners->contains($this->auth_context->user) ?? false;
+                 && $this->route_context->tournament?->owners->contains($this->auth_context->user) ?? false;
 
          case TournamentAction::RecordResults:
             /* allowed if has access to the tournament and is not anonymous */
             return $this->auth_context->isAuthenticated()
-                && $this->route_context?->tournament
+                && $this->route_context->tournament
                 && $this->hasTournamentAccess($this->route_context->tournament);
 
          case TournamentAction::CreateTournaments:

@@ -8,6 +8,9 @@ $container = new DI\Container();
 Slim\Factory\AppFactory::setContainer($container);
 $app = Slim\Factory\AppFactory::create();
 
+// all in UTC
+date_default_timezone_set('UTC');
+
 // set the base path for the application
 if (config::$BASE_PATH ?? false)
 {

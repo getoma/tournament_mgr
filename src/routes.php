@@ -8,10 +8,12 @@ use Tournament\Controller\AccountController;
 use Tournament\Controller\TestController;
 use Tournament\Controller\TournamentTreeController;
 use Tournament\Controller\UserManagementController;
+use Tournament\Controller\AreaDeviceAuthController;
 
 use Tournament\Policy\TournamentAction;
 
 use Base\Service\RedirectHandler;
+use Base\Service\SessionValidationIssue;
 use Slim\Middleware\MethodOverrideMiddleware;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -48,9 +50,11 @@ return function (\Slim\App $app)
    $app->add(new MethodOverrideMiddleware());
 
    // Add Error Handling Middleware, and register our error page renderer
-   $app->addErrorMiddleware(config::$debug ?? false, true, false)
-       ->getDefaultErrorHandler()
-       ->registerErrorRenderer('text/html', \Base\Middleware\ErrorPageRenderer::create($app, 'special_pages/error_page.twig'));
+   $errMW = $app->addErrorMiddleware(config::$debug ?? false, true, false);
+   $errMW->getDefaultErrorHandler()
+         ->registerErrorRenderer('text/html', \Base\Middleware\ErrorPageRenderer::create($app, 'special_pages/error_page.twig'));
+   // also correctly handle SessionValidationIssues by just showing an error page about the occurred logout */
+   $errMW->setErrorHandler(SessionValidationIssue::class, SessionValidationIssue::getSlimErrorHandler($app, 'special_pages/forced_logout.twig'));
 
 
    /**********************
@@ -58,7 +62,7 @@ return function (\Slim\App $app)
     */
 
    // create AuthGuard - enforce login on specific routes
-   $authGuard = \Base\Middleware\AuthMiddleware::create($app, 'auth.login.form');
+   $authGuard = \Tournament\Middleware\AuthContextGuard::create($app, 'auth.login.form');
 
    // Add TournamentStatusGuardMiddleware - enforce tournament status based permissions
    $policyGuard = \Tournament\Middleware\TournamentPolicyGuardMiddleware::create($app);
@@ -77,7 +81,7 @@ return function (\Slim\App $app)
    $app->post('/reset',  [AuthController::class, 'resetPassword'])->setName('auth.password.reset.update');
 
    /***
-    * Routes that need an active login
+    * Routes that need an active user login
     */
    $app->group('', function (RouteCollectorProxy $auth_grp) use ($policyGuard)
    {
@@ -149,6 +153,16 @@ return function (\Slim\App $app)
          }
          )->add( $policyGuard->for(TournamentAction::ManageParticipants) );
 
+         /* area device account settings */
+         $tgrp->group('/areas/devices', function (RouteCollectorProxy $agrp)
+         {
+            $agrp->get('[/]', [AreaDeviceAuthController::class, 'showAreaDeviceStatus'])->setName('tournaments.areas.devices.index');
+            $agrp->post('/{areaId:\d+}/create_code', [AreaDeviceAuthController::class, 'createLoginCode'])->setName('tournaments.areas.devices.createLogin');
+            $agrp->post('/{areaId:\d+}/invalidate_code',[AreaDeviceAuthController::class, 'invalidateLoginCode'])->setName('tournaments.areas.devices.invalidateLogin');
+            $agrp->post('/{areaId:\d+}/disable',     [AreaDeviceAuthController::class, 'disableDevice'])->setName('tournaments.areas.devices.disable');
+         }
+         )->add( $policyGuard->for(TournamentAction::ManageAreaDevices) );
+
          /* category routes */
          $tgrp->group('/category/{categoryId:\d+}', function (RouteCollectorProxy $cgrp) use ($policyGuard)
          {
@@ -219,6 +233,21 @@ return function (\Slim\App $app)
          $auth_grp->patch('/dbmigrate', [TestController::class, 'setDbMigration'])->setName('dbmigration.update');
       }
    })
-   ->add($authGuard);
+   ->add($authGuard->check( fn($ctx) => $ctx->isUser() ) );
+
+   /**
+    * area device routes
+    */
+
+   /* device login via one-time-code */
+   $app->get('/device/login', [AreaDeviceAuthController::class, 'showLogin'])->setName('device.login.form');
+   $app->post('/device/login', [AreaDeviceAuthController::class, 'login'])->setName('device.login.attempt');
+   $app->get('/device/logout', [AreaDeviceAuthController::class, 'logout'])->setName('device.logout');
+
+   $app->group('/device', function (RouteCollectorProxy $device_grp) use ($policyGuard)
+   {
+      $device_grp->get('/dashboard', [TournamentTreeController::class, 'showAreaDashboard'])->setName('device.dashboard.show');
+   })
+   ->add($authGuard->check( fn($ctx) => $ctx->isDevice(), 'Diese Seite ist nur für Zugriff von Kampfflächen-Geräten gültig' ));
 };
 
