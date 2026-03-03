@@ -1,12 +1,14 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Area\AreaCollection;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryConfiguration;
 use Tournament\Model\Category\CategoryMode;
+use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\PoolWinnerSlot;
 use Tournament\Model\TournamentStructure\TournamentStructure;
 use Tournament\Model\TournamentStructure\Pool\Pool;
@@ -150,59 +152,88 @@ class TournamentStructureTest extends TestCase
    }
 
    /**
-    * test whether areas are assigned as expected
+    * data provider to generate area assignment tests with different
+    * number of areas and rounds
+    * the algorithm was tested once with up to 8 areas and up to 10 rounds and yielded the expected results
+    * for regression testing, we lower the test area to the expected ranges: up to 4 areas, up to 8 rounds
     */
-   public function testAreaAssignment()
+   public static function numAreasProvider()
    {
-      foreach( [1,2,4] as $numAreas )
+      foreach( range(2,4) as $numAreas)
       {
-         $areas = $this->areaList($numAreas);
-         $areas_i = $areas->values();
-         $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3));
-         $structure = new TournamentStructure($category, $areas);
-         $structure->generateStructure();
-
-         /* pools: are assigned alternating */
-         $i = 0;
-         foreach( $structure->pools as $pool )
+         foreach( range(4,8) as $numRounds )
          {
-            /** @var Pool $pool */
-            $area = $areas_i[$i++%$numAreas];
-            $this->assertSame($area, $pool->getArea());
-            foreach ($pool->getMatchList() as $node)
+            if( (2**$numRounds)/2 >= $numAreas ) // do not consider any usecase with more areas than nodes per round
             {
-               $this->assertSame($area, $node->area);
-            }
-         }
-
-         /* KO: are assigned in sub structures */
-         foreach( $structure->ko->getRounds() as $round )
-         {
-            $numMatches = $round->count();
-            if( $numMatches > $numAreas )
-            {
-               $perArea = intdiv($numMatches, $numAreas);
-               foreach( $round as $i => $node )
-               {
-                  $area_idx = intdiv($i, $perArea);
-                  $this->assertSame($areas_i[$area_idx], $node->area);
-               }
-            }
-            else
-            {
-               /* allocation of finals (= the rounds where there are less matches than areas)
-                * only check whether all areas are distributed equally
-                */
-               $areasUsed = [];
-               foreach( $round as $node )
-               {
-                  $areasUsed[$node->area->id] ??= 0;
-                  $areasUsed[$node->area->id]  += 1;
-               }
-               $this->assertTrue( min($areasUsed)+1 >= max($areasUsed) );
+               yield "$numAreas Areas, $numRounds Rounds" => [$numAreas, $numRounds];
             }
          }
       }
+   }
+
+   /**
+    * test whether areas are assigned as expected
+    */
+   #[DataProvider('numAreasProvider')]
+   public function testAreaAssignment(int $numAreas=4, int $numRounds = 8)
+   {
+      $areas = $this->areaList($numAreas);
+      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration($numRounds));
+      $structure = new TournamentStructure($category, $areas);
+      $structure->generateStructure();
+
+      /* pools: are assigned alternating */
+      $i = 0;
+      $areas_i = $areas->values();
+      foreach( $structure->pools as $pool )
+      {
+         /** @var Pool $pool */
+         $area = $areas_i[$i++%$numAreas];
+         $this->assertSame($area, $pool->getArea());
+         foreach ($pool->getMatchList() as $node)
+         {
+            $this->assertSame($area, $node->area);
+         }
+      }
+
+      /* KO: areas are assigned equally and in clusters */
+      $tracker = [];
+      foreach( $structure->ko->getRounds() as $i => $round )
+      {
+         $prev_area = null;
+         foreach( $round as $node )
+         {
+            /* any area assigned at all? */
+            $this->assertIsObject($node->area, "no area assigned to KO node");
+
+            /* if both in-nodes are on the same area, this node should also be on this area */
+            if( $node->slotRed instanceof MatchWinnerSlot && $node->slotWhite instanceof MatchWinnerSlot
+               && $node->slotRed->matchNode->area === $node->slotWhite->matchNode->area )
+            {
+               $this->assertSame($node->slotRed->matchNode->area, $node->area, "area shift within the same cluster");
+            }
+
+            /* areas shall be assigned "in order" */
+            if( isset($prev_area) )
+            {
+               $this->assertGreaterThanOrEqual($prev_area->id, $node->area->id);
+            }
+            $prev_area = $node->area;
+
+            /* count matches per area */
+            $tracker[$node->area->id] ??= 0;
+            $tracker[$node->area->id] += 1;
+         }
+
+         /* after each round, the cummulated area distribution needs to be equal within a certain tolerance
+          * This means after round 1 all areas should've been equally used, after round 2 all areas need to be equally used as well
+          * *including* the usage counters for round 1, etc.
+          * For low number of areas, tolerance is 1. Starting from 5 areas, we need to accept up to 2 matches difference
+          */
+         $r_disp = $i+1;
+         $tolerance = ($numAreas > 4) ? 2 : 1;
+         $this->assertEqualsWithDelta(min($tracker), max($tracker), $tolerance, "Areas are not equally distributed after round $r_disp!");
+      };
    }
 
    /**

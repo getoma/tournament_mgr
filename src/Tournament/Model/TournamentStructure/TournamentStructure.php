@@ -82,13 +82,14 @@ class TournamentStructure
 
       if( !$this->areas->empty() )
       {
+         $area_hdl = new AreaAssignmentHandler($this);
          if ($this->ko)
          {
-            $this->assignKoAreas($this->areas, $this->category->config->area_cluster);
+            $area_hdl->assignKoAreas($this->areas, $this->category->config->area_cluster);
          }
          if (!$this->pools->empty())
          {
-            $this->assignPoolAreas($this->areas);
+            $area_hdl->assignPoolAreas($this->areas);
          }
       }
    }
@@ -268,109 +269,5 @@ class TournamentStructure
          }
       }
       return $currentRound->first();
-   }
-
-   /**
-    * Assign the areas to the pools.
-    * The areas are assigned in a round-robin fashion, so that each pool gets a
-    * different area assigned.
-    */
-   private function assignPoolAreas(AreaCollection $areas): void
-   {
-      $numAreas = $areas->count();
-      $areas_i  = $areas->values(); // turn into indexed list
-      $area_idx = 0;
-      foreach ($this->pools as $pool)
-      {
-         $area = $areas_i[$area_idx++ % $numAreas];
-         $pool->setArea($area);
-      }
-   }
-
-   /**
-    * Distribute the ko tree to the areas and create ko tree chunks if configured
-    * In order to minimize the number of concurrent participants on the same
-    * area, there is a parameter "area_cluster".
-    * The tree is split into #numArea * #area_cluster clusters. This means
-    * with 2 Areas and area_cluster=2 we have 8 clusters: Area-1-1, Area-2-1, Area-1-2, Area-2-2
-    */
-   private function assignKoAreas(AreaCollection $areas, ?int $cluster): void
-   {
-      $numAreas          = $areas->count();
-      $numClusters       = $numAreas * ($cluster ?? 1);
-      $rounds            = $this->ko->getRounds();
-      $finale_rounds_cnt = ceil(log($numClusters, 2));
-      $cluster_root_idx  = $rounds->count() - $finale_rounds_cnt - 1;
-
-      $areas_i = $areas->values();
-
-      /**
-       * split and assign the tree to the defined clusters
-       */
-      if($cluster_root_idx >= 0 )
-      {
-         /** @var KoNode $node */
-         foreach ($rounds[$cluster_root_idx] as $match_idx => $node)
-         {
-            $area_idx       = $match_idx % $numAreas; // index of the area cluster, starting at 0
-            $area_chunk_idx = intdiv($match_idx, $numAreas); // start at 1, so we can use it as a suffix
-            $area_chunk_id  = ($area_idx + 1) . "-" . ($area_chunk_idx + 1); // do NOT use area.name, or renaming areas will destroy the slot mapping
-            $area           = $areas_i[$area_idx];
-
-            /* if chunks are explicitly requested, split it now accordingly
-             * otherwise, keep the tree in one big chunk, and only assign areas as if there was one cluster for each area
-             */
-            if( $cluster !== null )
-            {
-               $this->chunks[$area_chunk_id] = new KoChunk($node, $area_chunk_id, $area);
-            }
-            else
-            {
-               foreach( $node->getMatchList() as $m )
-               {
-                  $m->area = $area;
-               }
-            }
-         }
-      }
-      else
-      {
-         /* not enough rounds to split into pre-finale chunks */
-         $finale_rounds_cnt = $rounds->count();
-      }
-
-      /**
-       * assign the finale rounds to the areas.
-       */
-      $area_usage = array_fill(0, $numAreas, 0); // track usage of each area
-      $final_rounds = $rounds->slice(-$finale_rounds_cnt); // get all final matches from the last rounds into a single list
-
-      /** @var KoNode $node */
-      foreach ($final_rounds->flatten() as $node)
-      {
-         /* find all areas with the least usage, and select one area that is also used in the previous matches, if possible */
-         $min_usage = min($area_usage);
-         $available_areas_idx_list = array_keys(array_filter($area_usage, fn($usage) => $usage === $min_usage));
-         $available_areas = array_intersect_key($areas_i, array_flip($available_areas_idx_list));
-         if ( ($node->slotRed instanceOf MatchWinnerSlot) && ($redArea = $node->slotRed->matchNode->area) )
-         {
-            $area_idx = array_search($redArea, $available_areas);
-         }
-         if (($area_idx === false) && ($node->slotWhite instanceof MatchWinnerSlot) && ($whiteArea = $node->slotWhite->matchNode->area))
-         {
-            $area_idx = array_search($whiteArea, $available_areas);
-         }
-         if ($area_idx === false)
-         {
-            // if the area is not in the available areas, select one "from the middle" of the available areas
-            $area_keys = array_keys($available_areas);
-            $area_idx = $area_keys[ceil(count($area_keys) / 2)-1];
-         }
-         $node->area = $available_areas[$area_idx];
-         $area_usage[$area_idx]++; // increment the usage of the area
-      }
-
-      /* update finale round count */
-      $this->finale_rounds_cnt = $cluster? $finale_rounds_cnt : null;
    }
 }
