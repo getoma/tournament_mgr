@@ -117,10 +117,13 @@ class ParticipantHandler
          }
       }
 
-      /* forward the collected participants to each pool */
+      /* forward the collected participants to each pool.
+       * Make sure they are always in the same order according slot number
+       */
+      $sorter = fn($a,$b) => $a->categories[$this->struc->category->id]->slot_name <=> $b->categories[$this->struc->category->id]->slot_name;
       foreach ($pool_participants as $id => $col)
       {
-         $this->struc->pools[$id]->setParticipants($col);
+         $this->struc->pools[$id]->setParticipants($col->usort($sorter));
       }
    }
 
@@ -412,8 +415,7 @@ class ParticipantHandler
          if ($node->slotRed->getName())   $result[$node->slotRed->getName()] = $node->slotRed;
          if ($node->slotWhite->getName()) $result[$node->slotWhite->getName()] = $node->slotWhite;
       }
-      $result->ksort(SORT_STRING);
-      return $result;
+      return $result->ksort(SORT_STRING);
    }
 
    /**
