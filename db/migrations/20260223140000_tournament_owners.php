@@ -11,8 +11,8 @@ final class TournamentOwners extends AbstractMigration
       $this->table('tournament_owners', ['id' => false, 'primary_key' => ['user_id', 'tournament_id']])
          ->addColumn('user_id', 'integer', ['null' => false, 'signed' => false])
          ->addColumn('tournament_id', 'integer', ['null' => false, 'signed' => false])
-         ->addForeignKey('user_id', 'users', 'id', ['delete' => 'CASCADE', 'constraint' => 'USER_ID'])
-         ->addForeignKey('tournament_id', 'tournaments', 'id', ['delete' => 'CASCADE', 'constraint' => 'TOURNAMENT_ID'])
+         ->addForeignKey('user_id', 'users', 'id', ['delete' => 'CASCADE', 'constraint' => 'tournament_owners_user_fk'])
+         ->addForeignKey('tournament_id', 'tournaments', 'id', ['delete' => 'CASCADE', 'constraint' => 'tournament_owners_tournament_fk'])
          ->create();
    }
 }

@@ -22,8 +22,8 @@ final class UserExtension extends AbstractMigration
       $this->table('user_roles', ['id' => false, 'primary_key' => ['user_id', 'role_id']])
          ->addColumn('user_id', 'integer', ['signed' => false, 'null' => false])
          ->addColumn('role_id', 'integer', ['signed' => false, 'null' => false])
-         ->addForeignKey('user_id', 'users', 'id', ['delete' => 'CASCADE', 'constraint' => 'USER_ID'])
-         ->addForeignKey('role_id', 'roles', 'id', ['delete' => 'CASCADE', 'constraint' => 'ROLE_ID'])
+         ->addForeignKey('user_id', 'users', 'id', ['delete' => 'CASCADE', 'constraint' => 'user_roles_user_fk'])
+         ->addForeignKey('role_id', 'roles', 'id', ['delete' => 'CASCADE', 'constraint' => 'user_roles_role_fk'])
          ->create();
 
       /* translate the admin flag to the new role system */

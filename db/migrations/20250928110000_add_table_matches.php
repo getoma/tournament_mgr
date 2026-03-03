@@ -20,11 +20,11 @@ final class AddTableMatches extends AbstractMigration
             ->addColumn('tie_break', 'boolean', ['null' => false, 'default' => false])
             ->addColumn('created_at', 'datetime', ['default' => 'CURRENT_TIMESTAMP'])
             ->addColumn('finalized_at', 'datetime', ['null' => true, 'default' => null])
-            ->addForeignKey('category_id', 'categories', 'id', ['delete'=> 'CASCADE', 'update'=> 'CASCADE'])
-            ->addForeignKey('white_id', 'participants', 'id', ['delete'=> 'CASCADE', 'update'=> 'CASCADE'])
-            ->addForeignKey('red_id', 'participants', 'id', ['delete'=> 'CASCADE', 'update'=> 'CASCADE'])
-            ->addForeignKey('winner_id', 'participants', 'id', ['delete'=> 'RESTRICT', 'update'=> 'CASCADE'])
-            ->addForeignKey('area_id', 'areas', 'id', ['delete'=> 'RESTRICT', 'update'=> 'CASCADE'])
+            ->addForeignKey('category_id', 'categories', 'id', ['delete'=> 'CASCADE', 'update'=> 'CASCADE', 'constraint' => 'matches_category_fk'])
+            ->addForeignKey('white_id', 'participants', 'id', ['delete'=> 'CASCADE', 'update'=> 'CASCADE', 'constraint' => 'matches_white_participant_fk'])
+            ->addForeignKey('red_id', 'participants', 'id', ['delete'=> 'CASCADE', 'update'=> 'CASCADE', 'constraint' => 'matches_red_participant_fk'])
+            ->addForeignKey('winner_id', 'participants', 'id', ['delete'=> 'RESTRICT', 'update'=> 'CASCADE', 'constraint' => 'matches_winner_fk'])
+            ->addForeignKey('area_id', 'areas', 'id', ['delete'=> 'RESTRICT', 'update'=> 'CASCADE', 'constraint' => 'matches_area_fk'])
             ->addIndex(['category_id', 'name'], ['unique' => true])
             ->create();
       }
