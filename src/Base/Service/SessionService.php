@@ -148,6 +148,7 @@ class SessionService
              * We do not delete the original session, but trigger a session regeneration
              * next time someone with a valid token tries to use it.
              */
+            error_log("session: " . $e->getMessage());
             $this->set(static::KEY_LAST_ROTATION, time() - 2 * $this->rotation_interval_s);
             setcookie(session_name(), '', time() - 600); // also try to delete the session cookie for this client
             throw $e;
