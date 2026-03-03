@@ -11,6 +11,12 @@ class AreaDeviceAccountRepository
 {
    private readonly \DateTimeZone $utc;
 
+   /**
+    * for now, I decided to not care about forensics, i.e. keep any login code or session for analysis purposes.
+    * So, immediately remove any expired entries as soon as meaningful.
+    */
+   const KEEP_OLD_ENTRIES = false;
+
    public function __construct(
       private \PDO $pdo,
    )
@@ -57,6 +63,11 @@ class AreaDeviceAccountRepository
       $expires_at_utc = \DateTime::createFromInterface($expires_at);
       $expires_at_utc->setTimezone($this->utc);
 
+      if( !static::KEEP_OLD_ENTRIES )
+      {
+         $this->pdo->prepare('DELETE FROM area_device_login_codes WHERE area_id=?')->execute([$area_id]);
+      }
+
       $stmt = $this->pdo->prepare('INSERT INTO area_device_login_codes (area_id, code, expires_at) VALUES (:area_id, :code, :expires_at)');
       $stmt->execute([
          ':area_id' => $area_id,
@@ -75,24 +86,31 @@ class AreaDeviceAccountRepository
 
    public function markLoginCodeUsed(int $code_id): void
    {
-      $stmt = $this->pdo->prepare('UPDATE area_device_login_codes SET used_at = CURRENT_TIMESTAMP WHERE id = ?');
-      $stmt->execute([$code_id]);
+      if (static::KEEP_OLD_ENTRIES)
+      {
+         $this->pdo->prepare('UPDATE area_device_login_codes SET used_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$code_id]);
+      }
+      else
+      {
+         $this->pdo->prepare('DELETE FROM area_device_login_codes WHERE id=?')->execute([$code_id]);
+      }
    }
 
    public function invalidateLoginCode(int $area_id): void
    {
+      /* never delete here to enable a "code expired/invalidated" display */
       $stmt = $this->pdo->prepare('UPDATE area_device_login_codes SET invalidated_at = CURRENT_TIMESTAMP WHERE area_id = ? AND used_at IS NULL AND invalidated_at IS NULL');
       $stmt->execute([$area_id]);
    }
 
    public function cleanLoginCodesByTournamentId(int $tournamentId): void
    {
-      $stmt = $this->pdo->prepare(<<<QUERY
+      $this->pdo->prepare(<<<QUERY
       DELETE FROM area_device_login_codes
       WHERE (expires_at < CURRENT_TIMESTAMP OR used_at IS NOT NULL OR invalidated_at IS NOT NULL)
         AND area_id IN (SELECT id FROM areas WHERE tournament_id = ?)
-      QUERY);
-      $stmt->execute([$tournamentId]);
+      QUERY)
+      ->execute([$tournamentId]);
    }
 
    private function createSessionObject(array $data): AreaDeviceSession
@@ -110,6 +128,11 @@ class AreaDeviceAccountRepository
 
    public function createSession(int $area_id, \DateTimeInterface $expires_at, string $php_session_id): AreaDeviceSession
    {
+      if (!static::KEEP_OLD_ENTRIES)
+      {
+         $this->pdo->prepare('DELETE FROM area_device_sessions WHERE area_id=?')->execute([$area_id]);
+      }
+
       $stmt = $this->pdo->prepare(' INSERT INTO area_device_sessions (area_id, expires_at, last_activity_at, last_php_session_id)'
                                  .' VALUES (:area_id, :expires_at, CURRENT_TIMESTAMP, :php_session_id)');
       $stmt->execute([
