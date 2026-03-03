@@ -160,7 +160,7 @@ class ParticipantHandlerTest extends TestCase
 
       $structure2 = new TournamentStructure($category, AreaCollection::new());
       $structure2->generateStructure();
-      $structure2->getParticipantHandler()->loadParticipants($participants);
+      $structure2->getParticipantHandler()->loadParticipants($participants->reverse()); // explicitly provide them in a different order
 
       $this->assertEquals($structure, $structure2);
    }
@@ -178,7 +178,7 @@ class ParticipantHandlerTest extends TestCase
 
       $structure2 = new TournamentStructure($category, AreaCollection::new());
       $structure2->generateStructure();
-      $structure2->getParticipantHandler()->loadParticipants($participants);
+      $structure2->getParticipantHandler()->loadParticipants($participants->reverse()); // explicitly provide them in a different order
 
       $this->assertEquals($structure, $structure2);
    }

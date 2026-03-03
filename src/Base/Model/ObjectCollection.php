@@ -258,9 +258,18 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
       return static::new(array_merge($this->elements, $other), $this->element_type);
    }
 
-   public function ksort(int $flags = SORT_REGULAR): void
+   public function ksort(int $flags = SORT_REGULAR): static
    {
-      ksort($this->elements, $flags);
+      $cpy = $this->elements;
+      ksort($cpy, $flags);
+      return static::_spawn($cpy);
+   }
+
+   public function usort(callable $callback): static
+   {
+      $cpy = $this->elements;
+      usort($cpy, $callback);
+      return static::_spawn($cpy);
    }
 
    /**

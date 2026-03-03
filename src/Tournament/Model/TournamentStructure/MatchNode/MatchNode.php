@@ -31,7 +31,7 @@ class MatchNode
    {
       if( $this->slotRed === $this->slotWhite )
       {
-         throw new \DomainException("invalid match: red and white slot must be different");
+         throw new \DomainException("invalid match: red and white slot must be different - $node_name");
       }
 
       $this->setName($node_name);
@@ -72,28 +72,32 @@ class MatchNode
 
       if( !$this->isReal() )
       {
-         throw new \LogicException("attempt to assign a match record to non-real match");
+         throw new \LogicException("attempt to assign a match record to non-real match: " . $this->getName());
       }
 
       if( $matchRecord->name !== $this->name )
       {
-         throw new \DomainException("inconsistent match record: name does not match");
+         throw new \DomainException("inconsistent match record: name does not match: " . $this->getName());
       }
 
       /* make sure the contained participants match with the participants according the tree */
       $p_red   = $this->slotRed->getParticipant();
       $p_white = $this->slotWhite->getParticipant();
 
-      if( !isset($p_red))   throw new \DomainException("cannot assign match record: no valid red participant");
-      if( !isset($p_white)) throw new \DomainException("cannot assign match record: no valid white participant");
+      if( !isset($p_red))   throw new \DomainException("cannot assign match record: no valid red participant: " . $this->getName());
+      if( !isset($p_white)) throw new \DomainException("cannot assign match record: no valid white participant: " . $this->getName());
 
       if ($p_red->id !== $matchRecord->redParticipant->id)
       {
-         throw new \DomainException("inconsistent match record: red participant does not match");
+         $rid = $p_red->id;
+         $rid2 = $matchRecord->redParticipant->id;
+         $ridw = $p_white->id;
+         $ridw2 = $matchRecord->whiteParticipant->id;
+         throw new \DomainException("inconsistent match record: red participant does not match: $rid - $rid2 - $ridw - $ridw2" . $this->getName());
       }
       if ($p_white->id !== $matchRecord->whiteParticipant->id)
       {
-         throw new \DomainException("inconsistent match record: white participant does not match");
+         throw new \DomainException("inconsistent match record: white participant does not match: " . $this->getName());
       }
 
       /* update this note with those inputs */
