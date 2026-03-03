@@ -695,3 +695,24 @@ button.danger:hover {
    border-color: #A71D2A;
    color: white;
 }
+
+td.checkbox {
+   text-align: center;
+}
+
+.participant-assigned-slot {
+   font-size: 0.9em;
+   display: block;
+}
+
+.participant-assigned-slot:has(>del) {
+   color: #D73A49;
+}
+
+.participant-assigned-slot > del {
+   display: none;
+}
+
+.participant-preassigned-slot {
+   font-weight: bold;
+}

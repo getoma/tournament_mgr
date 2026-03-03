@@ -16,7 +16,7 @@
   {{ form.input('number', 'pool_winners', 'Anzahl Pool-Sieger', prev.pool_winners ?? category.config.pool_winners, errors['pool_winners'], {'max': 3, 'min': 1}, active=isActive) }}
   {{ form.input('number', 'max_pools', 'Maximale Anzahl Pools (0 = unbegrenzt)', prev.max_pools ?? category.config.max_pools, errors['max_pools'], {'min': 0}, active=isActive) }}
   {{ form.input('number', 'area_cluster', 'Kampfflächen-Cluster', prev.area_cluster ?? category.config.area_cluster, errors['area_cluster'], {'min': 1}, active=isActive)}}
-  {{ form.submit('Speichern und neu generieren', active=isActive) }}
+  {{ form.submit('Aktualisieren', active=isActive) }}
 </form>
 </section>
 

@@ -176,6 +176,9 @@ return function (\Slim\App $app)
             $cgrp->post('/repopulate', [TournamentTreeController::class, 'repopulate'])->setName('tournaments.categories.shuffleParticipants')
                ->add($policyGuard->for(TournamentAction::ManageSetup));
 
+            $cgrp->post('addNewParticipants', [TournamentTreeController::class, 'addUnslottedParticipants'])->setName('tournaments.categories.assignParticipants')
+               ->add($policyGuard->for(TournamentAction::ManageParticipants));
+
             /* Tournament tree navigation */
             $cgrp->get('/category', [TournamentTreeController::class, 'showCategoryHome'])->setName('tournaments.categories.show');
             $cgrp->get('/pool', [TournamentTreeController::class, 'showCategoryPool'])->setName('tournaments.categories.pools.index');
