@@ -269,7 +269,7 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
    {
       $cpy = $this->elements;
       usort($cpy, $callback);
-      return static::_spawn($cpy);
+      return static::new($cpy); // cpy is re-indexed after sort, regenerated the id-indexes via new
    }
 
    /**
