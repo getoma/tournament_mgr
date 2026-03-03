@@ -68,9 +68,11 @@ return function (DI\Container $container)
    $container->set(Base\Service\SessionService::class, function () use ($container)
    {
       return new Base\Service\SessionService(
-         $container->get(SessionHandlerInterface::class,
-         [ 'secure' => config::$HTTPS_ONLY ?? true ]
-      ));
+         $container->get(SessionHandlerInterface::class),
+         [ 'secure' => config::$HTTPS_ONLY ?? true,
+           'path'   => config::$BASE_PATH,
+         ]
+      );
    });
 
    // configure TmpStorageService
