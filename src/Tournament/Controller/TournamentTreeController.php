@@ -326,7 +326,7 @@ class TournamentTreeController
             $pts[$color] = [
                'points'  => $mphdl->getPoints($record)->for($participant),
                'penalty' => $mphdl->getActivePenalties($record)->for($participant),
-               'undo'    => $record->points->for($participant)->filter(fn($p) => $p->isSolitary())->back()
+               'undo'    => $record->points->for($participant)->filter(fn($p) => $p->isSolitary())->last()
             ];
          }
       }

@@ -86,12 +86,12 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
       return $this->elements;
    }
 
-   public function front(): mixed
+   public function first(): mixed
    {
       return $this->elements[array_key_first($this->elements)] ?? null;
    }
 
-   public function back(): mixed
+   public function last(): mixed
    {
       return $this->elements[array_key_last($this->elements)] ?? null;
    }

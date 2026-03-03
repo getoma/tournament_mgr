@@ -103,7 +103,7 @@ class KoNode extends MatchNode
     */
    public function getFirstRound(): MatchNodeCollection
    {
-      return $this->getRounds(0,1)->front();
+      return $this->getRounds()->first();
    }
 
    /**

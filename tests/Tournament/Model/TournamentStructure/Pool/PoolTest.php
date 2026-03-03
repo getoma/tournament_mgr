@@ -278,7 +278,7 @@ class PoolTest extends TestCase
       $this->assertTrue($dut->isConducted());
       $this->assertTrue($dut->isDecided());
       $this->assertEquals($ranks, $dut->getRanking());
-      $this->assertSame($plist->front(), $dut->getRanked(1));
+      $this->assertSame($plist->first(), $dut->getRanked(1));
       $this->assertFalse($dut->needsDecisionRound());
       $this->assertNull($dut->getCurrentDecisionRound());
       $this->assertEmpty($dut->getDecisionMatches());
