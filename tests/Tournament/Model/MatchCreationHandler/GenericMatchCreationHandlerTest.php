@@ -70,8 +70,8 @@ class GenericMatchCreationHandlerTest extends TestCase
       /** @var TournamentStructureFactory $fact */
       $matchList = $tst->generate(new ParticipantCollection([$p1, $p2]), $fact);
       $this->assertCount(1, $matchList);
-      $this->assertEquals($p1, $matchList->front()->slotRed->getParticipant());
-      $this->assertEquals($p2, $matchList->front()->slotWhite->getParticipant());
+      $this->assertEquals($p1, $matchList->first()->slotRed->getParticipant());
+      $this->assertEquals($p2, $matchList->first()->slotWhite->getParticipant());
    }
 
    /**

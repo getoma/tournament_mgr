@@ -117,7 +117,7 @@ class TournamentStructureTest extends TestCase
       $wildcard_count = array_fill_keys(range(1, $pool_winners), 0);
       /* count the number of matches and wildcards per pool result rank */
       /** @var KoNode $node */
-      foreach($structure->ko->getRounds(0, 1)->front() as $node)
+      foreach($structure->ko->getFirstRound() as $node)
       {
          $red_rank   = ($node->slotRed instanceof PoolWinnerSlot)? $node->slotRed->rank : null;
          $white_rank = ($node->slotWhite instanceof PoolWinnerSlot) ? $node->slotWhite->rank : null;

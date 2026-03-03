@@ -43,7 +43,7 @@ class KendoMatchPointHandlerTest extends TestCase
       $ptM = new MatchPoint(id: null, point: 'M', given_at: new \DateTime(), participant: $rec->redParticipant);
       $this->assertTrue( $unit->addPoint($rec, $ptM) );
       $this->assertCount(1, $rec->points);
-      $this->assertEquals($ptM, $rec->points->back());
+      $this->assertEquals($ptM, $rec->points->last());
       $this->assertNull($unit->getWinner($rec));
       $this->assertFalse($unit->isDecided($rec));
 
@@ -54,7 +54,7 @@ class KendoMatchPointHandlerTest extends TestCase
       $ptK = new MatchPoint(id: 1, point: 'K', given_at: new \DateTime(), participant: $rec->whiteParticipant);
       $this->assertTrue($unit->addPoint($rec, $ptK));
       $this->assertCount(2, $rec->points);
-      $this->assertEquals($ptK, $rec->points->back());
+      $this->assertEquals($ptK, $rec->points->last());
       $this->assertNull($unit->getWinner($rec));
       $this->assertFalse($unit->isDecided($rec));
 
@@ -62,7 +62,7 @@ class KendoMatchPointHandlerTest extends TestCase
       $ptD = new MatchPoint(id: 2, point: 'D', given_at: new \DateTime(), participant: $rec->redParticipant);
       $this->assertTrue($unit->addPoint($rec, $ptD));
       $this->assertCount(3, $rec->points);
-      $this->assertEquals($ptD, $rec->points->back());
+      $this->assertEquals($ptD, $rec->points->last());
       $this->assertEquals($rec->redParticipant, $unit->getWinner($rec));
       $this->assertTrue($unit->isDecided($rec));
 
@@ -70,7 +70,7 @@ class KendoMatchPointHandlerTest extends TestCase
       $ptT = new MatchPoint(id: 3, point: 'T', given_at: new \DateTime(), participant: $rec->whiteParticipant);
       $this->assertFalse($unit->addPoint($rec, $ptT));
       $this->assertCount(3, $rec->points);
-      $this->assertEquals($ptD, $rec->points->back());
+      $this->assertEquals($ptD, $rec->points->last());
 
       /* remove D again */
       $this->assertTrue($unit->removePoint($rec, $ptD));
@@ -81,7 +81,7 @@ class KendoMatchPointHandlerTest extends TestCase
       /* add T for white */
       $this->assertTrue($unit->addPoint($rec, $ptT));
       $this->assertCount(3, $rec->points);
-      $this->assertEquals($ptT, $rec->points->back());
+      $this->assertEquals($ptT, $rec->points->last());
       $this->assertEquals($rec->whiteParticipant, $unit->getWinner($rec));
       $this->assertTrue($unit->isDecided($rec));
 
@@ -94,12 +94,12 @@ class KendoMatchPointHandlerTest extends TestCase
       /* remove an earlier point, by id */
       $this->assertTrue($unit->removePoint($rec, 1));
       $this->assertCount(1, $rec->points);
-      $this->assertEquals($ptM, $rec->points->back());
+      $this->assertEquals($ptM, $rec->points->last());
 
       /* try to remove it again */
       $this->assertTrue($unit->removePoint($rec, 1)); // still true, because there is no such point afterwards
       $this->assertCount(1, $rec->points);
-      $this->assertEquals($ptM, $rec->points->back());
+      $this->assertEquals($ptM, $rec->points->last());
    }
 
    public function testInvalid(): void
@@ -140,7 +140,7 @@ class KendoMatchPointHandlerTest extends TestCase
       $ptHR2 = new MatchPoint(id: null, point: 'H', given_at: new \DateTime(), participant: $rec->redParticipant);
       $this->assertTrue($unit->addPoint($rec, $ptHR2));
       $this->assertCount(4, $rec->points);
-      $this->assertEquals('I', $rec->points->back()->point);
+      $this->assertEquals('I', $rec->points->last()->point);
       $this->assertFalse($unit->isDecided($rec));
       $this->assertCount(1, $unit->getActivePenalties($rec));
 
@@ -153,7 +153,7 @@ class KendoMatchPointHandlerTest extends TestCase
       $ptHW2 = new MatchPoint(id: null, point: 'H', given_at: new \DateTime(), participant: $rec->whiteParticipant);
       $this->assertTrue($unit->addPoint($rec, $ptHW2));
       $this->assertCount(4, $rec->points);
-      $this->assertEquals('I', $rec->points->back()->point);
+      $this->assertEquals('I', $rec->points->last()->point);
       $this->assertFalse($unit->isDecided($rec));
       $this->assertCount(1, $unit->getActivePenalties($rec));
 
@@ -168,7 +168,7 @@ class KendoMatchPointHandlerTest extends TestCase
       $ptRM = new MatchPoint(id: null, point: 'M', given_at: new \DateTime(), participant: $rec->redParticipant);
       $this->assertTrue($unit->addPoint($rec, $ptRM));
       $this->assertCount(6, $rec->points);
-      $this->assertEquals($ptRM, $rec->points->back());
+      $this->assertEquals($ptRM, $rec->points->last());
       $this->assertEquals($rec->redParticipant, $unit->getWinner($rec));
    }
 }

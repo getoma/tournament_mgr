@@ -267,7 +267,7 @@ class TournamentStructure
             $currentRound[] = $this->factory->createKoNode($nextMatchId++, slotRed: $slotRed, slotWhite: $slotWhite);
          }
       }
-      return $currentRound->front();
+      return $currentRound->first();
    }
 
    /**

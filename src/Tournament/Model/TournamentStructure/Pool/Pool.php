@@ -117,7 +117,7 @@ class Pool
    {
       if( !$this->isDecided() ) return null;
       $ranked = $this->getRanking()->filter(fn($r) => $r->rank === $rank);
-      return $ranked->count() === 1? $ranked->front()->participant : null;
+      return $ranked->count() === 1? $ranked->first()->participant : null;
    }
 
    /**
