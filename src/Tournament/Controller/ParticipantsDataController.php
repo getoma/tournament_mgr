@@ -7,13 +7,12 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 use Tournament\Model\Category\CategoryCollection;
 use Tournament\Model\Participant\Participant;
-use Tournament\Model\Participant\CategoryAssignment;
-use Tournament\Model\Participant\CategoryAssignmentCollection;
 use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
 use Tournament\Service\ParticipantImportService;
 use Tournament\Service\TournamentStructureService;
+use Tournament\Service\RouteArgsContext;
 
 use Tournament\Repository\TournamentRepository;
 use Tournament\Repository\ParticipantRepository;
@@ -147,15 +146,16 @@ class ParticipantsDataController
             v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0))
          );
       }
+      $validation_rules['shuffle_in'] = v::optional(v::stringType()->in(['new', 'all']));
 
       $data = $request->getParsedBody();
       $errors = DataValidationService::validate($data, $validation_rules);
 
       // return form if there are errors
-      if (count($errors) > 0)
+      if ($errors)
       {
-         $err = ['participants' => ['update' => $errors]];
-         $prev = ['participants' => ['update' => $data]];
+         $err  = ['participant_list' => $errors];
+         $prev = ['participant_list' => $data];
          return $this->renderParticipantList($request, $response, $args, $err, $prev);
       }
 
@@ -164,6 +164,19 @@ class ParticipantsDataController
       {
          $participantIds = $data['category_' . $category->id] ?? [];
          $this->repo->setCategoryParticipants($category->id, $participantIds);
+      }
+
+      // if requested, reseed all participants
+      if( $data['shuffle_in'] ?? false )
+      {
+         foreach( $categories as $c )
+         {
+            match( $data['shuffle_in'] )
+            {
+               'all' => $this->tournamentService->repopulate($c),
+               'new' => $this->tournamentService->addParticipants($c),
+            };
+         }
       }
 
       return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args, ['status' => 'updated']);
@@ -476,10 +489,9 @@ class ParticipantsDataController
       $starting_slots = $this->getStartingSlotSelection($categories, $ctx->participant);
 
       $data = $request->getParsedBody();
-      $data['category_selection'] ??= [];
+      $data['categories'] ??= [];
       $participant_rules = Participant::validationRules();
-      $participant_rules['categories'] = v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0));
-      $participant_rules['category_selection'] = $participant_rules['categories'];
+      $participant_rules['categories'] = $participant_rules['categories']->each(v::in($ctx->tournament->categories->column('id')));
       $participant_rules['pre_assign'] = v::arrayType();
       $errors = DataValidationService::validate($data, $participant_rules);
 
@@ -488,11 +500,6 @@ class ParticipantsDataController
       {
          // Update participant data
          $ctx->participant->updateFromArray($data);
-
-         // take over category assignment
-         $ctx->participant->categories = CategoryAssignmentCollection::new(
-            array_map(fn($id) => new CategoryAssignment($this->tournamentRepo->getCategoryById($id)), $data['category_selection']??[])
-         );
 
          // take over pre-assigned slots
          for( $i = 0; $i < count($data['categories']); ++$i )

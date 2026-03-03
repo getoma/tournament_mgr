@@ -68,7 +68,7 @@ class UserRepository extends \Base\Repository\UserRepository
    {
       $stmt = $this->pdo->prepare("select count(*) from users where email=?");
       $stmt->execute([$email]);
-      return array_first($stmt->fetch());
+      return $stmt->fetchColumn() > 0;
    }
 
    public function deleteUser(int $id): bool

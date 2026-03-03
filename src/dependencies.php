@@ -37,6 +37,7 @@ return function (DI\Container $container)
       $twig->addExtension(new \Tournament\Twig\NavigationExtension(
          $container->get(\Tournament\Service\NavigationStructureService::class))
       );
+      $twig->addExtension(new \Tournament\Twig\TournamentExtension());
 
       $twig->getEnvironment()->addGlobal('debug', config::$debug ?? false);
       $twig->getEnvironment()->addGlobal('test_interfaces', config::$test_interfaces ?? false);

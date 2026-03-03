@@ -134,6 +134,11 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
       array_unshift($this->elements, $value);
    }
 
+   public function shift(): mixed
+   {
+      return array_shift($this->elements);
+   }
+
    public function search($value): mixed
    {
       return array_search($value, $this->elements, true);
@@ -180,9 +185,31 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
       return new static(array_slice($this->elements, $offset, $length), $this->element_type);
    }
 
-   public function filter(callable $callback): static
+   public function filter(callable $callback, int $mode = 0): static
    {
-      return new static(array_filter($this->elements, $callback), $this->element_type);
+      return new static(array_filter($this->elements, $callback, $mode), $this->element_type);
+   }
+
+   public function intersect(ObjectCollection $other, ?callable $cmp = null): static
+   {
+      if( !($other instanceof static) ) throw new \LogicException('attempt to intersect different ObjectCollections');
+      $result = self::new([], $this->element_type);
+      if( isset($cmp) ) $result->elements = array_uintersect($this->elements, $other->elements, $cmp);
+      else $result->elements = array_intersect($this->elements, $other->elements);
+      return $result;
+   }
+
+   public function intersect_key(ObjectCollection $other, ?callable $cmp = null): static
+   {
+      $result = self::new([], $this->element_type);
+      if( isset($cmp) ) $result->elements = array_intersect_ukey($this->elements, $other->elements, $cmp);
+      else $result->elements = array_intersect_key($this->elements, $other->elements);
+      return $result;
+   }
+
+   public function reduce(callable $callback, $initial=null): mixed
+   {
+      return array_reduce($this->elements, $callback, $initial);
    }
 
    public function any(callable $callback): bool
@@ -210,9 +237,15 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
       array_walk($this->elements, $callback, $arg);
    }
 
-   public function merge(iterable $other): static
+   public function merge(ObjectCollection|array $other): static
    {
+      if( $other instanceof self ) $other = $other->values();
       return static::new(array_merge($this->elements, $other), $this->element_type);
+   }
+
+   public function ksort(int $flags = SORT_REGULAR): void
+   {
+      ksort($this->elements, $flags);
    }
 
    /**

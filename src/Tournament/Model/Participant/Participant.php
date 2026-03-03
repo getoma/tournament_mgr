@@ -23,9 +23,10 @@ class Participant implements \Tournament\Model\Base\DbItem
    public static function validationRules(): array
    {
       return [
-         'lastname'  => v::stringType()->notEmpty()->length(1, max: 255),
-         'firstname' => v::stringType()->notEmpty()->length(1, max: 255),
-         'club'      => v::stringType()->length(max:127),
+         'lastname'   => v::stringType()->notEmpty()->length(1, max: 255),
+         'firstname'  => v::stringType()->notEmpty()->length(1, max: 255),
+         'club'       => v::stringType()->length(max:127),
+         'categories' => v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0))
       ];
    }
 
@@ -34,6 +35,13 @@ class Participant implements \Tournament\Model\Base\DbItem
       if (isset($data['lastname'])) $this->lastname = $data['lastname'];
       if (isset($data['firstname'])) $this->firstname = $data['firstname'];
       if (array_key_exists('club', $data)) $this->club = $data['club']; // null is allowed here
+      // categories: drop any no longer provided
+      $this->categories = $this->categories->filter(fn($ca) => in_array($ca->categoryId, $data['categories']));
+      // add any new category assignment
+      foreach( $data['categories'] as $catId )
+      {
+         if( !$this->categories->keyExists($catId) ) $this->categories[] = $catId;
+      }
    }
 
 }
