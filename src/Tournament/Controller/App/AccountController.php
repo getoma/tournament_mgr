@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Controller;
+namespace Tournament\Controller\App;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

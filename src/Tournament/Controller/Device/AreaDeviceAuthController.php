@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Controller;
+namespace Tournament\Controller\Device;
 
 use Base\Service\PrgService;
 use Psr\Http\Message\ResponseInterface;
