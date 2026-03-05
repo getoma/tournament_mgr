@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Controller;
+namespace Tournament\Controller\App;
 
 use Base\Service\AuthService;
 use Base\Service\PasswordResetService;

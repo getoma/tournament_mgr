@@ -1,20 +1,21 @@
 <?php
 
-use Tournament\Controller\ParticipantsDataController;
-use Tournament\Controller\TournamentSettingsController;
-use Tournament\Controller\IndexPageController;
-use Tournament\Controller\AuthController;
-use Tournament\Controller\AccountController;
-use Tournament\Controller\TestController;
-use Tournament\Controller\TournamentTreeController;
-use Tournament\Controller\UserManagementController;
-use Tournament\Controller\AreaDeviceAuthController;
+use Tournament\Controller\App\ParticipantsDataController;
+use Tournament\Controller\App\TournamentSettingsController;
+use Tournament\Controller\App\IndexPageController;
+use Tournament\Controller\App\AuthController;
+use Tournament\Controller\App\AccountController;
+use Tournament\Controller\App\TestController;
+use Tournament\Controller\App\TournamentTreeController;
+use Tournament\Controller\App\UserManagementController;
+
+use Tournament\Controller\Device\AreaDeviceAuthController;
 
 use Tournament\Policy\TournamentAction;
 
-use Base\Service\RedirectHandler;
 use Base\Service\SessionValidationIssue;
-use Slim\Middleware\MethodOverrideMiddleware;
+use Base\Service\RedirectHandler;
+
 use Slim\Routing\RouteCollectorProxy;
 
 return function (\Slim\App $app)
@@ -47,7 +48,7 @@ return function (\Slim\App $app)
    $app->add(Slim\Views\TwigMiddleware::create($app, $container->get(Slim\Views\Twig::class)));
 
    // method override: support overriding the HTTP method - needed for html clients that only support GET/POST
-   $app->add(new MethodOverrideMiddleware());
+   $app->add(new Slim\Middleware\MethodOverrideMiddleware());
 
    // Add Error Handling Middleware, and register our error page renderer
    $errMW = $app->addErrorMiddleware(config::$debug ?? false, true, false);
