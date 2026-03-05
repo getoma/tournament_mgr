@@ -86,20 +86,21 @@
 <section id="section-tournament-areas">
 <h2>Kampfflächen</h2>
 
-{% if policy.isActionAllowed('ManageSetup') -%}
 <table id="area_list">
   <thead>
     <tr>
       <th>Name</th>
+      {% if policy.isActionAllowed('ManageSetup') -%}
       <th>Aktionen</th>
+      {% endif %}
     </tr>
   </thead>
   <tbody>
     {% for area in areas %}
     <tr>
-      <td>{{ form.input_plain('text', 'name', prev.areas[area.id].name ?? area.name,
-        errors.areas[area.id]['name'],
-        {'maxlength':100, 'form': 'area_update_' ~ area.id}, required=true) }}</td>
+      {% if policy.isActionAllowed('ManageSetup') -%}
+      <td>{{ form.input_plain('text', 'name', prev.areas[area.id].name ?? area.name, errors.areas[area.id]['name'],
+             {'maxlength':100, 'form': 'area_update_' ~ area.id}, required=true) }}</td>
       <td>
         <form method="POST" action="{{url_for('tournaments.areas.update', route_context.args|merge({'areaId': area.id}))}}" id="area_update_{{ area.id }}">
           <input type="hidden" name="_METHOD" value="PATCH">
@@ -110,8 +111,12 @@
           {{ form.submit('Löschen') }}
         </form>
       </td>
+      {%- else %}
+      <td>{{ area.name }}</td>
+      {%- endif %}
     </tr>
     {% endfor %}
+    {% if policy.isActionAllowed('ManageSetup') -%}
     <tr>
       <td>{{ form.input_plain('text', 'name', prev.areas.new.name??'', errors.areas.new['name'],
         {'placeholder': 'Neue Kampffläche', 'maxlength':100, 'form':'area_new'}, required=true) }}</td>
@@ -121,28 +126,21 @@
         </form>
       </td>
     </tr>
+    {%- endif %}
   </tbody>
 </table>
-{% else -%}
-<ul id="area_list">
-  {% for area in areas -%}
-  <li>{{area.name}}</li>
-  {% endfor -%}
-</ul>
-{% endif -%}
-
 </section>
 
 <section id="section-tournament-categories">
 <h2>Kategorien</h2>
-
-{% if policy.isActionAllowed('ManageSetup') -%}
 <table id="category_list">
   <thead>
     <tr>
       <th>Name</th>
       <th>Modus</th>
+      {% if policy.isActionAllowed('ManageSetup') -%}
       <th>Aktionen</th>
+      {%- endif %}
     </tr>
   </thead>
   <tbody>
@@ -150,6 +148,7 @@
     <tr>
       <td>{{category.name}}</td>
       <td>{{category.mode.value}}</td>
+      {% if policy.isActionAllowed('ManageSetup') -%}
       <td>
         <a href="{{url_for('tournaments.categories.edit', route_context.args|merge({'categoryId': category.id}))}}" class="form-btn">Bearbeiten</a>
         <form method="POST" action="{{url_for('tournaments.categories.delete', route_context.args|merge({'categoryId': category.id}))}}">
@@ -157,8 +156,10 @@
           {{ form.submit('Löschen') }}
         </form>
       </td>
+      {%- endif %}
     </tr>
     {% endfor %}
+    {% if policy.isActionAllowed('ManageSetup') -%}
     <tr>
       <td>
         {{ form.input_plain('text', 'name', prev.categories.new.name??'', errors.categories.new['name'],
@@ -174,15 +175,9 @@
         </form>
       </td>
     </tr>
+    {%- endif %}
   </tbody>
 </table>
-{% else -%}
-<ul id="category_list">
-  {% for category in categories -%}
-  <li><a href="{{url_for('tournaments.categories.show', route_context.args|merge({'categoryId': category.id}))}}">{{category.name}} ({{category.mode.value}})</a></li>
-  {% endfor -%}
-</ul>
-{% endif -%}
 </section>
 
 <section id="section-tournament-danger_zone">
