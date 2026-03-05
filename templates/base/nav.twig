@@ -1,8 +1,8 @@
 {#
   generate a breadcrumbs menu to the current page
 #}
-{% macro breadcrumbs(path, subentry = null) %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
+{% macro breadcrumbs(path, subentry = null, id="pagebreadcrumbs") %}
+<nav class="breadcrumbs" aria-label="Breadcrumb" id="{{id}}">
   <ol>
     {% for node in path -%}
     {% if not loop.last or subentry is not null -%}
@@ -21,8 +21,8 @@
 {#
   generate a main page menu that shows the page structure down to a specific level
 #}
-{% macro pagemenu(nav_tree) %}
-<nav class="pagemenu" aria-label="Pagemenu">
+{% macro pagemenu(nav_tree, id="pagemenu") %}
+<nav class="pagemenu" aria-label="Pagemenu" id="{{id}}">
   {{ _self._render_menu(nav_tree, 1) }}
 </nav>
 {%endmacro%}

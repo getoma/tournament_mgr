@@ -1,9 +1,59 @@
+/**
+ * 12-Column Grid Layout pattern, see https://www.w3schools.com/css/css_grid_12column.asp
+ */
+body {
+   display: grid;
+   grid-template-columns: repeat(12, [col-start] 1fr);
+   grid-template-rows: auto auto 1fr; /* header | breadcrumbs | content */
+   gap: 15px;
+   align-items: stretch;
+}
+
+body > * {
+   grid-column: col-start / span 12;
+}
+
+#pagebreadcrumbs {
+   grid-column: col-start / span 12; /* default without pagemenu or small screens */
+   grid-row: 2 / 3;
+}
+
+main {
+   grid-column: col-start / span 12; /* default without pagemenu or for small screens */
+   grid-row: 2 / 3; /* default without breadcrumbs */
+}
+
+body:has(#pagebreadcrumbs) main {
+   grid-row: 3 / 4;
+}
+
+#pagemenu  {
+   grid-column: col-start / span 12; /* for small screens */
+   grid-row: 4 / 5;
+}
+
+@media (min-width:900px) {
+
+   body:has(#pagemenu) #pagebreadcrumbs {
+      grid-column: col-start 3 / span 10;
+   }
+
+   body:has(#pagemenu) main {
+      grid-column: col-start 3 / span 10;
+   }
+
+   #pagemenu {
+      grid-column: col-start / span 2;
+      grid-row: 2 / 4;
+   }
+}
+
 /* Body & Hintergrund */
 body {
-  background: #f5f6f7; /* neutral helles Grau */
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0 auto;
-  max-width: 1200px;
+   background: #f5f6f7; /* neutral helles Grau */
+   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+   margin: 0 auto;
+   max-width: 1200px;
 }
 
 /* Header */
@@ -21,46 +71,25 @@ header h1 {
   display: inline-block;
 }
 
-/* Main Content */
-main {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  grid-template-rows: max-content 1fr;
-  gap: 15px;
-  margin-top: 15px;
-}
-
 /* Sidebar */
 #pagemenu {
   background-color: #f0f4f8;
-  padding: 1rem;
   box-shadow: 2px 0 8px rgba(0,0,0,0.1);
   border-right: 1px solid #ccc;
   box-sizing: border-box;
-  grid-column: 1 / span 1;
-  grid-row: 1 / span 2;
 }
 
 /* breadcrumbs area */
 nav.breadcrumbs {
-   grid-column: 2 / span 1;
-   grid-row: 1 / span 1;
    margin: 0;
    padding: 0;
-}
-
-/* content area */
-div#content {
-   grid-column: 2 / span 1;
-   grid-row: 2 / span 1;
 }
 
 /* Hauptmenü */
 #pagemenu ul {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 1rem;
 }
 
 #pagemenu a {
@@ -246,7 +275,6 @@ nav#account-menu ul:hover {
   gap: 1.5rem;
   flex-wrap: wrap;
   justify-content: center;
-  margin-top: 2rem;
   padding: 1rem;
 }
 
@@ -345,17 +373,20 @@ table .checkbox {
 
 /* Hauptinhalt */
 
-#content > section,
-#content > nav {
+main > section,
+main > nav {
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 1.5rem;
-  margin-bottom: 2rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-#content h2 {
+main > * + section {
+   margin-top: 15px;
+}
+
+main h2 {
   margin-top: 0;
   margin-bottom: 1rem;
   font-size: 1.3rem;

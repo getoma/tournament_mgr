@@ -30,17 +30,12 @@
   {% import 'base/nav.twig' as nav -%}
   {% set navigation = buildNavigation(auth_context, route_context, active_page|default('')) %}
 
+  {% if auth_context.isUser() -%}
+  {{ nav.pagemenu(navigation.pagemenu) }}
+  {%- endif %}
+
+  {% if navigation.breadcrumbs is not empty -%}
+  {{ nav.breadcrumbs(navigation.breadcrumbs, nav_entry_label ?? null)}}
+  {%- endif %}
+
   <main>
-    {% if auth_context.isUser() -%}
-
-      {% if navigation.breadcrumbs is not empty -%}
-      {{ nav.breadcrumbs(navigation.breadcrumbs, nav_entry_label ?? null)}}
-      {%- endif %}
-
-    <aside id="pagemenu">
-      {{ nav.pagemenu(navigation.pagemenu) }}
-    </aside>
-
-    {%- endif %}
-
-    <div id="content">
