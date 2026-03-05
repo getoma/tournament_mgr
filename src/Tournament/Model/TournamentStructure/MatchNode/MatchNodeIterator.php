@@ -4,8 +4,14 @@ namespace Tournament\Model\TournamentStructure\MatchNode;
 
 class MatchNodeIterator implements \SeekableIterator, \Base\Model\ChainableIterator
 {
-   public function __construct(private MatchNodeCollection $matches, private int $position = 0)
+   private readonly MatchNodeCollection $matches;
+
+   public function __construct(
+      MatchNodeCollection $matches,
+      private int $position = 0,
+   )
    {
+      $this->matches = MatchNodeCollection::new($matches->values()); // enforce re-indexing for our position handling
    }
 
    public function current(): ?MatchNode
