@@ -1,12 +1,12 @@
 {% import 'base/form.twig' as form %}
 
-{% include 'base/header.twig' with {
+{%- include 'base/header.twig' with {
   'active_page': 'users.index'
 }%}
 
 <section>
   <h2>Aktive Nutzer</h2>
-  <table class="entry-list">
+  <table>
     <thead>
       <tr>
       <th>Angezeigter Name</th>
@@ -24,7 +24,7 @@
       <td>{{user.roles|map(r => r.value)|join(', ')|humanize}}</td>
       <td>{% if user.last_login %}{{user.last_login|date('d.m.Y H:i')}}{% else %}---{% endif %}</td>
       <td>{% set buttons_active = policy.canModifyUser(user) -%}
-          <a href="{{ url_for('users.show', {'userId': user.id}) }}" class="crud">
+          <a href="{{ url_for('users.show', {'userId': user.id}) }}" class="form-btn">
             {%- if buttons_active %}Bearbeiten{% else %}Details anzeigen{% endif -%}
           </a>
           {% if buttons_active -%}
@@ -43,7 +43,7 @@
 {% if users|find(u => not u.is_active) %}
 <section>
   <h2>Deaktivierte Nutzer</h2>
-  <table class="entry-list">
+  <table>
     <thead>
       <tr>
         <th>Angezeigter Name</th>

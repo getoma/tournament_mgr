@@ -3,7 +3,7 @@
 
 {% set route_parameters = route_context.args|merge({'pool': pool.getName()}) %}
 
-{% include 'base/header.twig' with {
+{%- include 'base/header.twig' with {
   'active_page': 'tournaments.categories.pools.show',
   'css': ['match.css']
 } %}

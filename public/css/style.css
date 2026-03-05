@@ -1,9 +1,59 @@
+/**
+ * 12-Column Grid Layout pattern, see https://www.w3schools.com/css/css_grid_12column.asp
+ */
+body {
+   display: grid;
+   grid-template-columns: repeat(12, [col-start] 1fr);
+   grid-template-rows: auto auto 1fr; /* header | breadcrumbs | content */
+   gap: 15px;
+   align-items: stretch;
+}
+
+body > * {
+   grid-column: col-start / span 12;
+}
+
+#pagebreadcrumbs {
+   grid-column: col-start / span 12; /* default without pagemenu or small screens */
+   grid-row: 2 / 3;
+}
+
+main {
+   grid-column: col-start / span 12; /* default without pagemenu or for small screens */
+   grid-row: 2 / 3; /* default without breadcrumbs */
+}
+
+body:has(#pagebreadcrumbs) main {
+   grid-row: 3 / 4;
+}
+
+#pagemenu  {
+   grid-column: col-start / span 12; /* for small screens */
+   grid-row: 4 / 5;
+}
+
+@media (min-width:900px) {
+
+   body:has(#pagemenu) #pagebreadcrumbs {
+      grid-column: col-start 3 / span 10;
+   }
+
+   body:has(#pagemenu) main {
+      grid-column: col-start 3 / span 10;
+   }
+
+   #pagemenu {
+      grid-column: col-start / span 2;
+      grid-row: 2 / 4;
+   }
+}
+
 /* Body & Hintergrund */
 body {
-  background: #f5f6f7; /* neutral helles Grau */
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0 auto;
-  max-width: 1200px;
+   background: #f5f6f7; /* neutral helles Grau */
+   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+   margin: 0 auto;
+   max-width: 1200px;
 }
 
 /* Header */
@@ -21,46 +71,25 @@ header h1 {
   display: inline-block;
 }
 
-/* Main Content */
-main {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  grid-template-rows: max-content 1fr;
-  gap: 15px;
-  margin-top: 15px;
-}
-
 /* Sidebar */
 #pagemenu {
   background-color: #f0f4f8;
-  padding: 1rem;
   box-shadow: 2px 0 8px rgba(0,0,0,0.1);
   border-right: 1px solid #ccc;
   box-sizing: border-box;
-  grid-column: 1 / span 1;
-  grid-row: 1 / span 2;
 }
 
 /* breadcrumbs area */
 nav.breadcrumbs {
-   grid-column: 2 / span 1;
-   grid-row: 1 / span 1;
    margin: 0;
    padding: 0;
-}
-
-/* content area */
-div#content {
-   grid-column: 2 / span 1;
-   grid-row: 2 / span 1;
 }
 
 /* Hauptmenü */
 #pagemenu ul {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 1rem;
 }
 
 #pagemenu a {
@@ -72,8 +101,7 @@ div#content {
   transition: background 0.3s, color 0.3s;
 }
 
-#pagemenu .nav-level-1 > li > a:hover
-{
+#pagemenu .nav-level-1 > li > a:hover {
   background-color: #0077cc;
   color: #fff;
 }
@@ -139,8 +167,7 @@ div#content {
 }
 
 /* Breadcrumbs menü */
-nav.breadcrumbs ol
-{
+nav.breadcrumbs ol {
    list-style: none;
    margin: 0;
    padding: 0;
@@ -150,14 +177,12 @@ nav.breadcrumbs ol
    padding: 1rem;
 }
 
-nav.breadcrumbs li
-{
+nav.breadcrumbs li {
    display: inline-block;
    padding: 0.2em;
 }
 
-nav.breadcrumbs a
-{
+nav.breadcrumbs a {
    text-decoration: none;
    color: #555;
 }
@@ -175,96 +200,25 @@ nav.breadcrumbs ol li:last-child {
    font-weight: bold;
 }
 
-/* Statusbox */
-.status-box {
-  background-color: #ffffff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1rem;
-  width: 300px;
-  min-height: 300px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
+/* Account Menu */
 
-.status-box h2 {
-  margin-top: 0;
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-  color: #333;
-  text-align: center;
-}
-
-.status-box ul {
-  padding-left: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.status-box ul li {
-  margin-bottom: 0.5rem;
-}
-
-.status-box ul li a {
-  text-decoration: none;
-  color: #667eea;
-  transition: color 0.3s;
-}
-
-.status-box ul li a:hover {
-  color: #4455cc;
-}
-
-/* Tabelle Turnierstaus */
-.left-align {
-  text-align: left;
-}
-
-/* Turnierkonfiguration */
-.boxed-section {
-  position: relative;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 2rem 1.5rem 1.5rem;
-  margin: 2rem 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  background: none;
-}
-
-.boxed-title {
-  position: absolute;
-  top: -0.8rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #f5f6f7;
-  padding: 0 1rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #333;
-}
-
-/* Usermenue */
-
-nav.user-menu {
+nav#account-menu {
   display: inline-block;
   position:relative; /* make it an anchor-point for the drop-down positioning */
 }
 
-nav.user-menu ul {
+nav#account-menu ul {
    list-style-type: none;
    margin:0;
    padding:0;
 }
 
-nav.user-menu ul li {
+nav#account-menu ul li {
    margin:0;
    padding: 0
 }
 
-nav.user-menu h2 {
+nav#account-menu h2 {
   background: #f5f6f7;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -277,11 +231,11 @@ nav.user-menu h2 {
   line-height: 1.2; /* verhindert zusätzliche Höhe */
 }
 
-.user-menu-btn:hover {
+nav#account-menu h2 {
   background: #e8e9eb;
 }
 
-.user-menu-dropdown {
+nav#account-menu ul {
   display: none;
   position: absolute;
   right: 0;
@@ -295,7 +249,7 @@ nav.user-menu h2 {
   padding-top: 2px; /* damit es visuell Luft hat, ohne echten Spalt */
 }
 
-.user-menu-dropdown a {
+nav#account-menu ul a {
   display: block;
   padding: 0.6em 2em;
   text-decoration: none;
@@ -304,13 +258,13 @@ nav.user-menu h2 {
   transition: background 0.3s, color 0.3s;
 }
 
-.user-menu-dropdown a:hover {
+nav#account-menu ul a:hover {
   background: #eef2ff;
   color: #4455cc;
 }
 
-nav.user-menu:hover .user-menu-dropdown,
-.user-menu-dropdown:hover {
+nav#account-menu:hover ul,
+nav#account-menu ul:hover {
   display: block;
 }
 
@@ -321,7 +275,6 @@ nav.user-menu:hover .user-menu-dropdown,
   gap: 1.5rem;
   flex-wrap: wrap;
   justify-content: center;
-  margin-top: 2rem;
   padding: 1rem;
 }
 
@@ -379,85 +332,61 @@ nav.user-menu:hover .user-menu-dropdown,
   }
 }
 
-/* Tabelle zum Auflisten von DB-Einträgen */
-table.entry-list {
-  border-collapse: separate;
-  border-spacing: 0;
+/* Default-style für Tabellen */
+table {
+  border-collapse: collapse;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-table.entry-list thead {
+table thead {
   background-color: #f0f0f0;
 }
 
-table.entry-list th, td {
+table th, td {
   padding: 0.75rem 1rem;
   text-align: left;
   border-bottom: 1px solid #eee;
 }
 
-table.entry-list tbody tr:nth-child(even) {
+table tbody tr:nth-child(even) {
   background-color: #fafafa;
 }
 
-table.entry-list tbody tr:hover {
+table tbody tr:nth-child(odd) {
+   background-color: white;
+}
+
+table tbody tr:hover {
   background-color: #f5f5f5;
 }
 
-table.entry-list td form {
+table td form {
   display: inline-block;
   margin: 0;
 }
 
-table.entry-list td a {
-  background-color: #667eea;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 0.4rem 0.8rem;
-  text-decoration: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.3s, color 0.3s;
+table .checkbox {
+   text-align: center;
 }
 
-table.entry-list td a:hover {
-  background-color: #4455cc;
-}
+/* Hauptinhalt */
 
-.boxed-section {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1.5rem 2rem;
-  margin: 2rem 0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-.boxed-section h2 {
-  margin-top: 0;
-  font-size: 1.3rem;
-  color: #333;
-}
-
-.boxed-section form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-#content > section {
+main > section,
+main > nav {
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 1.5rem;
-  margin-bottom: 2rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-h2 {
+main > * + section {
+   margin-top: 15px;
+}
+
+main h2 {
   margin-top: 0;
   margin-bottom: 1rem;
   font-size: 1.3rem;
@@ -466,7 +395,8 @@ h2 {
   padding-bottom: 0.5rem;
 }
 
-/* Formulare */
+/* Formular-Elemente */
+
 .form-element {
    margin: 1rem 0;
 }
@@ -477,24 +407,21 @@ h2 {
    display: block;
 }
 
-input[type="checkbox"] {
-   width: 1.2em;
-   height: 1.2em;
-   cursor: pointer;
-}
-
 label {
    cursor: pointer;
 }
 
-button {
+button,
+a.form-btn {
    background-color: #f0f0f0; /* neutral hellgrau */
+   font-size: 0.9rem;
    border: 1px solid #ccc;
    border-radius: 6px;
    padding: 0.5rem 1rem;
    transition: background 0.3s, color 0.3s;
    margin-top: 1rem;
    margin-right: 1rem;
+   text-decoration: none !important;
 }
 
 table button,
@@ -502,14 +429,22 @@ dl button {
    margin-top: 0;
 }
 
-button:enabled {
+button:enabled,
+a.form-btn {
   color: #333;                 /* dunkler Text */
   cursor: pointer;
 }
 
-button:enabled:hover {
+button:enabled:hover,
+a.form-btn:hover {
   background-color: #e0e0e0;   /* etwas dunkler beim Hover */
   color: #111;
+}
+
+input[type="checkbox"] {
+   width: 1.2em;
+   height: 1.2em;
+   cursor: pointer;
 }
 
 textarea {
@@ -523,7 +458,7 @@ textarea {
   resize: vertical;
 }
 
-.category-fieldset {
+fieldset {
   border: 1px solid #ccc;
   border-radius: 6px;
   padding: 0.8rem 1rem;
@@ -532,111 +467,57 @@ textarea {
   box-sizing: border-box;
 }
 
-.category-fieldset legend {
+legend {
   font-weight: 600;
   color: #333;
 }
 
-.category-checkboxes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+.checkbox-set > * {
+   display:inline-block;
+   margin-right: 1rem;
 }
 
-.category-label {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.95rem;
+/* label rows (z.B. in Kampf-Interface) */
+
+tr.label_row td
+{
+   border: none;
+   font-weight: bold;
+   font-size: 90%;
+   padding-bottom: 0;
 }
 
-.form-btn {
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  transition: background 0.3s, color 0.3s;
-  font-size: 0.9rem;
-  text-decoration: none;
+/* "Row-link"-Tabelle: jede Zeile/Zelle ist ein link */
+table.row-links td {
+   padding:0;
 }
 
-.form-btn:hover {
-  background-color: #e0e0e0;
+table.row-links tbody tr {
+   transition: background 0.2s ease;
 }
 
-a.form-btn.disabled,
-input[type="submit"].disabled,
-input[type="submit"][disabled] button.disabled,
-button[disabled] {
-   cursor: not-allowed;
-   opacity: 0.5;
-   pointer-events: none;
+table.row-links tbody tr:hover {
+   background-color: #007BFF;
 }
 
-/* Status Position*/
-.main > section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+table.row-links tbody tr:hover a {
+   color: white;
 }
 
-.main > section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+table.row-links a {
+   display:block;
+   padding: 0.75rem 1rem;
+   color: black;
+   text-decoration: none !important;
 }
 
-.tournament-status {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  align-items: center;
-  min-width: 250px;  /* feste Mindestbreite */
+/* tournament selection table: give it a minimum width for better optics */
+#tournament_list td:nth-child(1) { /* date column */
+   width: 10em;
 }
 
-.tournament-status ul {
-  display: flex;
-  list-style: none;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-}
-
-.tournament-status li {
-  flex-shrink: 0;
-}
-
-.tournament-status input[type="submit"] {
-  width: 150px;
-  min-height: 36px;
-  text-align: center;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #f0f0f0;
-  color: #333;
-  cursor: pointer;
-  transition: background 0.3s, color 0.3s;
-}
-
-.tournament-status input[type="submit"]:hover {
-  background: #e0e0e0;
-}
-
-.area-btn {
-    padding: 10px 18px;
-    margin: 5px;
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-}
-.area-btn:hover {
-    background-color: #005ec4;
+#tournament_list td:nth-child(2) { /* tournament name */
+   min-width: 30em;
 }
 
 tr.label_row td
@@ -665,21 +546,24 @@ p.ok, span.ok {
    margin-bottom: 1rem;
 }
 
+/* button list with descriptions as dl */
 dl.button-list {
    padding: 1rem;
+   display: grid;
+   grid-template-columns: auto 15em;
+   grid-auto-flow: column;
+   row-gap: 2rem;
+   align-items: center;
 }
 
-dl.button-list dt
-{
-   display:block;
-   max-width: 20em;
-   float: right;
-   clear: right;
+dl.button-list dt {
+   grid-column: 2;
+   text-align: center;
 }
 
-dl.button-list dd
-{
-   margin:0;
+dl.button-list dd {
+   grid-column: 1;
+   margin: 0;
 }
 
 /* buttons that trigger destructive actions */
@@ -690,16 +574,17 @@ button.danger {
 }
 
 a.form-btn.danger:hover,
-button.danger:hover {
+button.danger:hover:not([disabled]) {
    background-color: #D73A49;
    border-color: #A71D2A;
    color: white;
 }
 
-td.checkbox {
-   text-align: center;
+button.danger[disabled] {
+   color: #FA5D6C;
 }
 
+/* participant list definitions */
 .participant-assigned-slot {
    font-size: 0.9em;
    display: block;
@@ -714,5 +599,9 @@ td.checkbox {
 }
 
 .participant-preassigned-slot {
+   font-weight: bold;
+}
+
+.current-selection {
    font-weight: bold;
 }

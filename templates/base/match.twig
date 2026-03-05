@@ -19,7 +19,7 @@
 {% endmacro %}
 
 {% macro printMatchLinks(matchList, route_parameters, route_name='tournaments.categories.ko.matches.show') -%}
-<table>
+<table class="row-links">
   <thead>
     <tr>
       <th>Kampf</th>
@@ -32,13 +32,13 @@
     {% if match.isTieBreak() -%}
     <tr class="label_row"><td colspan="5">Entscheidungskampf</td></tr>
     {%- endif %}
+    {%- set match_url = url_for(route_name, route_parameters|merge({'matchName': match.name})) %}
     <tr>
-      <td class="match_name"><a
-          href="{{url_for(route_name, route_parameters|merge({'matchName': match.name}))}}">{{match.getLocalId()}}</a></td>
-      <td class="participant_name redside">{{_self.printSlot(match.slotRed, match.getWinner())}}</td>
-      <td class="score redside">{{match.getRedPoints()}}</td>
-      <td class="score whiteside">{{match.getWhitePoints()}}</td>
-      <td class="participant_name whiteside">{{_self.printSlot(match.slotWhite, match.getWinner())}}</td>
+      <td class="match_name"><a href="{{match_url}}">{{match.getLocalId()}}</a></td>
+      <td class="participant_name redside"><a href="{{match_url}}">{{_self.printSlot(match.slotRed, match.getWinner())}}</a></td>
+      <td class="score redside"><a href="{{match_url}}">{{match.getRedPoints()}}</a></td>
+      <td class="score whiteside"><a href="{{match_url}}">{{match.getWhitePoints()}}</a></td>
+      <td class="participant_name whiteside"><a href="{{match_url}}">{{_self.printSlot(match.slotWhite, match.getWinner())}}</a></td>
     </tr>
     {% endfor -%}
   </tbody>
