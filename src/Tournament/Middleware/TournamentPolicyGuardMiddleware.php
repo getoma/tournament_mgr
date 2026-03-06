@@ -4,11 +4,10 @@ namespace Tournament\Middleware;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 use Slim\Exception\HttpForbiddenException;
-
+use Tournament\Policy\AuthType;
 use Tournament\Policy\TournamentAction;
 use Tournament\Policy\TournamentPolicy;
 
@@ -17,36 +16,39 @@ use Tournament\Policy\TournamentPolicy;
  * To be added route-specific via the for() method that defines the action this route needs
  * to be guarded against.
  */
-class TournamentPolicyGuardMiddleware implements MiddlewareInterface
+class TournamentPolicyGuardMiddleware
 {
-   public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+   /**
+    * Wrapper to inject a guard for a specific action on a route.
+    */
+   public static function for(TournamentAction $action): \Closure
    {
-      /** @var TournamentAction $requiredAction */
-      $requiredAction = $request->getAttribute('requiredAction');
-      if (!($requiredAction instanceof TournamentAction) )
+      return function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($action): ResponseInterface
       {
-         throw new \DomainException("Route is missing requiredAction argument or it is not of type TournamentAction");
-      }
-
-      /** @var TournamentPolicy $policy */
-      $policy = $request->getAttribute('policy');
-      if (!$policy->isActionAllowed($requiredAction))
-      {
-         throw new HttpForbiddenException($request, "Aktion {$requiredAction->name} ist nicht erlaubt.");
-      }
-
-      return $handler->handle($request);
+         /** @var TournamentPolicy $policy */
+         $policy = $request->getAttribute('policy');
+         if (!$policy->isActionAllowed($action))
+         {
+            throw new HttpForbiddenException($request, "Aktion {$action->name} ist nicht erlaubt.");
+         }
+         return $handler->handle($request);
+      };
    }
 
    /**
-    * Wrapper to inject the specific action for each route.
+    * Wrapper to inject guard for a specific authorization type on a route
     */
-   public function for(TournamentAction $action): \Closure
+   public static function as(AuthType $auth)
    {
-      $mw = $this;
-      return function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($action, $mw)
+      return function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($auth): ResponseInterface
       {
-         return $mw->process($request->withAttribute('requiredAction', $action), $handler);
+         /** @var TournamentPolicy $policy */
+         $policy = $request->getAttribute('policy');
+         if (!$policy->hasAccessAs($auth))
+         {
+            throw new HttpForbiddenException($request, "Zugriff mit aktueller Authorisierung nicht erlaubt");
+         }
+         return $handler->handle($request);
       };
    }
 

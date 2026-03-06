@@ -3,6 +3,7 @@
 namespace Tournament\Service;
 
 use Templates\Navigation;
+use Tournament\Policy\AuthContext;
 use Tournament\Policy\TournamentPolicy;
 
 class NavigationStructureService

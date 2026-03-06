@@ -17,6 +17,7 @@ use Base\Service\SessionValidationIssue;
 use Base\Service\RedirectHandler;
 
 use Slim\Routing\RouteCollectorProxy;
+use Tournament\Policy\AuthType;
 
 return function (\Slim\App $app)
 {
@@ -61,12 +62,11 @@ return function (\Slim\App $app)
    /**********************
     * Local MiddleWare Initialization
     */
-
-   // create AuthGuard - enforce login on specific routes
-   $authGuard = \Tournament\Middleware\AuthContextGuard::create($app, 'auth.login.form');
-
    // Add TournamentStatusGuardMiddleware - enforce tournament status based permissions
    $policyGuard = \Tournament\Middleware\TournamentPolicyGuardMiddleware::create($app);
+
+   // General authorization checks
+   $authGuard = \Base\Middleware\AuthMiddleware::create($app, 'auth.login.form');
 
    /**********************
     * Route setup
@@ -234,7 +234,8 @@ return function (\Slim\App $app)
          $auth_grp->patch('/dbmigrate', [TestController::class, 'setDbMigration'])->setName('dbmigration.update');
       }
    })
-   ->add($authGuard->check( fn($ctx) => $ctx->isUser() ) );
+   ->add($policyGuard->as(AuthType::USER))
+   ->add($authGuard);
 
    /**
     * area device routes
@@ -249,6 +250,7 @@ return function (\Slim\App $app)
    {
       $device_grp->get('/dashboard', [TournamentTreeController::class, 'showAreaDashboard'])->setName('device.dashboard.show');
    })
-   ->add($authGuard->check( fn($ctx) => $ctx->isDevice(), 'Diese Seite ist nur für Zugriff von Kampfflächen-Geräten gültig' ));
+   ->add($policyGuard->as(AuthType::DEVICE))
+   ->add($authGuard);
 };
 
