@@ -23,7 +23,7 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
  * to fully load up the structure, the various loading methods need to be called in a proper order:
  * - __construct()
  * - generateStructure()
- * - getParticipantHandler->loadParticipants()
+ * - loadParticipants()
  * - loadMatchRecords()
  */
 class TournamentStructure
@@ -46,6 +46,9 @@ class TournamentStructure
    /** @var TournamentStructureFactory */
    private readonly TournamentStructureFactory $factory;
 
+   /** @var ParticipantHandler */
+   private readonly ParticipantHandler $participantHandler;
+
    public function __construct(
       public Category $category,
       public AreaCollection $areas
@@ -56,9 +59,15 @@ class TournamentStructure
       $this->factory = new TournamentStructureFactory(
          $category->getMatchPointHandler(),
          $category->getPoolRankHandler(),
-         $category->getMatchCreationHandler() );
+         $category->getMatchCreationHandler()
+      );
+      $this->participantHandler = new ParticipantHandler($this);
    }
 
+   /**
+    * generate the whole structure - it's a rather expensive operation,
+    * therefore it is not done inside the constructor
+    */
    public function generateStructure()
    {
       if ($this->category->mode === CategoryMode::KO)
@@ -82,23 +91,52 @@ class TournamentStructure
 
       if( !$this->areas->empty() )
       {
-         $area_hdl = new AreaAssignmentHandler($this);
          if ($this->ko)
          {
-            $area_hdl->assignKoAreas($this->areas, $this->category->config->area_cluster);
+            AreaAssignmentHandler::assignKoAreas($this->ko, $this->areas, $this->category->config->area_cluster);
          }
          if (!$this->pools->empty())
          {
-            $area_hdl->assignPoolAreas($this->areas);
+            AreaAssignmentHandler::assignPoolAreas($this->pools, $this->areas);
          }
       }
    }
 
-   public function getParticipantHandler()
+   /**
+    * extract the pool id from a slot name - pool slot naming is defined by ParticipantHandler
+    */
+   public static function getPoolIdFromSlotName(string $slotName, bool $throw_if_invalid = true): ?string
    {
-      return new ParticipantHandler($this);
+      return ParticipantHandler::getPoolIdFromSlotName($slotName, $throw_if_invalid);
    }
 
+   /**
+    * extract the KoNode name from a slot name - Node slot naming is defined by the KoNode class
+    */
+   public static function getKoNodeNameFromSlotName(string $slotName, bool $throw_if_invalid = true): ?string
+   {
+      return KoNode::getNodeNameFromSlotName($slotName, $throw_if_invalid);
+   }
+
+   /**
+    * load a collection of slot-assigned participants into the Tournament structure
+    */
+   public function loadParticipants(ParticipantCollection $participants): void
+   {
+      $this->participantHandler->loadParticipants($participants);
+   }
+
+   /**
+    * populate a TournamentStructure with a collection of Participants
+    */
+   public function populate(ParticipantCollection $participants): ParticipantCollection
+   {
+      return $this->participantHandler->populate($participants);
+   }
+
+   /**
+    * load a list of match records into the structure
+    */
    public function loadMatchRecords(MatchRecordCollection $matchRecords)
    {
       foreach ($this->pools as $pool)
@@ -111,6 +149,9 @@ class TournamentStructure
       }
    }
 
+   /**
+    * get a list of all pools assigned to a specific area
+    */
    public function getPoolsByArea(Area|int $area): PoolCollection
    {
       $areaid = ($area instanceof Area)? $area->id : $area;

@@ -31,7 +31,7 @@ class TournamentStructureService
       $matchRecords = $this->matchDataRepo->getMatchRecordsByCategoryId($category->id);
 
       $struc = $this->initialize($category);
-      $struc->getParticipantHandler()->loadParticipants($participants);
+      $struc->loadParticipants($participants);
       $struc->loadMatchRecords($matchRecords);
       return $struc;
    }
@@ -43,7 +43,7 @@ class TournamentStructureService
    {
       $struc = $this->initialize($category);
       $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
-      $slot_assignment = $struc->getParticipantHandler()->populate($participants);
+      $slot_assignment = $struc->populate($participants);
       $this->participantRepo->updateAllParticipantSlots($category->id, $slot_assignment);
       return $struc;
    }
@@ -60,7 +60,7 @@ class TournamentStructureService
          $struc = $this->load($struc);
       }
       $participants  ??= $struc->unmapped_participants->copy();
-      $slot_assignment = $struc->getParticipantHandler()->populate($participants);
+      $slot_assignment = $struc->populate($participants);
       $this->participantRepo->updateAllParticipantSlots($struc->category->id, $slot_assignment);
       return $struc;
    }

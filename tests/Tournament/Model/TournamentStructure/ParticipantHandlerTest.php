@@ -34,7 +34,7 @@ class ParticipantHandlerTest extends TestCase
       $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
-      $structure->getParticipantHandler()->populate($this->participantList(4));
+      $structure->populate($this->participantList(4));
       $rounds = $structure->ko->getRounds();
       $this->assertCount(4, $rounds[0]); // 4 matches in the first round
 
@@ -56,7 +56,7 @@ class ParticipantHandlerTest extends TestCase
       $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3, pool_winners: 2));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
-      $assignment = $structure->getParticipantHandler()->populate($participants);
+      $assignment = $structure->populate($participants);
 
       $assigned = array_map(fn($p) => $p->id, $assignment->values());
       $given = array_map(fn($p) => $p->id, $participants->values());
@@ -79,7 +79,7 @@ class ParticipantHandlerTest extends TestCase
       $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(4));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
-      $hdl   = $structure->getParticipantHandler();
+      $hdl   = $structure;
 
       /* generate two rounds of participant additions */
       $first_list = $this->participantList(4, 1);
@@ -116,7 +116,7 @@ class ParticipantHandlerTest extends TestCase
       $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3, pool_winners: 2));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
-      $hdl = $structure->getParticipantHandler();
+      $hdl = $structure;
 
       /* generate two rounds of participant additions */
       $first_list = $this->participantList(10, 1);
@@ -156,11 +156,11 @@ class ParticipantHandlerTest extends TestCase
       $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
-      $participants = $structure->getParticipantHandler()->populate($this->participantList(14)); // set more participants than starting slots on purpose
+      $participants = $structure->populate($this->participantList(14)); // set more participants than starting slots on purpose
 
       $structure2 = new TournamentStructure($category, AreaCollection::new());
       $structure2->generateStructure();
-      $structure2->getParticipantHandler()->loadParticipants($participants->reverse()); // explicitly provide them in a different order
+      $structure2->loadParticipants($participants->reverse()); // explicitly provide them in a different order
 
       $this->assertEquals($structure, $structure2);
    }
@@ -174,11 +174,11 @@ class ParticipantHandlerTest extends TestCase
       $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
-      $participants = $structure->getParticipantHandler()->populate($this->participantList(20));
+      $participants = $structure->populate($this->participantList(20));
 
       $structure2 = new TournamentStructure($category, AreaCollection::new());
       $structure2->generateStructure();
-      $structure2->getParticipantHandler()->loadParticipants($participants->reverse()); // explicitly provide them in a different order
+      $structure2->loadParticipants($participants->reverse()); // explicitly provide them in a different order
 
       $this->assertEquals($structure, $structure2);
    }
@@ -214,7 +214,7 @@ class ParticipantHandlerTest extends TestCase
             $cumulated[$club] += $count;
          }
 
-         $assigned = $structure->getParticipantHandler()->populate($participants);
+         $assigned = $structure->populate($participants);
 
          /* verify that previously placed participants are not modified */
          foreach ($slots as $slotting)
@@ -278,7 +278,7 @@ class ParticipantHandlerTest extends TestCase
             $cumulated[$club] += $count;
          }
 
-         $assigned = $structure->getParticipantHandler()->populate($participants);
+         $assigned = $structure->populate($participants);
 
          /* verify that previously placed participants are not modified */
          foreach ($slots as $slotting)

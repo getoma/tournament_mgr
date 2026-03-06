@@ -20,7 +20,7 @@ use Tournament\Model\TournamentStructure\MatchSlot\PoolWinnerSlot;
  * This module is there to move the participant assignment algorithms into a separate file,
  * and this class is tightly coupled to TournamentStructure
  */
-class ParticipantHandler
+final class ParticipantHandler
 {
    function __construct(private TournamentStructure $struc)
    {
@@ -29,7 +29,7 @@ class ParticipantHandler
    /**
     * load a collection of slot-assigned participants into the Tournament structure
     */
-   public function loadParticipants(ParticipantCollection $participants)
+   public function loadParticipants(ParticipantCollection $participants): void
    {
       if (!$this->struc->pools->empty())
       {
@@ -43,33 +43,6 @@ class ParticipantHandler
       {
          throw new \LogicException('No structure generated, yet');
       }
-   }
-
-   /**
-    * extract the pool id from a slot name including plausibility checking of the slotname
-    */
-   public static function getPoolIdFromSlotName(string $slotName, bool $throw_if_invalid = true): ?string
-   {
-      if( preg_match('/^\d+\.\d+$/', $slotName) ) return static::getPoolIdFromSlotNameInt($slotName);
-      if( $throw_if_invalid ) throw new \InvalidArgumentException("'$slotName' is not a valid pool slot name");
-      return null;
-   }
-
-   /**
-    * extract the pool id from a slot name without plausibility check
-    */
-   private static function getPoolIdFromSlotNameInt(string $slotName): string
-   {
-      list ($poolId) = (explode('.', $slotName));
-      return $poolId;
-   }
-
-   /**
-    * extract the KoNode name from a slot name
-    */
-   public static function getKoNodeNameFromSlotName(string $slotName, bool $throw_if_invalid = true): ?string
-   {
-      return KoNode::getNodeNameFromSlotName($slotName, $throw_if_invalid);
    }
 
    /**
@@ -100,7 +73,7 @@ class ParticipantHandler
          $slot_name = $p->categories[$this->struc->category->id]->slot_name;
          if( $slot_name )
          {
-            $poolId = $this->getPoolIdFromSlotNameInt($slot_name);
+            $poolId = self::getPoolIdFromSlotName($slot_name);
             if ($this->struc->pools->keyExists($poolId))
             {
                $pool_participants[$poolId] ??= ParticipantCollection::new();
@@ -401,6 +374,20 @@ class ParticipantHandler
 
       /* done */
       return $result;
+   }
+
+   /**
+    * extract the pool id from a slot name including a plausibility check
+    */
+   public static function getPoolIdFromSlotName(string $slotName, bool $throw_if_invalid = true): ?string
+   {
+      if (preg_match('/^\d+\.\d+$/', $slotName)) // as defined above in updateSlotAssignments()
+      {
+         list($poolId) = (explode('.', $slotName));
+         return $poolId;
+      }
+      if ($throw_if_invalid) throw new \InvalidArgumentException("'$slotName' is not a valid pool slot name");
+      return null;
    }
 
    /**
