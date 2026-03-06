@@ -67,7 +67,7 @@ class Category implements \Tournament\Model\Base\DbItem
     */
    public function getMatchCreationHandler(): \Tournament\Model\MatchCreationHandler\MatchCreationHandler
    {
-      return new \Tournament\Model\MatchCreationHandler\GenericMatchCreationHandler();
+      return new \Tournament\Model\MatchCreationHandler\GenericMatchCreationHandler($this);
    }
 
    /**

@@ -66,16 +66,9 @@ class TournamentTreeController
       // Load the tournament structure for this category
       $structure = $this->structureLoadService->load($ctx->category);
 
-      /* filter pool/ko display if we have a very large structure */
-      if ($structure->ko)
-      {
-         $ko = $structure->ko->getRounds(- ($structure->finale_rounds_cnt ?? 0));
-      }
-
       return $this->view->render($response, 'tournament/navigation/category_KO.twig', [
          'no_pools'   => $structure->pools->empty(),
-         'ko'         => $ko,
-         'chunks'     => $structure->chunks,
+         'ko'         => $structure->getFinaleRounds(),
          'unmapped_participants' => $structure->unmapped_participants,
       ]);
    }
@@ -91,16 +84,9 @@ class TournamentTreeController
       // Load the tournament structure for this category
       $structure = $this->structureLoadService->load($ctx->category);
 
-      /* filter pool/ko display if we have a very large structure */
-      if ($structure->ko)
-      {
-         $ko = $structure->ko->getRounds(- ($structure->finale_rounds_cnt ?? 0));
-      }
-
       return $this->view->render($response, 'tournament/navigation/category_home.twig', [
          'pools'      => $structure->pools,
-         'ko'         => $ko,
-         'chunks'     => $structure->chunks,
+         'ko'         => $structure->getFinaleRounds(),
          'unmapped_participants' => $structure->unmapped_participants,
       ]);
    }

@@ -3,6 +3,7 @@
 namespace Tournament\Model\TournamentStructure\MatchNode;
 
 use Tournament\Model\Area\Area;
+use Tournament\Model\Category\Category;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
@@ -21,14 +22,15 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
 class KoNode extends MatchNode
 {
    // use constructor to forward parentNode links to child nodes
-   public function __construct( string $name,
-                                MatchSlot $slotRed,
-                                MatchSlot $slotWhite,
-                                MatchPointHandler $mpHdl, // MatchPoint Handler to parse match points
-                                ?Area $area = null,
-                                ?MatchRecord $matchRecord = null)
+   public function __construct(
+      string $name,
+      Category $category,
+      MatchSlot $slotRed,
+      MatchSlot $slotWhite,
+      ?Area $area = null,
+      ?MatchRecord $matchRecord = null)
    {
-      parent::__construct($name, $slotRed, $slotWhite, $mpHdl, $area, false, $matchRecord);
+      parent::__construct($name, $category, $slotRed, $slotWhite, $area, false, $matchRecord);
    }
 
    public function setName(string $name): void

@@ -10,13 +10,15 @@ use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\TournamentStructure\KoChunk;
 use Tournament\Model\TournamentStructure\Pool\PoolCollection;
 
-use Tournament\Model\Area\Area;
 use Tournament\Model\Area\AreaCollection;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
+use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
+use Tournament\Model\TournamentStructure\Pool\Pool;
 
 /**
  * A class to generate and manage a Tournament structure, consisting of Pools and/or a KO tree
@@ -35,16 +37,13 @@ class TournamentStructure
    public ?KoNode $ko = null;
 
    /** @var KoChunk[] list of KO clusters*/
-   public array $chunks = [];
+   private array $clusters = [];
 
    /** @var ?int number of finale rounds after the clusters*/
-   public ?int $finale_rounds_cnt = null;
+   private int $finale_rounds_cnt = 0;
 
    /** @var ParticipantCollection of all participants that don't have a start place right now */
    public ParticipantCollection $unmapped_participants;
-
-   /** @var TournamentStructureFactory */
-   private readonly TournamentStructureFactory $factory;
 
    /** @var ParticipantHandler */
    private readonly ParticipantHandler $participantHandler;
@@ -56,11 +55,6 @@ class TournamentStructure
    {
       $this->pools = PoolCollection::new();
       $this->unmapped_participants = ParticipantCollection::new();
-      $this->factory = new TournamentStructureFactory(
-         $category->getMatchPointHandler(),
-         $category->getPoolRankHandler(),
-         $category->getMatchCreationHandler()
-      );
       $this->participantHandler = new ParticipantHandler($this);
    }
 
@@ -119,6 +113,34 @@ class TournamentStructure
    }
 
    /**
+    * find a node within this structure based on its name
+    * @param $name - the node name to search for
+    * @param $pool_hint - null: node may be in pools or KO, don't know | false: node is in KO part | string: node should be in this pool
+    */
+   public function findNode(string $name, mixed $pool_hint = null): ?MatchNode
+   {
+      $result = null;
+
+      if (!$pool_hint) // try to find it in KO first
+      {
+         $result = $this->ko->findByName($name);
+         if ($result || ($pool_hint === false)) return $result; // Node is not supposed to be inside pools, return whatever we found, even if nothing
+      }
+
+      if( $this->pools->empty() ) return null;
+
+      $pools = $pool_hint? [$this->pools[$pool_hint] ?? throw new \OutOfBoundsException('Pool not found: ' . $pool_hint)] : $this->pools;
+      foreach( $pools as $pool )
+      {
+         /** @var Pool $pool */
+         $result = $pool->getMatchList()->findNode($name);
+         if( $result ) break;
+      }
+
+      return $result;
+   }
+
+   /**
     * load a collection of slot-assigned participants into the Tournament structure
     */
    public function loadParticipants(ParticipantCollection $participants): void
@@ -150,12 +172,37 @@ class TournamentStructure
    }
 
    /**
-    * get a list of all pools assigned to a specific area
+    * get the list of finale rounds:
+    * - if there are clusters, all rounds after cluster execution
+    * - if there are no clusters, return the full KO structure
     */
-   public function getPoolsByArea(Area|int $area): PoolCollection
+   public function getFinaleRounds(): MatchRoundCollection
    {
-      $areaid = ($area instanceof Area)? $area->id : $area;
-      return $this->pools->filter(fn($pool) => $pool->getArea()?->id === $areaid);
+      return $this->ko->getRounds(-$this->finale_rounds_cnt);
+   }
+
+   /**
+    * get an ordered list of all matches in this structure
+    */
+   public function getMatchList(): MatchNodeCollection
+   {
+      $result = MatchNodeCollection::new();
+      /* collect all pools in order */
+      foreach( $this->pools as $pool )
+      {
+         $result->mergeInPlace($pool->getMatchList());
+      }
+      /* if there are clusters defined, collect those in order - each cluster added fully before the next one */
+      if( $this->clusters )
+      {
+         foreach( $this->clusters as $cluster )
+         {
+            $result->mergeInPlace($cluster->root->getMatchList());
+         }
+      }
+      /* add the rest of the KO structure */
+      $result->mergeInPlace($this->getFinaleRounds()->flatten());
+      return $result;
    }
 
    /**
@@ -164,7 +211,7 @@ class TournamentStructure
    private function createKoFirstRound(int $numRounds): MatchNodeCollection
    {
       return MatchNodeCollection::new( array_map(
-         fn($i) => $this->factory->createKoNode($i, new ParticipantSlot(), new ParticipantSlot()),
+         fn($i) => new KoNode($i, $this->category, new ParticipantSlot(), new ParticipantSlot()),
          range(1, pow(2, $numRounds - 1))
       ));
    }
@@ -180,7 +227,7 @@ class TournamentStructure
       $numSlots = pow(2, $numRounds);
       $numPools = pow(2, floor(log($numSlots / $winnersPerPool, 2))); // number of pools, must be a power of 2, rest filled up with BYEs
       if( $maxPools > 0 ) $numPools = min($maxPools, $numPools);
-      return PoolCollection::new( array_map(fn($i) => $this->factory->createPool($i+1), range(0, $numPools - 1)) );
+      return PoolCollection::new( array_map(fn($i) => new Pool($i+1, $this->category), range(0, $numPools - 1)) );
    }
 
    /**
@@ -190,7 +237,7 @@ class TournamentStructure
     * If there are any wildcards, this algorithm will assign them to the higher ranking participants according
     * pool results first.
     *
-    * This is done by iteratively halving the pool winner lists into smaller chunks, with a conflict resolution
+    * This is done by iteratively halving the pool winner lists into smaller clusters, with a conflict resolution
     * algorithm that determines the best canditates to add to each smaller chunk by a simple cost analysis.
     */
    private function createPoolKoFirstRound(PoolCollection $pools, ?int $winnersPerPool = null): MatchNodeCollection
@@ -204,7 +251,7 @@ class TournamentStructure
          /* track usage of each pool while distributing pool winners, use pool ids as key */
          $nextRound = [];
          $splitTarget = ceil($splitTarget / 2); // halve the target for the next round, rounding up
-         /* split down each current chunk into two new chunks */
+         /* split down each current chunk into two new clusters */
          foreach ($poolsPerPlace as $chunk)
          {
             /* add a dummy pool entry if not an even number of entries
@@ -219,7 +266,7 @@ class TournamentStructure
             while ($split_count < $splitTarget)
             {
                /* select one new candidate from each placement rank, which will result into selecting
-                * from a different pool each time - as a result, pool members will be separated across chunks
+                * from a different pool each time - as a result, pool members will be separated across clusters
                 */
                for ($i = 0; ($i < $winnersPerPool) && ($split_count < $splitTarget); ++$i)
                {
@@ -244,7 +291,7 @@ class TournamentStructure
          $poolsPerPlace = $nextRound; // set the next round of pools to the current round
       }
 
-      /* now we have an array of chunks in $poolsPerPlace,
+      /* now we have an array of clusters in $poolsPerPlace,
        * each with 2 or 3 pools, that we can use to create the first round of the knockout structure */
       $firstRound = MatchNodeCollection::new(); // current round of matches, will be filled with MatchNode objects
       $nextMatchId = 1; // local match ID, starting at 1
@@ -272,13 +319,13 @@ class TournamentStructure
 
          if (count($slots) === 2)
          {
-            $firstRound[] = $this->factory->createKoNode($nextMatchId++, slotRed: $slots[0], slotWhite: $slots[1] );
+            $firstRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slots[0], slotWhite: $slots[1] );
          }
          elseif(count($slots) === 3)
          {
             // one BYE needed, pair it with the best ranking participant in this chunk
-            $firstRound[] = $this->factory->createKoNode($nextMatchId++, slotRed: $slots[0], slotWhite: new ByeSlot());
-            $firstRound[] = $this->factory->createKoNode($nextMatchId++, slotRed: $slots[1], slotWhite: $slots[2]);
+            $firstRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slots[0], slotWhite: new ByeSlot());
+            $firstRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slots[1], slotWhite: $slots[2]);
          }
          else
          {
@@ -291,8 +338,7 @@ class TournamentStructure
 
    /**
     * complete the KO tree from a list of first-round-matches.
-    * Store the final node in the class, and return the full list of rounds
-    * for any further operations.
+    * Store the final node in the class and set the number of finale rounds
     */
    private function fillKO(MatchNodeCollection $currentRound): KoNode
    {
@@ -306,7 +352,7 @@ class TournamentStructure
          {
             $slotRed   = new MatchWinnerSlot($previousRound[$i]);
             $slotWhite = new MatchWinnerSlot($previousRound[$i + 1]);
-            $currentRound[] = $this->factory->createKoNode($nextMatchId++, slotRed: $slotRed, slotWhite: $slotWhite);
+            $currentRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slotRed, slotWhite: $slotWhite);
          }
       }
       return $currentRound->first();

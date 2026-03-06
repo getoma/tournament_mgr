@@ -16,7 +16,7 @@ class KoNodeBaseTest extends MatchNodeTest
    protected function setUp(): void
    {
       parent::setUp();
-      $this->node = new KoNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl);
+      $this->node = new KoNode("test", $this->category, $this->redSlot, $this->whiteSlot);
    }
 
    /**

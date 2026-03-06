@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
+use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\Participant;
@@ -30,6 +31,7 @@ class KoNodeTest extends TestCase
 
    /* match point handler for the match node */
    protected MatchPointHandler $mpHdl;
+   protected Category $category;
 
    /**
     * create a KoNode tree with ROUNDS rounds, and fill up above member variables
@@ -37,17 +39,23 @@ class KoNodeTest extends TestCase
    protected function setUp(): void
    {
       $this->mpHdl = $this->createStub(MatchPointHandler::class);
+      $category = $this->getMockBuilder(Category::class)
+         ->enableOriginalConstructor()
+         ->setConstructorArgs([1, 1, 'test', CategoryMode::KO])
+         ->getMock();
+      $category->expects($this->any())->method('getMatchPointHandler')->willReturn($this->mpHdl);
+      $this->category = $category;
 
       /* for testing, set up a KO tree according ROUNDS config */
       $round1_cnt = pow(2, self::ROUNDS - 1); // e.g. 3 ROUNDS -> 2**(3-1) = 4 matches in round 1
       $currentRound = array_map(
-         function($i)
+         function($i) use ($category)
          {
             /** @var ParticipantSlot $a */
             $this->start_slots[] = $a = $this->createStub(ParticipantSlot::class);
             /** @var ParticipantSlot $b */
             $this->start_slots[] = $b = $this->createStub(ParticipantSlot::class);
-            return new KoNode("test_".$i, $a, $b, $this->mpHdl);
+            return new KoNode("test_".$i, $category, $a, $b);
          }
          , range(1, $round1_cnt) );
 
@@ -63,7 +71,7 @@ class KoNodeTest extends TestCase
          {
             $slotRed   = new MatchWinnerSlot($previousRound[$i]);
             $slotWhite = new MatchWinnerSlot($previousRound[$i + 1]);
-            $node = new KoNode("test_" . $nextMatchId++, slotRed: $slotRed, slotWhite: $slotWhite, mpHdl: $this->mpHdl);
+            $node = new KoNode("test_" . $nextMatchId++, $category, slotRed: $slotRed, slotWhite: $slotWhite);
             $currentRound[] = $node;
             $this->node_list[] = $node;
          }
@@ -140,7 +148,6 @@ class KoNodeTest extends TestCase
     */
    public function testMatchData(): void
    {
-      $category = $this->createStub(Category::class);
       $area = $this->createStub(Area::class);
       /* iterate through the tree and fill up the match records backward.
        * alternate winner between red and white.
@@ -181,7 +188,7 @@ class KoNodeTest extends TestCase
          }
          /* create the match record */
          $records[] = new MatchRecord(
-            1, $node->getName(), $category, $area,
+            1, $node->getName(), $this->category, $area,
             $redParticipant, $whiteParticipant, $winner,
             tie_break: false, finalized_at: new \DateTime() );
 
@@ -191,7 +198,7 @@ class KoNodeTest extends TestCase
 
       /* also add another unrelated match record to ensure KoNode doesn't trip over it */
       $records[] = new MatchRecord(
-         1, "test_dummy", $category, $area,
+         1, "test_dummy", $this->category, $area,
          new Participant($pid++, 1, '', ''),
          new Participant($pid++, 1, '', ''),
          null,
