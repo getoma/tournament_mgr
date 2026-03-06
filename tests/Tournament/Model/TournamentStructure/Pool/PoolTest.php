@@ -4,11 +4,11 @@ namespace Tests\Tournament\Model\TournamentStructure\Pool;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Tests\CallSpy;
+
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
+use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchCreationHandler\MatchCreationHandler;
-use Tournament\Model\MatchPointHandler\MatchPointHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\Participant;
@@ -20,7 +20,8 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\Pool\Pool;
-use Tournament\Model\TournamentStructure\TournamentStructureFactory;
+
+use Tests\CallSpy;
 
 class PoolTest extends TestCase
 {
@@ -32,16 +33,23 @@ class PoolTest extends TestCase
     * Mocks for dependency injection to Pool
     */
    private MockObject $rankHdl;
-   private MockObject $strucHdl;
    private MockObject $matchHdl;
+   private Category $category;
 
    const POOL_NAME = "dut";
 
    protected function setUp(): void
    {
       $this->rankHdl  = $this->createMock(PoolRankHandler::class);
-      $this->strucHdl = $this->createMock(TournamentStructureFactory::class);
       $this->matchHdl = $this->createMock(MatchCreationHandler::class);
+
+      $category = $this->getMockBuilder(Category::class)
+         ->enableOriginalConstructor()
+         ->setConstructorArgs([1, 1, 'test', CategoryMode::Combined])
+         ->getMock();
+      $category->expects($this->any())->method('getPoolRankHandler')->willReturn($this->rankHdl);
+      $category->expects($this->any())->method('getMatchCreationHandler')->willReturn($this->matchHdl);
+      $this->category = $category;
    }
 
    private function createParticipantList($num = 3): ParticipantCollection
@@ -60,14 +68,13 @@ class PoolTest extends TestCase
       $parr = $plist->values();
       $res = MatchNodeCollection::new();
       $matchid = 1;
-      $mpHdl = $this->createStub(MatchPointHandler::class);
       for ($i = 0; $i < $pcount; ++$i)
       {
          for ($j = $i + 1; $j < $pcount; ++$j)
          {
             $red   = new ParticipantSlot($parr[$i]);
             $white = new ParticipantSlot($parr[$j]);
-            $res[] = new MatchNode($matchid++, $red, $white, $mpHdl);
+            $res[] = new MatchNode($matchid++, $this->category, $red, $white);
          }
       }
 
@@ -79,20 +86,10 @@ class PoolTest extends TestCase
       $res = $this->generateMatches($plist);
 
       $this->matchHdl->expects($this->once())->method('generate')
-      ->with($this->identicalTo($plist), $this->identicalTo($this->strucHdl))
+      ->with($this->identicalTo($plist))
       ->willReturn($res);
 
       return $res;
-   }
-
-   private function createPool(): Pool
-   {
-      return new Pool(
-         self::POOL_NAME,
-         $this->rankHdl,
-         $this->strucHdl,
-         $this->matchHdl
-      );
    }
 
    private function createMatchRecords(MatchNodeCollection $matches, bool $lastOngoing = false): MatchRecordCollection
@@ -125,7 +122,7 @@ class PoolTest extends TestCase
     */
    public function testEmptyPool()
    {
-      $dut = $this->createPool();
+      $dut = new Pool(self::POOL_NAME, $this->category);
       $this->assertEquals(self::POOL_NAME, $dut->getName());
       $this->assertNull($dut->getArea());
       $this->assertEmpty($dut->getParticipants());
@@ -150,7 +147,7 @@ class PoolTest extends TestCase
     */
    public function testFreshPool(int $numParticipants)
    {
-      $dut = $this->createPool();
+      $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
       $dut->setParticipants($plist);
@@ -200,7 +197,7 @@ class PoolTest extends TestCase
     */
    public function testStartedPool(int $numParticipants)
    {
-      $dut = $this->createPool();
+      $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
       $dut->setParticipants($plist);
@@ -235,7 +232,7 @@ class PoolTest extends TestCase
     */
    public function testOngoingPool(int $numParticipants)
    {
-      $dut = $this->createPool();
+      $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
       $dut->setParticipants($plist);
@@ -263,7 +260,7 @@ class PoolTest extends TestCase
     */
    public function testDecidedPool(int $numParticipants)
    {
-      $dut = $this->createPool();
+      $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
       $dut->setParticipants($plist);
@@ -292,7 +289,7 @@ class PoolTest extends TestCase
     */
    public function testTieBreakPool(int $numParticipants)
    {
-      $dut = $this->createPool();
+      $dut = new Pool(self::POOL_NAME, $this->category);
 
       $spy = new CallSpy();
       $this->matchHdl->method('generate')->willReturnCallback($spy->callback('generate'));
@@ -305,9 +302,8 @@ class PoolTest extends TestCase
 
       $this->assertEquals(1, $spy->count('generate'));
       $calls = $spy->callsOf('generate')[0];
-      [$pl, $str] = $calls['args'];
+      [$pl] = $calls['args'];
       $this->assertSame($plist, $pl);
-      $this->assertSame($this->strucHdl, $str);
 
       /**
        * create the pool ranking where the first place is not decided, yet
@@ -335,9 +331,8 @@ class PoolTest extends TestCase
 
       $this->assertEquals(1, $spy->count('generate'));
       $calls = $spy->callsOf('generate')[0];
-      [$pl, $str] = $calls['args'];
+      [$pl] = $calls['args'];
       $this->assertEquals($decision_participants->values(), $pl->values());
-      $this->assertSame($this->strucHdl, $str);
 
       $this->assertEquals($decision_matches, $decision_nodes);
       $this->assertNotNull($dut->getCurrentDecisionRound());

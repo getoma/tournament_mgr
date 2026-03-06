@@ -2,73 +2,32 @@
 
 namespace Tests\Tournament\Model\MatchCreationHandler;
 
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Tournament\Model\Area\Area;
+use Tournament\Model\Category\Category;
 use Tournament\Model\MatchCreationHandler\GenericMatchCreationHandler;
-use Tournament\Model\MatchPointHandler\MatchPointHandler;
-use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
-use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
-use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
-use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
-use Tournament\Model\TournamentStructure\TournamentStructureFactory;
+
+use PHPUnit\Framework\TestCase;
 
 class GenericMatchCreationHandlerTest extends TestCase
 {
-   private function createFactoryMock(): MockObject
-   {
-      $factMock = $this->createMock(TournamentStructureFactory::class);
-      $factMock->method('createMatchNode')->willReturnCallback(
-         function (
-            string $name,
-            MatchSlot $slotRed,
-            MatchSlot $slotWhite,
-            ?Area $area = null,
-            bool $tie_break = false,
-            ?MatchRecord $matchRecord = null,
-            bool $frozen = false
-         )
-         {
-            return new MatchNode($name, $slotRed, $slotWhite, $this->createStub(MatchPointHandler::class),
-                                 $area, $tie_break, $matchRecord, $frozen);
-         }
-      );
-      return $factMock;
-   }
-
    /**
     * trivial match generations: 0,1,2 participants
     */
    public function testTrivial()
    {
-      $tst = new GenericMatchCreationHandler();
+      $tst = new GenericMatchCreationHandler($this->createStub(Category::class));
 
-      $fact = $this->createFactoryMock();
-      $fact->expects($this->never())->method('createMatchNode');
-
-      /** @var TournamentStructureFactory $fact */
       /* no Participant */
-      $this->assertEmpty($tst->generate(new ParticipantCollection(), $fact));
+      $this->assertEmpty($tst->generate(new ParticipantCollection()));
 
       /* a single Participant */
       $p1 = new Participant(1, 1, '', '');
-      $this->assertEmpty($tst->generate(new ParticipantCollection([$p1]), $fact));
+      $this->assertEmpty($tst->generate(new ParticipantCollection([$p1])));
 
       /* two participants */
-      $fact = $this->createFactoryMock();
-      $fact->expects($this->once())->method('createMatchNode')
-        ->with(name:        $this->isType('string'),
-               slotRed:     $this->isInstanceOf(ParticipantSlot::class),
-               slotWhite:   $this->isInstanceOf(ParticipantSlot::class),
-               area:        $this->equalTo(null),
-               tie_break:   $this->equalTo(false),
-               MatchRecord: $this->equalTo(null),
-               frozen:      $this->equalTo(false));
       $p2 = new Participant(2, 1, '', '');
-      /** @var TournamentStructureFactory $fact */
-      $matchList = $tst->generate(new ParticipantCollection([$p1, $p2]), $fact);
+      $matchList = $tst->generate(new ParticipantCollection([$p1, $p2]));
       $this->assertCount(1, $matchList);
       $this->assertEquals($p1, $matchList->first()->slotRed->getParticipant());
       $this->assertEquals($p2, $matchList->first()->slotWhite->getParticipant());
@@ -80,23 +39,10 @@ class GenericMatchCreationHandlerTest extends TestCase
     */
    public function testThreeParticipants()
    {
-      $tst = new GenericMatchCreationHandler();
-      $fact = $this->createFactoryMock();
-      $fact->expects($this->exactly(3))->method('createMatchNode')
-         ->with(
-            name: $this->isType('string'),
-            slotRed: $this->isInstanceOf(ParticipantSlot::class),
-            slotWhite: $this->isInstanceOf(ParticipantSlot::class),
-            area: $this->equalTo(null),
-            tie_break: $this->equalTo(false),
-            MatchRecord: $this->equalTo(null),
-            frozen: $this->equalTo(false)
-         );
+      $tst = new GenericMatchCreationHandler($this->createStub(Category::class));
 
       $p = array_map(fn($i) => new Participant($i, 1, '', ''), range(1,3));
-
-      /** @var TournamentStructureFactory $fact */
-      $matchList = $tst->generate(new ParticipantCollection($p), $fact);
+      $matchList = $tst->generate(new ParticipantCollection($p));
 
       $this->assertCount(3, $matchList);
       /* A vs B */
@@ -116,23 +62,10 @@ class GenericMatchCreationHandlerTest extends TestCase
     */
    public function testFourParticipants()
    {
-      $tst = new GenericMatchCreationHandler();
-      $fact = $this->createFactoryMock();
-      $fact->expects($this->exactly(6))->method('createMatchNode')
-         ->with(
-            name: $this->isType('string'),
-            slotRed: $this->isInstanceOf(ParticipantSlot::class),
-            slotWhite: $this->isInstanceOf(ParticipantSlot::class),
-            area: $this->equalTo(null),
-            tie_break: $this->equalTo(false),
-            MatchRecord: $this->equalTo(null),
-            frozen: $this->equalTo(false)
-         );
+      $tst = new GenericMatchCreationHandler($this->createStub(Category::class));
 
       $p = array_map(fn($i) => new Participant($i, 1, '', ''), range(1, 4));
-
-      /** @var TournamentStructureFactory $fact */
-      $matchList = $tst->generate(new ParticipantCollection($p), $fact);
+      $matchList = $tst->generate(new ParticipantCollection($p));
 
       $this->assertCount(6, $matchList);
       /* A vs B */
@@ -175,18 +108,7 @@ class GenericMatchCreationHandlerTest extends TestCase
       $numPart = 6;
       $matchCount = $numPart*($numPart-1)/2;
 
-      $tst = new GenericMatchCreationHandler();
-      $fact = $this->createFactoryMock();
-      $fact->expects($this->exactly($matchCount))->method('createMatchNode')
-         ->with(
-            name: $this->isType('string'),
-            slotRed: $this->isInstanceOf(ParticipantSlot::class),
-            slotWhite: $this->isInstanceOf(ParticipantSlot::class),
-            area: $this->equalTo(null),
-            tie_break: $this->equalTo(false),
-            MatchRecord: $this->equalTo(null),
-            frozen: $this->equalTo(false)
-         );
+      $tst = new GenericMatchCreationHandler($this->createStub(Category::class));
 
       /* generate List of participants */
       $p = array_map(fn($i) => new Participant($i, 1, '', ''), range(1,$numPart));
@@ -202,8 +124,7 @@ class GenericMatchCreationHandlerTest extends TestCase
          }
       }
 
-      /** @var TournamentStructureFactory $fact */
-      $matchList = $tst->generate(new ParticipantCollection($p), $fact);
+      $matchList = $tst->generate(new ParticipantCollection($p));
       $previous = [];
 
       $this->assertCount($matchCount, $matchList);

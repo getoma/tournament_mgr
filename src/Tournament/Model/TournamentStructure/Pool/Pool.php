@@ -2,21 +2,17 @@
 
 namespace Tournament\Model\TournamentStructure\Pool;
 
-use LogicException;
-use RuntimeException;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
-use Tournament\Model\MatchCreationHandler\MatchCreationHandler;
+use Tournament\Model\Category\Category;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\PoolRankHandler\PoolRank;
 use Tournament\Model\PoolRankHandler\PoolRankCollection;
-use Tournament\Model\PoolRankHandler\PoolRankHandler;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
-use Tournament\Model\TournamentStructure\TournamentStructureFactory;
 
 class Pool
 {
@@ -24,14 +20,13 @@ class Pool
    private ParticipantCollection $participants;
    private PoolRankCollection $ranking;
 
+   public const DEFAULT_NUM_WINNERS = 2;
+
    private int $current_extension = 0;
 
    public function __construct(
       private string $name,
-      private PoolRankHandler $rankHandler,
-      private TournamentStructureFactory $nodeFactory,
-      private MatchCreationHandler $pairingHandler,
-      private int $num_winners = 2,
+      public  Category $category,
       private ?Area $area = null,
    )
    {
@@ -40,7 +35,7 @@ class Pool
    }
 
    /**
-    * return a unique name for this pool, derived from the chunk id.
+    * return a unique name for this pool.
     */
    public function getName(): string
    {
@@ -104,7 +99,7 @@ class Pool
     */
    public function getRanking(): PoolRankCollection
    {
-      return $this->ranking ??= $this->rankHandler->deriveRanking($this->matches);
+      return $this->ranking ??= $this->category->getPoolRankHandler()->deriveRanking($this->matches);
    }
 
    /**
@@ -137,7 +132,8 @@ class Pool
    public function isDecided(): bool
    {
       if( !$this->isConducted() ) return false;
-      return $this->num_winners === $this->getRanking()->filter(fn($r) => $r->rank <= $this->num_winners)->count();
+      $num_winners = $this->category->config->pool_winners ?: self::DEFAULT_NUM_WINNERS;
+      return $num_winners === $this->getRanking()->filter(fn($r) => $r->rank <= $num_winners)->count();
    }
 
    /**
@@ -146,7 +142,8 @@ class Pool
    public function needsDecisionRound(): bool
    {
       if (!$this->isConducted()) return false;
-      return $this->num_winners !== $this->getRanking()->filter(fn($r) => $r->rank <= $this->num_winners)->count();
+      $num_winners = $this->category->config->pool_winners ?: self::DEFAULT_NUM_WINNERS;
+      return $num_winners !== $this->getRanking()->filter(fn($r) => $r->rank <= $num_winners)->count();
    }
 
    /**
@@ -154,7 +151,7 @@ class Pool
     */
    public function createDecisionRound(): MatchNodeCollection
    {
-      if( !$this->needsDecisionRound() ) throw new RuntimeException("no tie break matches needed right now, refusing");
+      if( !$this->needsDecisionRound() ) throw new \RuntimeException("no tie break matches needed right now, refusing");
 
       /** @var ParticipantCollection[] $per_rank - all participants sorted by rank into collections */
       $per_rank = [];
@@ -178,7 +175,7 @@ class Pool
 
       /* because of the above "needsTieBreakMatch" check, we should always have identified a list here
        * if due to some implementation bug this is not the case, just throw an exception. */
-      if( !$col ) throw new LogicException("could not identifiy any needed matches...");
+      if( !$col ) throw new \LogicException("could not identifiy any needed matches...");
 
       $this->current_extension += 1;
       return $this->addNewMatchesFor($col);
@@ -230,7 +227,7 @@ class Pool
          {
             $red     = new ParticipantSlot($p_red);
             $white   = new ParticipantSlot($p_white);
-            $newNode = $this->nodeFactory->createMatchNode($matchName, $red, $white, $this->area);
+            $newNode = new MatchNode($matchName, $this->category, $red, $white, $this->area);
             $newNode->setMatchRecord($record);
             $this->matches[] = $newNode;
          }
@@ -240,6 +237,16 @@ class Pool
          }
       }
       $this->current_extension = $extId - 1; # $extId is one beyond the last found
+
+      /* If there is any extension / tie break active: freeze all previous results */
+      if( $this->current_extension  > 0 )
+      {
+         $fixedMatches = $this->matches->filter( fn($node) => $this->getExtensionId($node->getName()) !== $this->current_extension );
+         foreach( $fixedMatches as $node )
+         {
+            $node->frozen = true;
+         }
+      }
    }
 
    /**
@@ -258,7 +265,7 @@ class Pool
     */
    private function addNewMatchesFor(ParticipantCollection $p): MatchNodeCollection
    {
-      $report  = $this->pairingHandler->generate($p, $this->nodeFactory);
+      $report  = $this->category->getMatchCreationHandler()->generate($p);
       $matchId = $this->matches->count();
       foreach ($report as $match)
       {

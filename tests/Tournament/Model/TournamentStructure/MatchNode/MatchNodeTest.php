@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
+use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchPointHandler\MatchPointHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\Participant\Participant;
@@ -61,9 +62,15 @@ class MatchNodeTest extends TestCase
 
       $this->mpHdl = $this->createStub(MatchPointHandler::class);
 
-      $this->node = new MatchNode("test", $this->redSlot, $this->whiteSlot, $this->mpHdl);
+      $category = $this->getMockBuilder(Category::class)
+         ->enableOriginalConstructor()
+         ->setConstructorArgs([1, 1, 'test', CategoryMode::Combined])
+         ->getMock();
+      $category->expects($this->any())->method('getMatchPointHandler')->willReturn($this->mpHdl);
+      $this->category = $category;
 
-      $this->category = $this->createStub(Category::class);
+      $this->node = new MatchNode("test", $category, $this->redSlot, $this->whiteSlot);
+
       $this->area = $this->createStub(Area::class);
    }
 
@@ -317,7 +324,7 @@ class MatchNodeTest extends TestCase
 
       /* also test with setting this property at creation */
       $node_class = get_class($this->node);
-      $tie_break_node = new $node_class("test", $this->redSlot, $this->whiteSlot, $this->mpHdl, tie_break: true);
+      $tie_break_node = new $node_class("test", $this->category, $this->redSlot, $this->whiteSlot, tie_break: true);
       $this->assertFalse($tie_break_node->tiesAllowed());
       $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
                      $this->redParticipant, $this->whiteParticipant,

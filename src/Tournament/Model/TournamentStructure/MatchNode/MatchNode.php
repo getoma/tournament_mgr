@@ -20,13 +20,14 @@ class MatchNode
 
    public function __construct(
       string $node_name,
-      public readonly MatchSlot $slotRed,    // slot contents may be modified, but the slot itself is fixed
-      public readonly MatchSlot $slotWhite,  // slot contents may be modified, but the slot itself is fixed
-      protected readonly MatchPointHandler $mpHdl, // MatchPoint Handler to parse match points
+      public readonly Category  $category,         // the category this node belongs to
+      public readonly MatchSlot $slotRed,          // slot contents may be modified, but the slot itself is fixed
+      public readonly MatchSlot $slotWhite,        // slot contents may be modified, but the slot itself is fixed
       public  ?Area $area = null,
       private bool $tie_break = false,
       private ?MatchRecord $matchRecord = null,
-      public bool $frozen = false            // whether match record data is frozen for this node or not
+      public bool $frozen = false,              // whether match record data is frozen for this node or not
+
    )
    {
       if( $this->slotRed === $this->slotWhite )
@@ -122,12 +123,12 @@ class MatchNode
     * provide the match record for this node.
     * if none available yet, initialize it.
     */
-   public function provideMatchRecord(Category $category): MatchRecord
+   public function provideMatchRecord(): MatchRecord
    {
       $this->matchRecord ??= new MatchRecord(
          id: null,
          name: $this->name,
-         category: $category,
+         category: $this->category,
          area: $this->area,
          tie_break: $this->tie_break,
          redParticipant: $this->getRedParticipant(),
@@ -244,7 +245,7 @@ class MatchNode
    public function getRedPoints(): ?int
    {
       if( !$this->matchRecord ) return null;
-      return $this->mpHdl->getPoints($this->matchRecord)->for($this->matchRecord->redParticipant)->count();
+      return $this->category->getMatchPointHandler()->getPoints($this->matchRecord)->for($this->matchRecord->redParticipant)->count();
    }
 
    /**
@@ -255,7 +256,7 @@ class MatchNode
    public function getWhitePoints(): ?int
    {
       if (!$this->matchRecord) return null;
-      return $this->mpHdl->getPoints($this->matchRecord)->for($this->matchRecord->whiteParticipant)->count();
+      return $this->category->getMatchPointHandler()->getPoints($this->matchRecord)->for($this->matchRecord->whiteParticipant)->count();
    }
 
 
