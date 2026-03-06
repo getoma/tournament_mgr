@@ -3,7 +3,9 @@
 namespace Tournament\Model\TournamentStructure;
 
 use Tournament\Model\Area\AreaCollection;
+use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
+use Tournament\Model\TournamentStructure\Pool\PoolCollection;
 
 /**
  * AreaAssignmentHandler - handle assignment of Areas to MatchNodes for a given
@@ -11,23 +13,19 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
  * This module is there to move the area assignment algorithms into a separate file,
  * and this class is tightly coupled to TournamentStructure
  */
-class AreaAssignmentHandler
+final class AreaAssignmentHandler
 {
-   function __construct(private TournamentStructure $struc)
-   {
-   }
-
    /**
     * Assign the areas to the pools.
     * The areas are assigned in a round-robin fashion, so that each pool gets a
     * different area assigned.
     */
-   public function assignPoolAreas(AreaCollection $areas): void
+   public static function assignPoolAreas(PoolCollection $pools, AreaCollection $areas): void
    {
       $numAreas = $areas->count();
       $areas_i  = $areas->values(); // turn into indexed list
       $area_idx = 0;
-      foreach ($this->struc->pools as $pool)
+      foreach ($pools as $pool)
       {
          $area = $areas_i[$area_idx++ % $numAreas];
          $pool->setArea($area);
@@ -38,14 +36,14 @@ class AreaAssignmentHandler
     * Distribute the ko tree to the areas.
     * parameter $cluster currently ignored, TBD
     */
-   public function assignKoAreas(AreaCollection $areas, ?int $cluster): void
+   public static function assignKoAreas(KoNode $root, AreaCollection $areas, ?int $cluster): void
    {
       $numAreas   = $areas->count();
       $area_usage = array_fill(0, $numAreas, 0); // track usage of each area
-      $rounds     = $this->struc->ko->getRounds();
+      $rounds     = $root->getRounds();
       $areas_i    = $areas->values();
 
-      $area_usage = $this->symmetricDistributeAreas($rounds->first(), $areas_i);
+      $area_usage = self::symmetricDistributeAreas($rounds->first(), $areas_i);
 
       /** @var KoNode $node */
       foreach ($rounds->slice(1) as $round)
@@ -57,7 +55,7 @@ class AreaAssignmentHandler
          }
          else
          {
-            $area_usage = $this->innodeBasedAreaDistribute($round, $areas_i, $area_usage);
+            $area_usage = self::innodeBasedAreaDistribute($round, $areas_i, $area_usage);
          }
       }
    }
@@ -71,7 +69,7 @@ class AreaAssignmentHandler
     * @param $areas - a 0-based indexed array of all areas to use
     * @return array - number of assignments per area in $areas, with 0-based indexing
     */
-   private function symmetricDistributeAreas(MatchNodeCollection $round, array $areas): array
+   private static function symmetricDistributeAreas(MatchNodeCollection $round, array $areas): array
    {
       /**
        * calculate a symmetric distribution of all areas in the first round
@@ -130,7 +128,7 @@ class AreaAssignmentHandler
     * @param $usage - usage counters for each area, with 0-based indexing
     * @return array - the updated $usage tracker
     */
-   private function innodeBasedAreaDistribute(MatchNodeCollection $round, array $areas, array $usage): array
+   private static function innodeBasedAreaDistribute(MatchNodeCollection $round, array $areas, array $usage): array
    {
       $numAreas = count($areas);
       $nodeCount = $round->count();

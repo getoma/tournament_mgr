@@ -2,7 +2,7 @@
 
 namespace Tournament\Twig;
 
-use Tournament\Model\TournamentStructure\ParticipantHandler;
+use Tournament\Model\TournamentStructure\TournamentStructure;
 
 class TournamentExtension extends \Twig\Extension\AbstractExtension
 {
@@ -23,12 +23,12 @@ class TournamentExtension extends \Twig\Extension\AbstractExtension
 
    public function getKoNodeNameFromSlotName(string $slotName): string
    {
-      return ParticipantHandler::getKoNodeNameFromSlotName($slotName);
+      return TournamentStructure::getKoNodeNameFromSlotName($slotName);
    }
 
    public function getPoolIdFromSlotName(string $slotName): string
    {
-      return ParticipantHandler::getPoolIdFromSlotName($slotName);
+      return TournamentStructure::getPoolIdFromSlotName($slotName);
    }
 
    public function humanizeSlotName(?string $slotName): string
@@ -40,8 +40,8 @@ class TournamentExtension extends \Twig\Extension\AbstractExtension
        * we just try them one-by-one until the slot name is accepted by the corresponding resolver
        */
       $attempts = [
-         'Kampf' => [ParticipantHandler::class, 'getKoNodeNameFromSlotName'],
-         'Pool'  => [ParticipantHandler::class, 'getPoolIdFromSlotName'],
+         'Kampf' => [TournamentStructure::class, 'getKoNodeNameFromSlotName'],
+         'Pool'  => [TournamentStructure::class, 'getPoolIdFromSlotName'],
       ];
 
       foreach( $attempts as $prefix => $call )
