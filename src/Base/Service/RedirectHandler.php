@@ -5,22 +5,17 @@ namespace Base\Service;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Routing\RouteContext;
-use Slim\Psr7\Response;
 
-class RedirectHandler
+final class RedirectHandler
 {
-   public function __call($name, $arguments)
+   public static function to($route): callable
    {
-      /** @var ServerRequestInterface $request */
-      /** @var ResponseInterface $response */
-      [$request, $response] = $arguments;
-      $routeContext = RouteContext::fromRequest($request);
-      $routeParser = $routeContext->getRouteParser();
-      $routeArgs = $routeContext->getRoute()->getArguments();
-
-      $response = new Response();
-      return $response
-         ->withHeader('Location', $routeParser->urlFor($name, $routeArgs))
-         ->withStatus(302);
+      return function(ServerRequestInterface $request, ResponseInterface $response, array $routeArgs) use ($route): ResponseInterface
+      {
+         $routeParser = RouteContext::fromRequest($request)->getRouteParser();
+         return $response
+            ->withHeader('Location', $routeParser->urlFor($route, $routeArgs))
+            ->withStatus(302);
+      };
    }
 }

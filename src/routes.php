@@ -139,8 +139,8 @@ return function (\Slim\App $app)
          /* participants */
          $tgrp->get('/participants[/]', [ParticipantsDataController::class, 'showParticipantList'])->setName('tournaments.participants.index');
          $tgrp->get('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'showParticipant'])->setName('tournaments.participants.show');
-         $tgrp->get('/participants/add', [RedirectHandler::class, 'tournaments.participants.index']);
-         $tgrp->get('/participants/upload', [RedirectHandler::class, 'tournaments.participants.index']);
+         $tgrp->get('/participants/add', RedirectHandler::to('tournaments.participants.index'));
+         $tgrp->get('/participants/upload', RedirectHandler::to('tournaments.participants.index'));
          $tgrp->group('', function (RouteCollectorProxy $pgrp)
          {
             $pgrp->patch('/participants', [ParticipantsDataController::class, 'updateParticipantList'])->setName('tournaments.participants.bulk.update');
@@ -190,8 +190,8 @@ return function (\Slim\App $app)
             /* Match browsing */
             $cgrp->get('/ko/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('tournaments.categories.ko.matches.show');
             $cgrp->get('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('tournaments.categories.pools.matches.show');
-            $cgrp->get('/pool/{pool}/addTieBreak', [RedirectHandler::class, 'tournaments.categories.pools.show']);
-            $cgrp->get('/pool/{pool}/delete/{decision_round}', [RedirectHandler::class, 'tournaments.categories.pools.show']);
+            $cgrp->get('/pool/{pool}/addTieBreak', RedirectHandler::to('tournaments.categories.pools.show'));
+            $cgrp->get('/pool/{pool}/delete/{decision_round}', RedirectHandler::to('tournaments.categories.pools.show'));
 
             /* Match Result recording */
             $cgrp->group('', function (RouteCollectorProxy $mgrp) use ($policyGuard)
@@ -250,7 +250,6 @@ return function (\Slim\App $app)
    {
       $device_grp->get('/dashboard', [TournamentTreeController::class, 'showAreaDashboard'])->setName('device.dashboard.show');
    })
-   ->add($policyGuard->as(AuthType::DEVICE))
-   ->add($authGuard);
+   ->add($policyGuard->as(AuthType::DEVICE));
 };
 
