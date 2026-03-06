@@ -71,7 +71,7 @@
     {% if node.isModifiable() and policy.isActionAllowed('RecordResults') -%}
     <tr>
       <td colspan="3" class="controls redside">
-        {{_self.printControls(node, node.getRedParticipant(),possible_pts,points['red'].undo,update_route,route_context.args)}}
+        {{_self.printControls(node, node.getRedParticipant(),points.available,points['red'].undo,update_route,route_context.args)}}
       </td>
       <td colspan="2" class="controls noside">
         {% if node.tiesAllowed() -%}
@@ -81,7 +81,7 @@
         {%- endif %}
       </td>
       <td colspan="3" class="controls whiteside">
-        {{_self.printControls(node, node.getWhiteParticipant(),possible_pts,points['white'].undo,update_route,route_context.args)}}
+        {{_self.printControls(node, node.getWhiteParticipant(),points.available,points['white'].undo,update_route,route_context.args)}}
       </td>
     </tr>
   {% endif -%}

@@ -27,7 +27,7 @@ class PrgService
       ServerRequestInterface $request,
       ResponseInterface $response,
       string $route,
-      array $args,
+      array $args = [],
       mixed $prgMessage = true
    ): ResponseInterface
    {
