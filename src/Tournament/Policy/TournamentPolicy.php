@@ -8,7 +8,6 @@ use Tournament\Model\User\Role;
 use Tournament\Model\User\RoleCollection;
 use Tournament\Model\User\User;
 
-use Tournament\Service\AuthContext;
 use Tournament\Service\RouteArgsContext;
 
 /**
@@ -17,10 +16,30 @@ use Tournament\Service\RouteArgsContext;
 final class TournamentPolicy
 {
    function __construct(
-      private readonly AuthContext $auth_context,       // auth_context is always available
+      private readonly AuthContext $auth_context,      // auth_context is always available
       private readonly RouteArgsContext $route_context // policy must be accessible/usable even if no RouteArgsContext available
    )
    {
+   }
+
+   /**
+    * check if the current authorization context covers
+    * access as a certain authorization type
+    */
+   public function hasAccessAs(AuthType $authType): bool
+   {
+      if( $this->auth_context->authtype !== $authType ) return false;
+      if( $this->auth_context->isDevice() )
+      {
+         if( $this->route_context->tournament && $this->auth_context->tournament !== $this->route_context->tournament ) return false;
+         if( $this->route_context->category   && !$this->auth_context->tournament->categories->contains($this->route_context->category) ) return false;
+         if( $this->route_context->area       && $this->auth_context->area !== $this->route_context->area) return false;
+         /**
+          * we cannot easily check match name or pool here, because the whole TournamentStructure needs to be loaded for that
+          * this access check has to be done on Controller level, unfortunately...
+          */
+      }
+      return true; // all checks passed
    }
 
    /**

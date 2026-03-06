@@ -3,6 +3,7 @@
 namespace Tournament\Service;
 
 use Base\Service\AuthService;
+use Tournament\Policy\AuthContext;
 use Tournament\Repository\TournamentRepository;
 
 /**

@@ -1,22 +1,16 @@
 <?php
 
-namespace Tournament\Service;
+namespace Tournament\Policy;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\User\User;
 use Tournament\Model\User\Role;
 
-enum AuthType
-{
-   case USER;
-   case DEVICE;
-}
-
 final class AuthContext
 {
    private function __construct(
-      private readonly ?AuthType $authtype = null,
+      public readonly ?AuthType $authtype = null,
       public readonly ?User $user = null,
       public readonly ?Tournament $tournament = null,
       public readonly ?Area $area = null,
