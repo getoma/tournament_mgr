@@ -273,11 +273,11 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
    }
 
    /**
-    * merge $other into $this without creating a new copy
+    * merge $other into $this without creating a new copy. keys will be re-indexed
     * @param $other   - the other collection to merge
     * @param $replace - if true, any duplicate in $other will replace the object inside $this. if false, duplicates in $other will be dropped
     */
-   public function mergeInPlace(iterable $other, bool $replace = true): void
+   public function mergeInPlace(iterable $other, bool $replace = false): void
    {
       foreach( $other as $v )
       {
