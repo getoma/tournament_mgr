@@ -28,6 +28,9 @@ class AuthService
    protected const KEY_SESSION_VERSION = '_auth.SESSION_VERSION';
    protected const KEY_USER_ID         = '_auth.USER_ID';
 
+   /** remember-me cookie */
+   public const TOKEN_COOKIE_NAME = 'remember_me_token';
+
    /**
     * Constructor for AuthService
     * @param UserRepository $repo
@@ -37,7 +40,8 @@ class AuthService
       private UserRepository $repo,
       private PasswordHasher $hasher,
       private SessionService $session,
-      private int $keepAliveTime_s = 7*24*3600 // 1wk
+      private CookieService  $cookieService,
+      private int $remember_me_time_hrs = 7*24 // 1wk
    )
    {
    }
@@ -59,51 +63,54 @@ class AuthService
     * @param string $password
     * @return bool Returns true if login is successful, false otherwise.
     */
-   public function login(string $email, string $password, bool $keepAlive = false): bool
+   public function login(string $email, string $password, bool $keepLoggedIn = false): bool
    {
       $user = $this->repo->findUser(['email' => $email]);
       if( !$user )
       {
          $this->login_issue = self::USER_NOT_FOUND;
       }
-      else if( empty($user->password_hash) )
-      {
-         $this->login_issue = self::NO_PASSWORD_SET;
-      }
-      else if( !$this->hasher->verify($password, $user->password_hash) )
-      {
-         $this->login_issue = self::PASSWORD_MISMATCH;
-      }
-      else if( !$user->is_active )
-      {
-         $this->login_issue = self::USER_DISABLED;
-      }
       else
       {
-         $this->login_issue = self::NO_ISSUE;
-
-         // regenerate the session
-         $this->session->regenerateSession(
-            keepAlive:  $keepAlive,
-            lifetime_s: $keepAlive? $this->keepAliveTime_s : null,
-            set_token:  true,
-         );
-
-         // login successful, store user in session
-         $this->session->set(static::KEY_USER_ID, $user->id);
-         $this->session->set(static::KEY_SESSION_VERSION, $user->session_version);
-         $this->user = $user;
-
-         // check for the need to rehash the password now that we have the unencrypted password
-         // and actually CAN re-hash it.
-         if ($this->hasher->needsRehash($user->password_hash))
+         $password_hash = $this->repo->getUserPassword($user->id);
+         if( empty($password_hash) )
          {
-            $password_hash = $this->hasher->hash($password);
-            $this->repo->updateUserPassword($user->id, $password_hash);
+            $this->login_issue = self::NO_PASSWORD_SET;
          }
+         else if( !$this->hasher->verify($password, $password_hash) )
+         {
+            $this->login_issue = self::PASSWORD_MISMATCH;
+         }
+         else if( !$user->is_active )
+         {
+            $this->login_issue = self::USER_DISABLED;
+         }
+         else
+         {
+            $this->login_issue = self::NO_ISSUE;
 
-         // done
-         return true;
+            $this->loginUser($user);
+
+            // check for the need to rehash the password now that we have the unencrypted password
+            // and actually CAN re-hash it.
+            if ($this->hasher->needsRehash($password_hash))
+            {
+               $password_hash = $this->hasher->hash($password);
+               $this->repo->updateUserPassword($user->id, $password_hash);
+            }
+
+            if( $keepLoggedIn )
+            {
+               $this->setRememberMeToken();
+            }
+            else
+            {
+               $this->repo->clearUserRememberMeToken($user->id);
+            }
+
+            // done
+            return true;
+         }
       }
       return false;
    }
@@ -113,12 +120,24 @@ class AuthService
     */
    public function logout(): void
    {
-      // destroy current session
-      $this->session->clear();
       // invalidate all user sessions
       $this->repo->rotateUserSession($this->user->id);
+      // destroy current session
+      $this->destroySessionData();
+   }
+
+   /**
+    * destroy this specific session, without invalidating other (valid) sessions
+    */
+   private function destroySessionData(): void
+   {
+      // invalidate remember me
+      $this->repo->clearUserRememberMeToken($this->user->id);
+      $this->cookieService->deleteCookie(static::TOKEN_COOKIE_NAME);
       // clear buffer
       $this->user = null;
+      // destroy current session data
+      $this->session->clear();
    }
 
    /**
@@ -136,28 +155,41 @@ class AuthService
     */
    public function getCurrentUser(): ?User
    {
-      if( $this->user === null && $this->session->sessionActive() && $this->session->has(static::KEY_USER_ID) )
+      if( $this->user === null )
+      {
+         $this->validateSession() || $this->validateRememberMe();
+      }
+      return $this->user;
+   }
+
+   /**
+    * validate whether the current session is logged in for a user
+    */
+   private function validateSession(): bool
+   {
+      if ($this->session->sessionActive() && $this->session->has(static::KEY_USER_ID))
       {
          try
          {
             $this->user = $this->repo->findUser(['id' => $this->session->get(static::KEY_USER_ID)]);
          }
-         catch( \Exception $e )
+         catch (\Exception $e)
          {
             // session user could not be retrieved, log an error
             error_log("Session user could not be retrieved: " . $e->getMessage());
          }
 
          /* validate the session version */
-         if( $this->user && $this->user->session_version !== $this->session->get(static::KEY_SESSION_VERSION) )
+         if ($this->user && $this->user->session_version !== $this->session->get(static::KEY_SESSION_VERSION))
          {
             /* it does not fit - destroy this session and throw session validation issue */
-            $this->session->clear();
-            $this->user = null;
+            $this->destroySessionData();
             throw new SessionValidationIssue('session expired');
          }
+
+         return true;
       }
-      return $this->user;
+      return false;
    }
 
    /**
@@ -170,5 +202,70 @@ class AuthService
       $new_session_version = $this->repo->rotateUserSession($user->id);
       $user->session_version = $new_session_version;
       $this->session->set(static::KEY_SESSION_VERSION, $new_session_version);
+      if( $this->cookieService->hasCookie(static::TOKEN_COOKIE_NAME) )
+      {
+         $this->setRememberMeToken();
+      }
+   }
+
+   /**
+    * set up a session with a logged in user
+    */
+   private function loginUser(User $user)
+   {
+      // regenerate the session
+      $this->session->regenerateSession(set_token: true);
+
+      // store user in session
+      $this->session->set(static::KEY_USER_ID, $user->id);
+      $this->session->set(static::KEY_SESSION_VERSION, $user->session_version);
+      $this->user = $user;
+   }
+
+   /**
+    * (re)set any "remember me" token
+    */
+   private function setRememberMeToken(): void
+   {
+      /* create the device token for additional security */
+      $token = bin2hex(random_bytes(32));
+      $tokenHash = hash('sha256', $token);
+
+      /* set it in the instance */
+      if( $this->repo->updateUserRememberMeToken($this->getCurrentUser()->id, $tokenHash) )
+      {
+         /* set the device tooken as separate cookie on client side */
+         $this->cookieService->setCookie(
+            static::TOKEN_COOKIE_NAME, $token,
+            ['expires'  => time() + $this->remember_me_time_hrs*3600]
+         );
+      }
+   }
+
+   /**
+    * validate any remember me token
+    */
+   private function validateRememberMe(): bool
+   {
+      if( $this->cookieService->hasCookie(static::TOKEN_COOKIE_NAME) )
+      {
+         $token = $this->cookieService->getCookie(static::TOKEN_COOKIE_NAME);
+         $tokenHash = hash('sha256', $token);
+         $user = $this->repo->findUser(['remember_me_token' => $tokenHash]);
+         if( $user )
+         {
+            // perform login
+            $this->loginUser($user);
+            // token is valid, refresh it
+            $this->setRememberMeToken();
+            // done
+            return true;
+         }
+         else
+         {
+            $this->cookieService->deleteCookie(static::TOKEN_COOKIE_NAME);
+         }
+      }
+      return false;
    }
 }

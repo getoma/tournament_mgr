@@ -37,7 +37,7 @@
     {%- endif %}
   </form>
   {% if form_active -%}
-    {% if user.password_hash is empty -%}
+    {% if allow_welcome_mail -%}
     <form action="{{ url_for('users.sendWelcome', {'userId': user.id}) }}" method="post">
     {{ form.submit('Willkommens-Mail schicken')}}
     </form>

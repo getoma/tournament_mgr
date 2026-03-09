@@ -11,12 +11,6 @@ class SessionService
 
    protected const TOKEN_COOKIE_NAME = 'client_session_token';
 
-   protected const DEFAULT_COOKIE_OPTIONS = [
-      'secure'   => true,
-      'httponly' => true,
-      'samesite' => 'Strict'
-   ];
-
    protected const KEY_EXPIRES         = '_session.EXPIRES';
    protected const KEY_LIFETIME        = '_session.LIFETIME';
    protected const KEY_IP_ADDRESS      = '_session.IP_ADDRESS';
@@ -24,20 +18,16 @@ class SessionService
    protected const KEY_TOKEN_HASH      = '_session.CLIENT_TOKEN_HASH';
    protected const KEY_LAST_ROTATION   = '_session.LAST_ROTATION';
 
-   private readonly array $cookie_options;
-
    public function __construct(
+      private \Base\Service\CookieService $cookieService,
       ?\SessionHandlerInterface $handler = null,
-      array $cookie_options = [],
       private bool $strict_session_validation = false,
       private int $rotation_interval_s = 3600, // once per hour
    )
    {
-      $this->cookie_options = $cookie_options + static::DEFAULT_COOKIE_OPTIONS;
-
       ini_set('session.use_strict_mode', 1);
       ini_set('session.use_only_cookies', 1);
-      session_set_cookie_params($this->cookie_options);
+      session_set_cookie_params($cookieService->cookie_options);
 
       if( !self::$handler_set && isset($handler) )
       {
@@ -61,19 +51,12 @@ class SessionService
     * regenerate and establish the current session
     * inject all meta data in this session to make this a validatable and rotatable session
     */
-   public function regenerateSession(?int $lifetime_s = null, bool $set_token = false, bool $keepAlive = false, bool $reload = false): void
+   public function regenerateSession(bool $set_token = false, bool $reload = false): void
    {
       if( $this->sessionActive() )
       {
          /* set previous session to obsolete and set expiry, but only bother if there is any content to begin with */
          if( !$this->sessionEmpty() ) $this->set(static::KEY_EXPIRES, time()+60); // +1min
-
-         /* take over the lifetime if needed */
-         if ($lifetime_s === null && $this->has(static::KEY_LIFETIME))
-         {
-            $lifetime_s = $this->get(static::KEY_LIFETIME);
-            $keepAlive  = true; // this value is only set if keepAlive was requested previously
-         }
 
          /* generate a new session id, but keep the previous one */
          session_regenerate_id(false);
@@ -83,7 +66,6 @@ class SessionService
          session_id($newSession);
       }
 
-      session_set_cookie_params([ 'lifetime' => $lifetime_s ] + $this->cookie_options);
       session_start();
 
       /* store back ip address and user agent hash for validation purposes */
@@ -91,29 +73,17 @@ class SessionService
       if (!$this->has(static::KEY_USER_AGENT_HASH) || $reload) $this->set(static::KEY_USER_AGENT_HASH, hash('sha256', $_SERVER['HTTP_USER_AGENT']));
 
       /* set a client token in a separate cookie as additional session hijacking protection */
-      if( ($set_token && !$this->has(static::KEY_TOKEN_HASH)) // token creation requested
-        ||($keepAlive &&  $this->has(static::KEY_TOKEN_HASH)) // keep alive - need to create a new one as we cannot reset the old one
-        )
+      if( $set_token && !$this->has(static::KEY_TOKEN_HASH) ) // token creation requested
       {
          /* create the device token for additional security */
          $deviceToken = bin2hex(random_bytes(32));
          $tokenHash = hash('sha256', $deviceToken);
 
          /* set the device tooken as separate cookie on client side */
-         setcookie(
-            static::TOKEN_COOKIE_NAME,
-            $deviceToken,
-            [ 'expires'  => $lifetime_s ? time() + $lifetime_s : 0 ] + $this->cookie_options
-         );
+         $this->cookieService->setCookie(static::TOKEN_COOKIE_NAME, $deviceToken);
 
          /* store the hash in the session */
          $this->set(static::KEY_TOKEN_HASH, $tokenHash);
-      }
-
-      /* store the lifetime if keep alive is selected, to extend it on each regeneration */
-      if( $keepAlive )
-      {
-         $this->set(static::KEY_LIFETIME, $lifetime_s);
       }
 
       /* set the last rotation time */
@@ -132,11 +102,11 @@ class SessionService
          /* validate the session token */
          try
          {
-            if (!isset($_COOKIE[static::TOKEN_COOKIE_NAME]))
+            if (!$this->cookieService->hasCookie(static::TOKEN_COOKIE_NAME))
             {
                throw new SessionValidationIssue('no client token provided');
             }
-            $tokenHash = hash('sha256', $_COOKIE[static::TOKEN_COOKIE_NAME]);
+            $tokenHash = hash('sha256', $this->cookieService->getCookie(static::TOKEN_COOKIE_NAME));
             if ($tokenHash !== $this->get(static::KEY_TOKEN_HASH))
             {
                throw new SessionValidationIssue('client token mismatch detected');
@@ -150,7 +120,7 @@ class SessionService
              */
             error_log("session: " . $e->getMessage());
             $this->set(static::KEY_LAST_ROTATION, time() - 2 * $this->rotation_interval_s);
-            setcookie(session_name(), '', time() - 600); // also try to delete the session cookie for this client
+            $this->cookieService->deleteCookie(session_name()); // also try to delete the session cookie for this client
             throw $e;
          }
       }
@@ -211,16 +181,12 @@ class SessionService
    public function clear(): void
    {
       /* delete the token cookie if set */
-      if (isset($_COOKIE[static::TOKEN_COOKIE_NAME]))
-      {
-         setcookie(static::TOKEN_COOKIE_NAME, '', time() - 600);
-         unset($_COOKIE[static::TOKEN_COOKIE_NAME]);
-      }
+      $this->cookieService->deleteCookie(static::TOKEN_COOKIE_NAME);
 
       /* delete the session contents */
       $_SESSION = [];
       session_destroy();
-      setcookie(session_name(), '', time() - 600);
+      $this->cookieService->deleteCookie(session_name());
    }
 
    public function get(string $key, mixed $default = null): mixed

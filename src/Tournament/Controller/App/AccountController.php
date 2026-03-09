@@ -44,7 +44,8 @@ class AccountController
          /* check if password change is requested, and process it */
          if (!empty($data['current_password']) && !empty($data['new_password']))
          {
-            if( !$this->hasher->verify($data['current_password'], $user->password_hash) )
+            $password_hash = $this->userRepository->getUserPassword($user->id);
+            if( !$this->hasher->verify($data['current_password'], $password_hash) )
             {
                $errors['password'] = 'Aktuelles Passwort ist falsch.';
             }

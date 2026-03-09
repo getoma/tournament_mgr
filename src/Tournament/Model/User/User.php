@@ -15,12 +15,11 @@ class User extends \Base\Model\User implements \Tournament\Model\Base\DbItem
       public readonly \DateTime $created_at,
       public ?\DateTime $last_login = null,
       public RoleCollection $roles = new RoleCollection(),
-      string $password_hash = '',
       bool $is_active = true,
       int $session_version = 1,
    )
    {
-      parent::__construct($id, $email, $password_hash, $is_active, $session_version);
+      parent::__construct($id, $email, $is_active, $session_version);
    }
 
    public function hasRole(Role $role)

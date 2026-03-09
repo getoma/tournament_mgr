@@ -122,23 +122,21 @@ class AreaDeviceAccountRepository
          expires_at: new \DateTimeImmutable($data['expires_at'], $this->utc),
          invalidated_at: isset($data['invalidated_at']) ? new \DateTime($data['invalidated_at'], $this->utc) : null,
          last_activity_at: new \DateTime($data['last_activity_at'], $this->utc),
-         last_php_session_id: $data['last_php_session_id'],
       );
    }
 
-   public function createSession(int $area_id, \DateTimeInterface $expires_at, string $php_session_id): AreaDeviceSession
+   public function createSession(int $area_id, \DateTimeInterface $expires_at): AreaDeviceSession
    {
       if (!static::KEEP_OLD_ENTRIES)
       {
          $this->pdo->prepare('DELETE FROM area_device_sessions WHERE area_id=?')->execute([$area_id]);
       }
 
-      $stmt = $this->pdo->prepare(' INSERT INTO area_device_sessions (area_id, expires_at, last_activity_at, last_php_session_id)'
-                                 .' VALUES (:area_id, :expires_at, CURRENT_TIMESTAMP, :php_session_id)');
+      $stmt = $this->pdo->prepare(' INSERT INTO area_device_sessions (area_id, expires_at, last_activity_at, token_hash)'
+                                 .' VALUES (:area_id, :expires_at, CURRENT_TIMESTAMP, "")');
       $stmt->execute([
          ':area_id' => $area_id,
          ':expires_at' => $expires_at->format('Y-m-d H:i:s'),
-         ':php_session_id' => $php_session_id,
       ]);
       $id = $this->pdo->lastInsertId();
       return $this->getValidSessionById($id);
@@ -173,13 +171,27 @@ class AreaDeviceAccountRepository
       return $data ? $this->createSessionObject($data) : null;
    }
 
-   public function updateSessionActivity(int $id, string $php_session_id): void
+   public function findValidSessionByToken(string $token_hash): ?AreaDeviceSession
    {
-      $stmt = $this->pdo->prepare('UPDATE area_device_sessions SET last_activity_at = CURRENT_TIMESTAMP, last_php_session_id=:php_session_id WHERE id = :id');
+      $stmt = $this->pdo->prepare('SELECT * FROM area_device_sessions WHERE token_hash = ? AND expires_at > CURRENT_TIMESTAMP AND invalidated_at IS NULL');
+      $stmt->execute([$token_hash]);
+      $data = $stmt->fetch(\PDO::FETCH_ASSOC);
+      return $data ? $this->createSessionObject($data) : null;
+   }
+
+   public function setTokenHash(int $id, string $token_hash): void
+   {
+      $stmt = $this->pdo->prepare('UPDATE area_device_sessions SET token_hash = :token_hash WHERE id = :id');
       $stmt->execute([
-         ':id' => $id,
-         ':php_session_id' => $php_session_id,
+         'id' => $id,
+         'token_hash' => $token_hash,
       ]);
+   }
+
+   public function updateSessionActivity(int $id): void
+   {
+      $stmt = $this->pdo->prepare('UPDATE area_device_sessions SET last_activity_at = CURRENT_TIMESTAMP WHERE id = ?');
+      $stmt->execute([$id]);
    }
 
    public function invalidateSession(int $id): void

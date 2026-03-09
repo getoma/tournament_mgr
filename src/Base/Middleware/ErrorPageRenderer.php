@@ -3,6 +3,7 @@
 namespace Base\Middleware;
 
 use Psr\Http\Message\ResponseFactoryInterface;
+use Slim\Exception\HttpException;
 use Slim\Interfaces\ErrorRendererInterface;
 use Slim\Views\Twig;
 
@@ -18,8 +19,7 @@ class ErrorPageRenderer implements ErrorRendererInterface
 
    public function __invoke(\Throwable $exception, bool $displayErrorDetails): string
    {
-      $code = $exception->getCode() ?: 500;
-
+      $code = $exception instanceof HttpException? $exception->getCode() : 500;
       $response = $this->responseFactory->createResponse($code);
 
       return $this->twig->render($response, $this->error_page_template_name, [

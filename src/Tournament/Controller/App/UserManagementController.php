@@ -88,6 +88,7 @@ class UserManagementController
       return $this->twig->render($response, 'user/user_details.twig', [
          'user'   => $user,
          'roles'  => Role::cases(),
+         'allow_welcome_mail' => empty($this->repo->getUserPassword($user->id)),
       ]);
    }
 
@@ -98,7 +99,7 @@ class UserManagementController
       if (!isset($user)) throw new EntityNotFoundException($request, 'user not found');
 
       // only allow to send a "new user mail" as long as no password is set
-      if ($user->password_hash)
+      if ($this->repo->getUserPassword($user->id))
       {
          $errors = [ 'error' => 'Nutzer hat bereits ein Passwort gesetzt.'];
       }
