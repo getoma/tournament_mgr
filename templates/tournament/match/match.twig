@@ -7,7 +7,7 @@
 {% set update_route, get_route = 'tournaments.categories.pools.matches.update', 'tournaments.categories.pools.matches.show' %}
 {% endif %}
 
-{% include 'base/header.twig' with {
+{%- include 'base/header.twig' with {
   'active_page': get_route,
   'css': ['match.css']
 }%}

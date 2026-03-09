@@ -1,10 +1,10 @@
-{% include 'base/header.twig' with { 'active_page': 'tournaments.index' } %}
+{%- include 'base/header.twig' with { 'active_page': 'tournaments.index' } %}
 
-<ul class="tournament_list_by_state">
-  {% for status, tournaments in tournaments_by_state %}
-  <li class="status-box">
-    <h2>{{status}}</h2>
-    <table>
+{% for status, tournaments in tournaments_by_state %}
+<section>
+  <h2>{{status}}</h2>
+  <nav>
+  <table id="tournament_list" class="row-links">
   <thead>
     <tr>
       <th>Datum</th>
@@ -14,18 +14,15 @@
   <tbody>
       {% for tournament in tournaments %}
       <tr>
-        <td>{{ tournament.date }}</td>
-        <td>
-          <a href="{{ url_for('tournaments.show', { tournamentId: tournament.id }) }}">
-            {{ tournament.name }}
-          </a>
-        </td>
+        <td><a href="{{ url_for('tournaments.show', { tournamentId: tournament.id }) }}">{{ tournament.date }}</a></td>
+        <td><a href="{{ url_for('tournaments.show', { tournamentId: tournament.id }) }}">{{ tournament.name }}</a></td>
       </tr>
       {% endfor %}
     </tbody>
-</table>
-  {%endfor%}
-</ul>
+  </table>
+  </nav>
+</section>
+{%endfor%}
 
 {%- if policy.isActionAllowed('CreateTournaments') %}
 <section>

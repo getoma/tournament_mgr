@@ -1,9 +1,17 @@
 table.match_table,
 table.match_table th,
-table.match_table td
+table.match_table td,
+nav.match_nav table th
 {
    border: 1px solid black;
-   border-collapse:collapse
+   border-collapse:collapse;
+   border-radius: 0;
+   box-shadow: none;
+}
+
+table.match_table tbody tr
+{
+   background-color: white; /* revert the hover color of default tables from style.css */
 }
 
 th.redside
@@ -75,12 +83,7 @@ table.match_table td.winner
    text-align:center;
 }
 
-nav.match_nav table th
-{
-   border:1px solid black;
-   padding: 0.5ex;
-}
-
+nav.match_nav th,
 nav.match_nav td
 {
    text-align:center
