@@ -1,7 +1,7 @@
 {% import 'base/form.twig' as form %}
 
 {%- include 'base/header.twig' with {
-'active_page': 'tournaments.areas.devices.index'
+'active_page': 'tournaments.devices.index'
 } %}
 
 {% for area in areas -%}
@@ -16,7 +16,7 @@
     <dt>Letzte Aktivität</dt>
     <dd class="time-display">{{ session.last_activity_at|date('H:i', timezone) }} ({{session.last_activity_at|time_delta}})</dd>
   </dl>
-  <form action="{{url_for('tournaments.areas.devices.disable', route_context.args|merge({areaId: area.id}))}}" method="post">
+  <form action="{{url_for('tournaments.devices.disable', route_context.args|merge({areaId: area.id}))}}" method="post">
     {{ form.submit('Session beenden') }}
   </form>
   {% elseif session is not null -%}
@@ -28,7 +28,7 @@
     <dt>Gültig bis</dt>
     <dd class="time-display">{{login.expires_at|date('H:i', timezone)}} ({{login.expires_at|time_delta}})</dd>
   </dl>
-  <form action="{{url_for('tournaments.areas.devices.invalidateLogin', route_context.args|merge({areaId: area.id}))}}" method="post">
+  <form action="{{url_for('tournaments.devices.invalidateLogin', route_context.args|merge({areaId: area.id}))}}" method="post">
     {{ form.submit('Login-Code deaktivieren') }}
   </form>
   {% elseif login is not null -%}
@@ -36,7 +36,7 @@
   {% else -%}
   <p>Kein Zugang eingerichtet.</p>
   {%- endif %}
-  <form action="{{url_for('tournaments.areas.devices.createLogin', route_context.args|merge({areaId: area.id}))}}" method="post">
+  <form action="{{url_for('tournaments.devices.createLogin', route_context.args|merge({areaId: area.id}))}}" method="post">
     {{ form.submit('Neuen Login-Code erzeugen') }}
   </form>
 </section>

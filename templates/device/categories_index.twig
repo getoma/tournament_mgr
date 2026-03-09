@@ -1,0 +1,20 @@
+{%- include 'base/header.twig' with {
+  'active_page': 'device.categories.index'
+} %}
+
+<section>
+  <h2>Turnierkategorien</h2>
+  <nav class="nav-cards">
+  <ul>
+  {% for category in categories %}
+    <li><a href="{{ url_for('device.categories.show', route_context.args|merge({'categoryId': category.id})) }}" class="card">
+      <b>{{ category.name }}</b>
+      <span class="separator">: </span>
+      <span class="details">Turnierkategorie ansehen</span>
+    </li></a>
+  {% endfor %}
+  </ul>
+  </nav>
+</section>
+
+{% include 'base/footer.twig' %}

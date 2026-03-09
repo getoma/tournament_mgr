@@ -8,20 +8,20 @@
 
 <section>
 <h2>{{ route_context.category.name }} - Pools</h2>
-<ul class="pool_list">
+<nav class="nav-cards">
+<ol class="pool_list">
   {% for pool in pools %}
-  <li>
-    <p class="pool_name"><a href="{{url_for('tournaments.categories.pools.show', route_context.args|merge({'pool': pool.getName()}))}}">Pool {{pool.getName()}}
-      {%- if pool.area is not empty %} ({{ pool.area.name }}){% endif -%}
-      </a></p>
+  <li><a href="{{url_for('tournaments.categories.pools.show', route_context.args|merge({'pool': pool.getName()}))}}">
+    <p class="pool_name"><b>Pool {{pool.getName()}}{{ pool.area? " (" ~ pool.area.name ~")" : "" }}</b></p>
     <ul class="participant_list">
       {% for slot in pool.participants %}
       <li>{{slot.lastname}}, {{slot.firstname}}</li>
       {% endfor %}
     </ul>
-  </li>
+  </a></li>
   {% endfor %}
-</ul>
+</ol>
+</nav>
 </section>
 
 {% if unmapped_participants is not empty %}

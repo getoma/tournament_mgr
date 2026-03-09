@@ -57,7 +57,8 @@
         <td>{{user.display_name}}</td>
         <td>{{user.email}}</td>
       <td>{% set buttons_active = policy.canModifyUser(user) -%}
-          <a href="{{ url_for('users.show', {'userId': user.id}) }}">{%if buttons_active%}Bearbeiten{%else%}Details anzeigen{%endif%}</a>
+          <a href="{{ url_for('users.show', {'userId': user.id}) }}" class="form-btn">
+          {%- if buttons_active%}Bearbeiten{%else%}Details anzeigen{% endif %}</a>
           {% if buttons_active -%}
           <form method="post" action="{{ url_for('users.delete', {'userId': user.id}) }}">
             <input type="hidden" name="_METHOD" value="DELETE">

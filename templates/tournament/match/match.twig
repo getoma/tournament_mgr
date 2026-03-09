@@ -12,31 +12,10 @@
   'css': ['match.css']
 }%}
 
-{% macro printControls(node,participant,possible_pts,undo,update_route,route_parameters) -%}
-<form method="post" action="{{url_for(update_route, route_parameters)}}" class="match_control">
-  <input type="hidden" name="_METHOD" value="PATCH">
-  <input type="hidden" name="participant" value="{{participant.id}}">
-  <input type="hidden" name="undo" value="{{undo.id}}">
-  {% for name, pt in possible_pts -%}
-  {{ form.submit(pt, 'action', pt) }}
-  {% endfor -%}
-  {{ form.submit('Undo' ~ (undo? '(%s)'|format(undo.point) : ''), 'action', 'undo', active=undo is not null)}}
-  {{ form.submit('Als Gewinner setzen', 'action', 'winner', active=node.isModifiable() and node.getWinner() is not same as(participant)) }}
-</form>
-{% endmacro -%}
-
-{% macro printPoints(points,undo) -%}
-<ul>
-  {% for pt in points -%}
-  <li{%if pt is same as(undo)%} class="undo"{%endif%}>{{pt.point}}</li>
-  {% endfor -%}
-</ul>
-{% endmacro -%}
-
-{% if previous is not empty -%}
+{% if node_it.back().valid() -%}
 <nav id="previous_match_nav" class="match_nav">
-  <h2>Vorheriger Kampf</h2>
-  {{part.printMatchLinks({0: previous}, route_context.args, get_route)}}
+  <h2>Vorheriger Kampf{{ area? " (" ~ area.name ~ ")" : "" }}</h2>
+  {{part.printMatchLinks(get_route, route_context.args, node_it.back(), 1)}}
 </nav>
 {%- endif %}
 
@@ -45,68 +24,17 @@
   {%- if pool is not empty %}Pool {{pool}} - {%endif-%}
   Kampf {{node.getLocalId()}}
 </h2>
-<table class="match_table">
-  <thead>
-    <tr>
-      <th colspan="4" class="redside">Kämpfer Rot</th>
-      <th colspan="4" class="whiteside">Kämpfer Weiß</th>
-    </tr>
-    <tr>
-      <th>Name</th><th>Hansoku</th><th>Punkte</th>
-      <th colspan="2">Sieger</th>
-      <th>Punkte</th><th>Hansoku</th><th>Name</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td class="participant_name redside">{{part.printSlot(node.slotRed, node.getWinner())}}</td>
-      <td class="penalty redside">{{_self.printPoints(points['red'].penalty,points['red'].undo)}}</td>
-      <td class="points redside">{{_self.printPoints(points['red'].points,points['red'].undo)}}</td>
-      <td class="winner redside">{% if node.isTied() %}-{% elseif node.getRedParticipant() is same as(node.getWinner()) %}X{%endif%}</td>
-      <td class="winner whiteside">{% if node.isTied() %}-{% elseif node.getWhiteParticipant() is same as(node.getWinner()) %}X{%endif%}</td>
-      <td class="points whiteside">{{_self.printPoints(points['white'].points,points['white'].undo)}}</td>
-      <td class="penalty whiteside">{{_self.printPoints(points['white'].penalty,points['white'].undo)}}</td>
-      <td class="participant_name whiteside">{{part.printSlot(node.slotWhite, node.getWinner())}}</td>
-    </tr>
-    {% if node.isModifiable() and policy.isActionAllowed('RecordResults') -%}
-    <tr>
-      <td colspan="3" class="controls redside">
-        {{_self.printControls(node, node.getRedParticipant(),points.available,points['red'].undo,update_route,route_context.args)}}
-      </td>
-      <td colspan="2" class="controls noside">
-        {% if node.tiesAllowed() -%}
-        <form method="post" action="{{url_for(update_route, route_context.args)}}" class="match_control">
-          <input type="hidden" name="_METHOD" value="PATCH">
-          {{ form.submit('Unentschieden', 'action', 'tie', active=node.isModifiable() and not node.isTied()) }}
-        {%- endif %}
-      </td>
-      <td colspan="3" class="controls whiteside">
-        {{_self.printControls(node, node.getWhiteParticipant(),points.available,points['white'].undo,update_route,route_context.args)}}
-      </td>
-    </tr>
-  {% endif -%}
-  </tbody>
-</table>
-
+{{ part.printMatchTable([node], node.getName(), update_route, route_context.args) }}
 {% if error is not empty %}
 <p class="error">{{error}}</p>
 {% endif %}
-
-<aside class="legend">
-  <ul>
-    {% for name,symbol in possible_pts -%}
-    <li>{{symbol}} = {{name}}</li>
-    {% endfor -%}
-  </ul>
-</aside>
-
 </section>
 
-{% if next is not empty -%}
+{% if node_it.skip().valid() -%}
 <nav id="next_match_nav" class="match_nav">
-  <h2>Nächste Kämpfe</h2>
-  {{part.printMatchLinks(next, route_context.args, get_route)}}
+  <h2>Nächste Kämpfe{{ area? " (" ~ area.name ~ ")" : "" }}</h2>
+  {{part.printMatchLinks(get_route, route_context.args, node_it.skip(), 3, node_it.roundIdx())}}
 </nav>
-{%endif-%}
+{% endif -%}
 
 {% include 'base/footer.twig' %}

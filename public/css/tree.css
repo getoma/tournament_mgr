@@ -1,130 +1,253 @@
-ul.pool_list {
-    padding: 15px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
+/**************************************
+ * Pool visualization
+ */
 
-ul.pool_list > li {
-    list-style-type: none;
-    background: #ffffff;
-    border-radius: 10px;
-    border: 1px solid #d3d3d3;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-    padding: 15px;
-    width: 320px;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-areas:
-        "name"
-        "participants"
-        "fights";
-    animation: fadeIn 0.3s ease-in-out;
-}
+.nav-cards ol.pool_list {
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-ul.pool_list p.pool_name {
-    grid-area: name;
-    font-size: 1.3rem;
-    font-weight: bold;
-    margin: 0 0 10px 0;
-    padding-bottom: 5px;
-    text-align: center;
-    border-bottom: 2px solid #3e8ed0;
-    color: #3e8ed0;
-}
-
-ul.pool_list ul.participant_list {
-    grid-area: participants;
-    padding: 0;
-    margin: 0 0 15px 0;
-    list-style: none;
-    border-right: none;
-}
-
-ul.pool_list ul.participant_list li {
-    background: #f4faff;
-    border: 1px solid #dbe9f5;
-    padding: 6px 10px;
-    margin-bottom: 5px;
-    border-radius: 6px;
-}
-
-ul.pool_list p.fight_list {
-    grid-area: fights_h;
-    display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
-    color: #444;
-}
-
-ul.pool_list ul.fight_list {
-    grid-area: fights;
-    padding: 0;
-    margin: 0;
-    list-style: none;
-}
-
-ul.pool_list ul.fight_list li {
-    background: #fff8f4;
-    border: 1px solid #f1d7c7;
-    padding: 6px 10px;
-    margin-bottom: 5px;
-    border-radius: 6px;
-}
-
-ul.fight_tree {
-   padding: 0.5ex;
-   list-style-type: none;
+   padding: 15px;
    display: flex;
-   flex-wrap: nowrap;
+   flex-wrap: wrap;
+   gap: 20px;
+
+   & > li > a {
+      padding: 15px;
+      width: 320px;
+      color: black;
+   }
+
+   p.pool_name {
+      font-size: 1.3rem;
+      margin: 0 0 10px 0;
+      padding-bottom: 5px;
+      text-align: center;
+      border-bottom: 2px solid #3e8ed0;
+      color: #3e8ed0;
+
+      & > b {
+         font-weight: bold;
+      }
+   }
+
+   & > li > a > ul.participant_list {
+      padding: 0;
+      margin: 0 0 15px 0;
+      list-style: none;
+
+      & > li {
+
+         text-align: left;
+         background: #f4faff;
+         border: 1px solid #dbe9f5;
+         padding: 6px 10px;
+         margin-bottom: 5px;
+         border-radius: 6px;
+      }
+   }
 }
 
-ul.fight_tree li {
-   flex-shrink: 0;
+/**************************************
+ * Full KO tree visualization
+ */
+
+.ko-full-tree {
+
+   --tree-line-style: 3px solid #aaa;
+   --tree-round-gap: 20px;
+
+   ol.ko-tournament {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      display: inline-grid;
+      gap: 0 var(--tree-round-gap);
+
+      &>li {
+         grid-row: 1 /* put each round into a new column */
+      }
+   }
+
+   /* hide "Round x" titles */
+   h3 {
+      display: none;
+   }
+
+   ol.ko-round {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      height: 100%; /* fully fill the round column */
+      display: grid;
+      gap: 10px 0; /* vertical gap between nodes in round */
+
+      li {
+         grid-column: 1;     /* put each node into a new row */
+         position: relative; /* make it an anchor for ::before/::after placement */
+         display:flex;       /* use flex-box to center the match node box vertically */
+         justify-content: center;
+         align-items: center;
+      }
+
+      /* merging line left of a node */
+      li::before {
+         content: "";
+         border-top: var(--tree-line-style);
+         position: absolute;
+         top: 50%;     /* vertically center on tree item */
+         right: 100%;  /* put it on the left border of tree item */
+         width: calc(var(--tree-round-gap) / 2);
+      }
+
+      /* outgoing line right of a node */
+      li::after {
+         content: "";
+         border-right: var(--tree-line-style);
+         position: absolute;
+         left: 100%;  /* put it on the right border of tree item */
+         height: 75%; /* theoretically, 50% li-height + vertial grid gap, use 75% as a good estimation */
+         width: calc(var(--tree-round-gap) / 2);
+      }
+
+      /* for odd tree items, route the outgoing line downwards */
+      li:nth-child(odd)::after {
+         top: 50%;
+         border-top: var(--tree-line-style);
+      }
+
+      /* for even tree items, route the outgoing line upwards */
+      li:nth-child(even)::after {
+         bottom: 50%;
+         border-bottom: var(--tree-line-style);
+      }
+   }
+
+   /* hide in/out lines for first/last round */
+   li:first-child ol.ko-round li::before,
+   li:last-child ol.ko-round li::after {
+      display: none;
+   }
+
+   /* format the actual node */
+   .ko-node {
+
+      a {
+         display: block;
+         padding: 5px;
+         width: 25ex;
+      }
+
+      .separator {
+         display: none;
+      }
+
+      a > * {
+         display: block;
+      }
+
+      a > b {
+         text-align: center;
+         padding-bottom: 0.5em;
+         font-weight: bold;
+      }
+
+      .participant {
+         display: block;
+         position: relative; /* anchor for before/after elements */
+         padding-left: 1.5em;
+
+         text-align: left;
+         white-space: nowrap;
+         overflow: hidden;
+         text-overflow: ellipsis;
+
+         &::before {
+            content: "";
+            position: absolute;
+            width: 1em;
+            left: 0;
+            border: 1px solid black;
+            box-sizing: border-box;
+            height: 100%;
+         }
+
+         &.side-red::before {
+            background-color: red;
+         }
+
+         &.side-white::before {
+            background-color: white;
+         }
+      }
+   }
 }
 
+/*********************************************
+ * Partial/list-style KO tree visualization
+ */
 
-ul.fight_tree>li>span {
-   display: none;
+.partial-ko-tree {
+
+   ol.ko-tournament,
+   ol.ko-tournament > li {
+      display: contents;
+   }
+
+   ol.ko-round {
+      list-style-type: none;
+      padding: 0;
+   }
+
+   .ko-node {
+      margin-bottom: 1em;
+
+      .node-name::after {
+         content: ": ";
+         display: inline;
+      }
+
+      .area {
+         display: none;
+      }
+
+      a {
+         display: inline-block;
+         padding: 0.5em;
+      }
+   }
 }
 
-ul.fight_tree>li {
-   margin: 0 10px;
-}
+/*********************************************
+ * shared elements visualisation
+ */
+.ko-node {
 
-ul.fight_tree li span.fight_name {
-   display: block;
-   text-align: center;
-}
+   a {
+      border-radius: 5px;
+      border: 2px solid #d3d3d3;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+      text-decoration: none;
+      color: black;
+      transition: background 0.3s, color 0.3s;
+      background-color: #eee; /* default for inactive nodes */
 
-ul.fight_round {
-   list-style-type: none;
-   padding: 0;
-   margin: 0;
-   height: 100%;
-   display: flex;
-   flex-flow: column nowrap;
-   justify-content: space-around;
-}
+      &[href] {
+         background-color: white;
 
-ul.fight_round li {
-    background: #ffffff;
-    border-radius: 10px;
-    border: 1px solid #d3d3d3;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-    padding: 12px;
-    min-width: 180px;
-    text-align: center;
-    margin: 10px 0;
-}
+         &:hover {
+            background-color: #0077cc;
+            color: #fff;
+         }
+      }
+   }
 
-.fight_participant em
-{
-   font-weight: bold;
-   font-style: normal;
+   &.completed a {
+      border-color: #198754;
+   }
+
+   &.ongoing a {
+      border-color: darkkhaki;
+   }
+
+   &.ready a {
+      border-color: #0077cc;
+   }
 }

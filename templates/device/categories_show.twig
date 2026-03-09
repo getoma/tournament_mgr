@@ -1,0 +1,32 @@
+{% import 'base/match.twig' as part %}
+
+{%- include 'base/header.twig' with {
+  'active_page': 'device.categories.show',
+  'css': ['tree.css']
+} %}
+
+{% if pools is not empty -%}
+<section>
+  <h2>Pools</h2>
+    <nav class="nav-cards">
+    <ul>
+    {% for pool in pools -%}
+      <li><a href="{{ url_for('device.categories.pools.show', route_context.args|merge({'pool': pool.getName()})) }}">
+        <b>Pool {{ pool.getName() }}</b>
+        <span class="separator"> - </span>
+        <span class="details">{{ pool.getMatchList().count() }} Kämpfe</span>
+      </a></li>
+    {%- endfor %}
+    </ul>
+  </nav>
+</section>
+{%- endif %}
+
+<section>
+  <h2>KO</h2>
+  <nav class="partial-ko-tree">
+    {{ part.printKo(ko, 'device.categories.ko.matches.show', route_context.args) }}
+  </nav>
+</section>
+
+{% include 'base/footer.twig' %}

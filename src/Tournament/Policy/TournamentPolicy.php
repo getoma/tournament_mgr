@@ -58,7 +58,7 @@ final class TournamentPolicy
     */
    private function checkStatePolicy(TournamentAction $action): bool
    {
-      $status = $this->route_context->tournament?->status ?? null;
+      $status = $this->route_context->tournament?->status ?? $this->auth_context->tournament?->status ?? null;
       return match ($action)
       {
          TournamentAction::ManageDetails => match($status)
@@ -124,11 +124,6 @@ final class TournamentPolicy
       // determine authorization status depending on the specific action
       switch( $action )
       {
-         case TournamentAction::BrowseTournament:
-            /* allow if has access to this tournament in any way */
-            return $this->route_context->tournament
-                && $this->hasTournamentAccess($this->route_context->tournament);
-
          case TournamentAction::ManageDetails:
          case TournamentAction::ManageOwners:
          case TournamentAction::ManageSetup:
@@ -140,11 +135,22 @@ final class TournamentPolicy
             return  $this->auth_context->isUser()
                  && $this->route_context->tournament?->owners->contains($this->auth_context->user) ?? false;
 
+         case TournamentAction::BrowseTournament:
          case TournamentAction::RecordResults:
             /* allowed if has access to the tournament and is not anonymous */
-            return $this->auth_context->isAuthenticated()
-                && $this->route_context->tournament
-                && $this->hasTournamentAccess($this->route_context->tournament);
+            if( !$this->auth_context->isAuthenticated() ) return false;
+            /* allowed if tournament access defined via auth context */
+            if( $this->auth_context->tournament )
+            {
+               return !$this->route_context->tournament || $this->route_context->tournament === $this->auth_context->tournament;
+            }
+            /* allowed if current user has access to this specific tournament */
+            if( $this->route_context->tournament )
+            {
+               return $this->hasTournamentAccess($this->route_context->tournament);
+            }
+            /* tournament isn't even defined, decline access */
+            return false;
 
          case TournamentAction::CreateTournaments:
             return $this->auth_context->hasRole(Role::ORGANIZER);
@@ -209,6 +215,8 @@ final class TournamentPolicy
     */
    public function hasTournamentAccess(Tournament $tournament): bool
    {
-      return $this->auth_context->hasRole(Role::ADMIN) || $tournament->owners->contains($this->auth_context->user);
+      return $this->auth_context->hasRole(Role::ADMIN) ||
+             $tournament->owners->contains($this->auth_context->user) ||
+             $this->auth_context->tournament === $tournament;
    }
 }

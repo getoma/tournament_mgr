@@ -8,16 +8,18 @@ use Tournament\Controller\App\AccountController;
 use Tournament\Controller\App\TestController;
 use Tournament\Controller\App\TournamentTreeController;
 use Tournament\Controller\App\UserManagementController;
+use Tournament\Controller\App\AreaDeviceController;
 
 use Tournament\Controller\Device\AreaDeviceAuthController;
+use Tournament\Controller\Device\AreaDeviceViewController;
 
 use Tournament\Policy\TournamentAction;
+use Tournament\Policy\AuthType;
 
 use Base\Service\SessionValidationIssue;
 use Base\Service\RedirectHandler;
 
 use Slim\Routing\RouteCollectorProxy;
-use Tournament\Policy\AuthType;
 
 return function (\Slim\App $app)
 {
@@ -157,10 +159,10 @@ return function (\Slim\App $app)
          /* area device account settings */
          $tgrp->group('/areas/devices', function (RouteCollectorProxy $agrp)
          {
-            $agrp->get('[/]', [AreaDeviceAuthController::class, 'showAreaDeviceStatus'])->setName('tournaments.areas.devices.index');
-            $agrp->post('/{areaId:\d+}/create_code', [AreaDeviceAuthController::class, 'createLoginCode'])->setName('tournaments.areas.devices.createLogin');
-            $agrp->post('/{areaId:\d+}/invalidate_code',[AreaDeviceAuthController::class, 'invalidateLoginCode'])->setName('tournaments.areas.devices.invalidateLogin');
-            $agrp->post('/{areaId:\d+}/disable',     [AreaDeviceAuthController::class, 'disableDevice'])->setName('tournaments.areas.devices.disable');
+            $agrp->get('[/]', [AreaDeviceController::class, 'showAreaDeviceStatus'])->setName('tournaments.devices.index');
+            $agrp->post('/{areaId:\d+}/create_code', [AreaDeviceController::class, 'createLoginCode'])->setName('tournaments.devices.createLogin');
+            $agrp->post('/{areaId:\d+}/invalidate_code',[AreaDeviceController::class, 'invalidateLoginCode'])->setName('tournaments.devices.invalidateLogin');
+            $agrp->post('/{areaId:\d+}/disable',     [AreaDeviceController::class, 'disableDevice'])->setName('tournaments.devices.disable');
          }
          )->add( $policyGuard->for(TournamentAction::ManageAreaDevices) );
 
@@ -182,7 +184,7 @@ return function (\Slim\App $app)
 
             /* Tournament tree navigation */
             $cgrp->get('/category', [TournamentTreeController::class, 'showCategoryHome'])->setName('tournaments.categories.show');
-            $cgrp->get('/pool', [TournamentTreeController::class, 'showCategoryPool'])->setName('tournaments.categories.pools.index');
+            $cgrp->get('/pool', [TournamentTreeController::class, 'showCategoryPools'])->setName('tournaments.categories.pools.index');
             $cgrp->get('/pool/{pool}', [TournamentTreeController::class, 'showPool'])->setName('tournaments.categories.pools.show');
             $cgrp->get('/area/ko/{chunk}', [TournamentTreeController::class, 'showKoArea'])->setName('tournaments.categories.ko.chunks.show');
             $cgrp->get('/ko', [TournamentTreeController::class, 'showCategorytree'])->setName('tournaments.categories.ko.show');
@@ -248,7 +250,32 @@ return function (\Slim\App $app)
 
    $app->group('/device', function (RouteCollectorProxy $device_grp) use ($policyGuard)
    {
-      $device_grp->get('/dashboard', [TournamentTreeController::class, 'showAreaDashboard'])->setName('device.dashboard.show');
+      $device_grp->get('/category[/]', [AreaDeviceViewController::class, 'showCategories'])->setName('device.categories.index');
+
+      /* category routes */
+      $device_grp->group('/category/{categoryId:\d+}', function (RouteCollectorProxy $cgrp) use ($policyGuard)
+      {
+         /* area match navigation */
+         $cgrp->get('[/]', [AreaDeviceViewController::class, 'showCategoryHome'])->setName('device.categories.show');
+         $cgrp->get('/pool/{pool}/show[/]', [AreaDeviceViewController::class, 'showPool'])->setName('device.categories.pools.show');
+         $cgrp->get('/ko/{matchName}', [AreaDeviceViewController::class, 'showMatch'])->setName('device.categories.ko.matches.show');
+
+         $cgrp->get('/ko', RedirectHandler::to('device.categories.show'));
+         $cgrp->get('/pool', RedirectHandler::to('device.categories.show'));
+         $cgrp->get('/pool/{pool}', RedirectHandler::to('device.categories.pools.show'));
+         $cgrp->get('/pool/{pool}/addTieBreak', RedirectHandler::to('device.categories.pools.show'));
+         $cgrp->get('/pool/{pool}/delete/{decision_round}', RedirectHandler::to('device.categories.pools.show'));
+
+         /* Match Result recording */
+         $cgrp->group('', function (RouteCollectorProxy $mgrp) use ($policyGuard)
+         {
+            $mgrp->patch('/ko/{matchName}', [AreaDeviceViewController::class, 'updateMatch'])->setName('device.categories.ko.matches.update');
+            $mgrp->patch('/pool/{pool}/show/{matchName}', [AreaDeviceViewController::class, 'updateMatch'])->setName('device.categories.pools.matches.update');
+            $mgrp->post('/pool/{pool}/addTieBreak', [AreaDeviceViewController::class, 'addPoolTieBreak'])->setName('device.categories.pools.decision.add');
+            $mgrp->delete('/pool/{pool}/delete/{decision_round}', [AreaDeviceViewController::class, 'deletePoolDecisionRound'])->setName('device.categories.pools.decision.delete');
+         })
+         ->add($policyGuard->for(TournamentAction::RecordResults));
+      });
    })
    ->add($policyGuard->as(AuthType::DEVICE));
 };

@@ -8,7 +8,9 @@
 
 <section>
 <h2>{{ route_context.category.name }} - KO-Runde</h2>
-{{ part.printKo(ko, chunks, route_context.args) }}
+<nav class="ko-full-tree">
+{{ part.printKo(ko, 'tournaments.categories.ko.matches.show', route_context.args) }}
+</nav>
 </section>
 
 {% if no_pools %}

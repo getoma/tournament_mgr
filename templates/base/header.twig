@@ -3,39 +3,45 @@
 
 <head>
   <meta charset="UTF-8">
+  {%- if active_page starts with 'device' %}
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {%- endif %}
+
   <title>{% block title %}Tournament powered by Slim{% endblock %}</title>
   <link rel="stylesheet" href="{{url_for('tournaments.index')}}css/style.css">
-  {% for file in css -%}
+{%- for file in css %}
+
   <link rel="stylesheet" href="{{url_for('tournaments.index')}}css/{{file}}">
-  {%- endfor %}
+{%- endfor %}
+
+  <script src="{{url_for('tournaments.index')}}js/helpers.js"></script>
 </head>
 
 <body>
 
-  <header>
-    <h1>{{ heading|default(route_context.tournament.name)|default('Kendo Turniersoftware')}}</h1>
-    <nav id="account-menu" aria-label="Account">
-      {% if auth_context.isUser() -%}
-      <h2>👤 {{ auth_context.user.display_name }} ▼</h2>
-      <ul>
-        <li><a href="{{url_for('account.show')}}">Account</a></li>
-        <li><a href="{{url_for('auth.logout')}}">Logout</a></li>
-      </ul>
-      {%- elseif auth_context.isDevice() -%}
-      <a href="{{ url_for('device.logout')}}">Logout</a>
-      {%- endif %}
-    </nav>
-  </header>
+<header>
+  <h1>{{ heading|default(route_context.tournament.name)|default(auth_context.tournament.name)|default('Kendo Turniersoftware')}}
+    {%- if auth_context.area is not empty %} - {{ auth_context.area.name }}{% endif -%}
+  </h1>
+{% if auth_context.isUser() %}
+  <nav id="account-menu" aria-label="Account">
+    <h2>👤 {{ auth_context.user.display_name }} ▼</h2>
+    <ul>
+      <li><a href="{{url_for('account.show')}}">Account</a></li>
+      <li><a href="{{url_for('auth.logout')}}">Logout</a></li>
+    </ul>
+  </nav>
+{% endif %}
+</header>
 
-  {% import 'base/nav.twig' as nav -%}
-  {% set navigation = buildNavigation(auth_context, route_context, active_page|default('')) %}
+{% import 'base/nav.twig' as nav -%}
+{%- set navigation = buildNavigation(auth_context, route_context, active_page|default('')) -%}
+{% if auth_context.isUser() -%}
+{{ nav.pagemenu(navigation.pagemenu) }}
+{%- endif -%}
+{% if navigation.breadcrumbs is not empty -%}
+{{ nav.breadcrumbs(navigation.breadcrumbs, nav_entry_label ?? null)}}
+{%- endif %}
 
-  {% if auth_context.isUser() -%}
-  {{ nav.pagemenu(navigation.pagemenu) }}
-  {%- endif %}
-
-  {% if navigation.breadcrumbs is not empty -%}
-  {{ nav.breadcrumbs(navigation.breadcrumbs, nav_entry_label ?? null)}}
-  {%- endif %}
-
-  <main>
+<main>

@@ -1,0 +1,41 @@
+{% import 'base/match.twig' as part %}
+{% import 'base/form.twig' as form %}
+
+{% if type == 'ko' %}
+{% set update_route, get_route = 'device.categories.ko.matches.update', 'device.categories.ko.matches.show' %}
+{% else %}
+{% set update_route, get_route = 'device.categories.pools.matches.update', 'device.categories.pools.matches.show' %}
+{% endif %}
+
+{%- include 'base/header.twig' with {
+  'active_page': get_route,
+  'css': ['match.css']
+}%}
+
+{% if node_it.back().valid() -%}
+<nav id="previous_match_nav" class="match_nav">
+  <h2>Vorheriger Kampf</h2>
+  {{part.printMatchLinks(get_route, route_context.args, node_it.back(), 1)}}
+</nav>
+{%- endif %}
+
+<section>
+  <h2>
+    {%- if pool is not empty %}Pool {{pool}} - {%endif-%}
+    Kampf {{node.getLocalId()}}
+    {%- if node_it.roundIdx() is not null %} ({{ part.printRoundName(node_it.roundCount() - node_it.roundIdx() - 1)}}){% endif -%}
+  </h2>
+  {{ part.printMatchTable([node], node.getName(), update_route, route_context.args) }}
+  {% if error is not empty %}
+  <p class="error">{{error}}</p>
+  {% endif %}
+</section>
+
+{% if node_it.skip().valid() -%}
+<nav id="next_match_nav" class="match_nav">
+  <h2>Nächste Kämpfe</h2>
+  {{part.printMatchLinks(get_route, route_context.args, node_it.skip(), 3, node_it.roundIdx())}}
+</nav>
+{% endif -%}
+
+{% include 'base/footer.twig' %}
