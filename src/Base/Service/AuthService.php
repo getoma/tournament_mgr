@@ -132,7 +132,7 @@ class AuthService
    private function destroySessionData(): void
    {
       // invalidate remember me
-      $this->repo->clearUserRememberMeToken($this->user->id);
+      if( $this->user ) $this->repo->clearUserRememberMeToken($this->user->id);
       $this->cookieService->deleteCookie(static::TOKEN_COOKIE_NAME);
       // clear buffer
       $this->user = null;
@@ -171,7 +171,7 @@ class AuthService
       {
          try
          {
-            $this->user = $this->repo->findUser(['id' => $this->session->get(static::KEY_USER_ID)]);
+            $this->user = $this->repo->findUser(['id' => $this->session->get(static::KEY_USER_ID), 'is_active' => true]);
          }
          catch (\Exception $e)
          {
@@ -180,14 +180,16 @@ class AuthService
          }
 
          /* validate the session version */
-         if ($this->user && $this->user->session_version !== $this->session->get(static::KEY_SESSION_VERSION))
+         if ($this->user && $this->user->session_version === $this->session->get(static::KEY_SESSION_VERSION))
+         {
+            return true;
+         }
+         else
          {
             /* it does not fit - destroy this session and throw session validation issue */
             $this->destroySessionData();
             throw new SessionValidationIssue('session expired');
          }
-
-         return true;
       }
       return false;
    }
@@ -251,7 +253,7 @@ class AuthService
       {
          $token = $this->cookieService->getCookie(static::TOKEN_COOKIE_NAME);
          $tokenHash = hash('sha256', $token);
-         $user = $this->repo->findUser(['remember_me_token' => $tokenHash]);
+         $user = $this->repo->findUser(['remember_me_token' => $tokenHash, 'is_active' => true]);
          if( $user )
          {
             // perform login

@@ -192,8 +192,14 @@ class UserManagementController
       $user->updateFromArray($data);
       $this->repo->saveUser($user);
 
-      // if user was disabled, invalidate all his current sessions
-      if( $was_active && !$user->is_active ) $this->repo->rotateUserSession($user->id);
+      // if user was disabled, invalidate all their current sessions just to be sure
+      // AuthService will immediately decline any disabled user anyway, but
+      // additional measures don't hurt.
+      if( $was_active && !$user->is_active )
+      {
+         $this->repo->rotateUserSession($user->id);
+         $this->repo->clearUserRememberMeToken($user->id);
+      }
 
       // done, redirect-to-GET
       return $this->prgService->redirect($request, $response, 'users.show', $args, 'updated');
