@@ -127,7 +127,7 @@ class ParticipantImportService
       $report = $this->parseText($text, $tournamentId, $club);
       if (isset($report['errors'])) return $report;
       /* step 2: attach categories to participants */
-      $assignments = $categories->map(fn($c) => new CategoryAssignment($c));
+      $assignments = $categories->map(fn($c) => new CategoryAssignment($c->id));
       $report['participants']->walk(fn($p) => $p->categories = new CategoryAssignmentCollection($assignments));
       /* step 3: duplicate detection: search for already existing participants with same name and replace/update them */
       $report['duplicates'] = $this->findDuplicates($report['participants'], $tournamentId);
