@@ -88,6 +88,7 @@ class UserManagementController
       return $this->twig->render($response, 'user/user_details.twig', [
          'user'   => $user,
          'roles'  => Role::cases(),
+         'allow_welcome_mail' => empty($this->repo->getUserPassword($user->id)),
       ]);
    }
 
@@ -98,7 +99,7 @@ class UserManagementController
       if (!isset($user)) throw new EntityNotFoundException($request, 'user not found');
 
       // only allow to send a "new user mail" as long as no password is set
-      if ($user->password_hash)
+      if ($this->repo->getUserPassword($user->id))
       {
          $errors = [ 'error' => 'Nutzer hat bereits ein Passwort gesetzt.'];
       }
@@ -191,8 +192,14 @@ class UserManagementController
       $user->updateFromArray($data);
       $this->repo->saveUser($user);
 
-      // if user was disabled, invalidate all his current sessions
-      if( $was_active && !$user->is_active ) $this->repo->rotateUserSession($user->id);
+      // if user was disabled, invalidate all their current sessions just to be sure
+      // AuthService will immediately decline any disabled user anyway, but
+      // additional measures don't hurt.
+      if( $was_active && !$user->is_active )
+      {
+         $this->repo->rotateUserSession($user->id);
+         $this->repo->clearUserRememberMeToken($user->id);
+      }
 
       // done, redirect-to-GET
       return $this->prgService->redirect($request, $response, 'users.show', $args, 'updated');

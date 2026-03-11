@@ -2,6 +2,7 @@
 
 namespace Tournament\Service;
 
+use Base\Service\CookieService;
 use Tournament\Repository\AreaDeviceAccountRepository;
 use Tournament\Repository\TournamentRepository;
 
@@ -19,37 +20,17 @@ class AreaDeviceService
    private ?AreaDeviceSession $device = null;
 
    protected const KEY_DEVICE_SESSION_ID = '_.areadevice.ID';
+   protected const TOKEN_COOKIE_NAME     = 'area_device_token';
 
    public function __construct(
       private AreaDeviceAccountRepository $repo,
       private TournamentRepository $tournamentRepo,
       private SessionService $session,
+      private CookieService $cookieService,
       private int $session_expiry_h = 24,
       private \Random\Randomizer $rng = new \Random\Randomizer(),
    )
    {
-   }
-
-   /**
-    * try to load session data
-    */
-   public function loadSession(): void
-   {
-      if( isset($this->device) || !$this->session->has(static::KEY_DEVICE_SESSION_ID) ) return;
-
-      $this->device = $this->repo->getValidSessionById($this->session->get(static::KEY_DEVICE_SESSION_ID));
-
-      if ($this->device)
-      {
-         $this->area = $this->tournamentRepo->getAreaById($this->device->area_id);
-         $this->repo->updateSessionActivity($this->device->id, $this->session->id());
-      }
-      else
-      {
-         /* no valid session, drop the session identifier */
-         $this->session->remove(static::KEY_DEVICE_SESSION_ID);
-         throw new SessionValidationIssue('session expired');
-      }
    }
 
    /**
@@ -106,22 +87,37 @@ class AreaDeviceService
       $login = $this->repo->findValidLoginCode($login_code);
       if (!$login) return false;
 
-      /* try to find the assigned area */
-      $area_id = $login->area_id;
-      $area = $this->tournamentRepo->getAreaById($area_id);
-      if (!$area) return false;
-
       /* establish the expiry time for this session */
       $expiry = new \DateTime();
       $expiry->modify('+' . $this->session_expiry_h . ' hours');
 
       /* create the device session and mark the login code as used */
-      $session = $this->repo->createSession($area->id, $expiry, $this->session->id());
-      $this->session->set(static::KEY_DEVICE_SESSION_ID, $session->id);
+      $session = $this->repo->createSession($login->area_id, $expiry, $this->session->id());
       $this->repo->markLoginCodeUsed($login->id);
+
+      /* set up the session */
+      $this->loginDevice($session);
+
+      /* set post-session token */
+      $this->setDeviceToken();
 
       /* report success */
       return true;
+   }
+
+   /**
+    * set up the session to be logged in for this device
+    */
+   private function loginDevice(AreaDeviceSession $session): void
+   {
+      $this->session->set(static::KEY_DEVICE_SESSION_ID, $session->id);
+      $this->device = $session;
+      $this->area = $this->tournamentRepo->getAreaById($session->area_id);
+
+      if( $this->area === null )
+      {
+         throw new SessionValidationIssue('unknown area');
+      }
    }
 
    /**
@@ -156,7 +152,10 @@ class AreaDeviceService
     */
    public function getArea(): ?Area
    {
-      $this->loadSession();
+      if( $this->area === null )
+      {
+         $this->validateSession() || $this->validateDeviceToken();
+      }
       return $this->area;
    }
 
@@ -167,5 +166,74 @@ class AreaDeviceService
    {
       $this->repo->cleanLoginCodesByTournamentId($tournamentId);
       $this->repo->cleanSessionsByTournamentId($tournamentId);
+   }
+
+   /**
+    * (re)set any "remember me" token
+    */
+   private function setDeviceToken(): void
+   {
+      /* create the device token for additional security */
+      $token = bin2hex(random_bytes(32));
+      $tokenHash = hash('sha256', $token);
+
+      /* set it in the instance */
+      $this->repo->setTokenHash($this->device->id, $tokenHash);
+
+      /* set the device tooken as separate cookie on client side */
+      $this->cookieService->setCookie(
+         static::TOKEN_COOKIE_NAME, $token,
+         ['expires'  => $this->device->expires_at->getTimestamp()]
+      );
+   }
+
+   /**
+    * try to load session data
+    */
+   public function validateSession(): bool
+   {
+      if (!$this->session->has(static::KEY_DEVICE_SESSION_ID)) return false;
+
+      $this->device = $this->repo->getValidSessionById($this->session->get(static::KEY_DEVICE_SESSION_ID));
+
+      if ($this->device)
+      {
+         $this->area = $this->tournamentRepo->getAreaById($this->device->area_id);
+         $this->repo->updateSessionActivity($this->device->id);
+         return true;
+      }
+      else
+      {
+         /* no valid session, drop the session identifier */
+         $this->session->remove(static::KEY_DEVICE_SESSION_ID);
+         throw new SessionValidationIssue('session expired');
+      }
+   }
+
+   /**
+    * validate any remember me token
+    */
+   private function validateDeviceToken(): bool
+   {
+      if ($this->cookieService->hasCookie(static::TOKEN_COOKIE_NAME))
+      {
+         $token = $this->cookieService->getCookie(static::TOKEN_COOKIE_NAME);
+         $tokenHash = hash('sha256', $token);
+         $session = $this->repo->findValidSessionByToken($tokenHash);
+         if ($session)
+         {
+            // perform login
+            $this->loginDevice($session);
+            // token is valid, refresh it
+            $this->setDeviceToken();
+            // done
+            return true;
+         }
+         else
+         {
+            $this->cookieService->deleteCookie(static::TOKEN_COOKIE_NAME);
+         }
+      }
+      return false;
    }
 }

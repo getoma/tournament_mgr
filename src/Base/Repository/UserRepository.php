@@ -46,6 +46,13 @@ class UserRepository
       return $data ? $this->createUserObject($data) : null;
    }
 
+   public function getUserPassword(int $id): string
+   {
+      $stmt = $this->pdo->prepare("SELECT password_hash FROM users WHERE id = :id");
+      $stmt->execute(['id' => $id]);
+      return (string)$stmt->fetchColumn();
+   }
+
    public function updateUserPassword(int $id, string $hashedPassword): bool
    {
       $stmt = $this->pdo->prepare("UPDATE users SET password_hash = :passwordHash WHERE id = :id");
@@ -53,6 +60,37 @@ class UserRepository
          'passwordHash' => $hashedPassword,
          'id' => $id
       ]);
+   }
+
+   public function getUserRememberMeToken(int $id): string
+   {
+      $stmt = $this->pdo->prepare("SELECT remember_me_token FROM users WHERE id = :id");
+      $stmt->execute(['id' => $id]);
+      return (string)$stmt->fetchColumn();
+   }
+
+   public function updateUserRememberMeToken(int $id, string $token): bool
+   {
+      try
+      {
+         $stmt = $this->pdo->prepare("UPDATE users SET remember_me_token = :token WHERE id = :id");
+         return $stmt->execute([
+            'token' => $token ?: null,
+            'id' => $id
+         ]);
+      }
+      catch(\PDOException)
+      {
+         // may happen right right after SW update and before DB migration
+         // also, not mission critical, this will just disable "remember me" functionality
+         error_log("Failed to set 'remember me' token for user");
+         return false;
+      }
+   }
+
+   public function clearUserRememberMeToken(int $id): bool
+   {
+      return $this->updateUserRememberMeToken($id, '');
    }
 
    public function storePasswordResetToken(int $userId, string $tokenHash, int $expiry_minutes): bool

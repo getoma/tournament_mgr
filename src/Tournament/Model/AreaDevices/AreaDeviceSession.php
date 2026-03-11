@@ -10,7 +10,6 @@ class AreaDeviceSession
       public readonly \DateTimeImmutable $expires_at,
       public ?\DateTimeInterface $invalidated_at = null,
       public \DateTimeInterface $last_activity_at,
-      public string $last_php_session_id,
       public ?int $id = null,
    )
    {

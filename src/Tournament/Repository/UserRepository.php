@@ -29,7 +29,6 @@ class UserRepository extends \Base\Repository\UserRepository
       if ($user->id === null)
       {
          // Insert new user
-         // do not set password_hash - to be maintained by a dedicated service.
          // do not set last_login - cannot have a value for a non-existing user
          $stmt = $this->pdo->prepare("INSERT INTO users (email, display_name, is_active, created_at) VALUES (:email, :display_name, :is_active, :created_at)");
          $stmt->execute([
@@ -44,7 +43,6 @@ class UserRepository extends \Base\Repository\UserRepository
       {
          // Update existing user
          // do not set email - shall not be updateable according current design / and/or has to be handled by dedicated service
-         // do not set password_hash - to be maintained by a dedicated service.
          // do not set created_at - not modifyable
          $stmt = $this->pdo->prepare("UPDATE users SET display_name = :display_name, last_login = :last_login, is_active = :is_active WHERE id = :id");
          $stmt->execute([
@@ -118,7 +116,6 @@ class UserRepository extends \Base\Repository\UserRepository
       $user = new \Tournament\Model\User\User(
          id: $data['id'],
          email: $data['email'],
-         password_hash: $data['password_hash'],
          display_name: $data['display_name'],
          created_at: new \DateTime($data['created_at']??'now'),
          last_login: isset($data['last_login'])? new \DateTime($data['last_login']) : null,

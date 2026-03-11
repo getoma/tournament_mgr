@@ -64,11 +64,10 @@ return function (DI\Container $container)
       return new Base\Service\PdoSessionHandler($container->get(PDO::class));
    });
 
-   // configure SessionService
-   $container->set(Base\Service\SessionService::class, function () use ($container)
+   // configure CookieService
+   $container->set(Base\Service\CookieService::class, function ()
    {
-      return new Base\Service\SessionService(
-         $container->get(SessionHandlerInterface::class),
+      return new Base\Service\CookieService(
          [ 'secure' => config::$HTTPS_ONLY ?? true,
            'path'   => config::$BASE_PATH,
          ]
@@ -76,7 +75,7 @@ return function (DI\Container $container)
    });
 
    // configure TmpStorageService
-   $container->set(Base\Service\TmpStorageService::class, function () use ($container)
+   $container->set(Base\Service\TmpStorageService::class, function ()
    {
       return new Base\Service\TmpStorageService(config::$BASE_PATH);
    });
