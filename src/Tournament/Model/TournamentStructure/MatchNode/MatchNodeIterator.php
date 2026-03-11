@@ -4,6 +4,8 @@ namespace Tournament\Model\TournamentStructure\MatchNode;
 
 class MatchNodeIterator implements \SeekableIterator, \Base\Model\ChainableIterator
 {
+   use \Base\Model\ChainableIteratorTrait;
+
    private readonly MatchNodeCollection $matches;
 
    public function __construct(
@@ -41,49 +43,32 @@ class MatchNodeIterator implements \SeekableIterator, \Base\Model\ChainableItera
 
    public function valid(): bool
    {
-      return isset($this->matches[$this->position]);
+      return $this->matches->offsetExists($this->position);
    }
 
    public function seek($position): void
    {
-      if ($position < 0 || $position > count($this->matches))
+      if ($position < 0 || $position > $this->matches->count())
       {
-         throw new \OutOfBoundsException("Invalid position $position");
+         throw new \OutOfRangeException("Invalid position $position");
       }
       $this->position = $position;
    }
 
    public function goto(string $name): void
    {
-      for( $i = 0; $i < $this->matches->count(); ++$i) // do NOT use foreach loop, or this will spawn another MatchNodeIterator
+      $this->rewind();
+      while ($cur = $this->current()) // as long as we point to a valid node...
       {
-         if ($this->matches[$i]->getName() === $name)
-         {
-            $this->position = $i;
-            return;
-         }
+         if ($cur->getName() === $name) return; // check if it is the one we are looking for
+         $this->next(); // if not, continue to next
       }
-      throw new \OutOfBoundsException("Invalid match $name");
-   }
-
-   public function skip(int $count = 1): self
-   {
-      return new self($this->matches, $this->position+$count);
-   }
-
-   public function back(int $count = 1): self
-   {
-      return new self($this->matches, $this->position-$count);
-   }
-
-   public function jump(int $position): self
-   {
-      return new self($this->matches, $position);
+      throw new \OutOfRangeException("Invalid match '$name'"); // node not found
    }
 
    public function findNode(string $name): self
    {
-      $new = new self($this->matches);
+      $new = clone $this;
       $new->goto($name);
       return $new;
    }
