@@ -28,9 +28,10 @@ class AuthContextService
       }
       else if ($this->deviceService->isDeviceAccount() )
       {
+         $device = $this->deviceService->getDeviceSession();
          $area = $this->deviceService->getArea();
          $tournament = $this->tournamentRepo->getTournamentByAreaId($area->id);
-         $ctx = AuthContext::as_device($tournament, $area);
+         $ctx = AuthContext::as_device($device, $tournament, $area);
       }
       else
       {

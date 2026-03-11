@@ -39,6 +39,9 @@ return function (\Slim\App $app)
    // Add Routing Middleware
    $app->addRoutingMiddleware();
 
+   // Add Activity tracking
+   $app->add(\Tournament\Middleware\ActivityTrackingMiddleware::create($app));
+
    // Add AuthContextMiddleWare
    $app->add(\Tournament\Middleware\AuthContextMiddleware::create($app));
 

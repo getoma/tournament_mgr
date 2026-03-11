@@ -12,7 +12,7 @@
       <th>Angezeigter Name</th>
       <th>E-Mail</th>
       <th>Rollen</th>
-      <th>Letzter Login</th>
+      <th>Zuletzt gesehen</th>
       <th>Aktionen</th>
       </tr>
     </thead>
@@ -22,7 +22,7 @@
       <td>{{user.display_name}}</td>
       <td>{{user.email}}</td>
       <td>{{user.roles|map(r => r.value)|join(', ')|humanize}}</td>
-      <td>{% if user.last_login %}{{user.last_login|date('d.m.Y H:i')}}{% else %}---{% endif %}</td>
+      <td>{% if user.last_activity_at %}{{user.last_activity_at|date('d.m.Y H:i')}}{% else %}---{% endif %}</td>
       <td>{% set buttons_active = policy.canModifyUser(user) -%}
           <a href="{{ url_for('users.show', {'userId': user.id}) }}" class="form-btn">
             {%- if buttons_active %}Bearbeiten{% else %}Details anzeigen{% endif -%}
