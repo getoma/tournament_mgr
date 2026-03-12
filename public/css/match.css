@@ -1,154 +1,183 @@
-table.match_table,
-table.match_table th,
-table.match_table td,
-table.match_table .td-link>*,
-nav.match_nav table th {
-   border: 1px solid black;
-   border-collapse:collapse;
-   border-radius: 0;
-   box-shadow: none;
+table.match_table {
+
+   &, th, td, .td-link>* {
+      border: 1px solid black;
+      border-collapse:collapse;
+      border-radius: 0;
+      box-shadow: none;
+   }
+
+   thead {
+      border-bottom: 2px solid black;
+
+      tr:first-child th.side-red {
+         background-color: red !important;
+      }
+
+      tr:first-child th.side-white {
+         background-color: white !important;
+      }
+   }
+
+   tr.selected, tr.controls {
+      border-top: 2px solid black;
+      border-bottom: 2px solid black;
+   }
+
+   tbody tr {
+      background-color: white; /* revert the hover color of default tables from style.css */
+   }
+
+   tr.inactive {
+      background-color: #f1f1f1;
+
+      &.frozen {
+         background-color: #ddd;
+      }
+   }
+
+   th {
+      background-color: white;
+   }
+
+   th, td, .td-link > * {
+      padding: 1ex;
+   }
+
+
+   .side-red {
+      text-align:left;
+   }
+
+   .side-white {
+      text-align:right;
+   }
+
+   .side-none {
+      text-align: center;
+   }
+
+   tbody ul {
+      padding: 0;
+      margin: 0;
+   }
+
+   .points, .penalty {
+
+      width: 10ex;
+
+      ul {
+         display: flex;
+         gap: 0;
+      }
+
+      &.side-red ul {
+         justify-content: flex-start;
+      }
+
+      &.side-white ul {
+         justify-content: flex-end;
+      }
+
+      li {
+         list-style: none;
+         padding:1px;
+         text-align:center;
+         width:1rem
+      }
+
+      .undo {
+         background-color: khaki;
+      }
+   }
+
+   td.participant {
+      width:30ex;
+   }
+
+   td.winner {
+      width:3ex;
+      text-align:center;
+   }
+
+   .match_control {
+      display: flex;
+      flex-flow: row wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+
+      button {
+         min-width: 4rem;
+         height: 3.5rem;
+         margin: 0;
+
+         &[value="undo"] {
+            min-width: 10rem;
+         }
+      }
+   }
 }
 
-table.match_table tbody tr {
-   background-color: white; /* revert the hover color of default tables from style.css */
+nav.match_nav {
+
+   thead tr:first-child th.side-red {
+      background-color: red !important;
+   }
+
+   thead tr:first-child th.side-white {
+      background-color: white !important;
+   }
+
+   th {
+      border: 1px solid black;
+      border-collapse: collapse;
+      border-radius: 0;
+      box-shadow: none;
+      text-align: center;
+   }
+
+   td {
+      text-align:center
+   }
 }
 
-table.match_table th {
-   background-color: white;
-}
-
-table.match_table tr.inactive {
-   background-color: #f1f1f1;
-}
-
-table.match_table tr.inactive.frozen {
-   background-color: #ddd;
-}
-
-table.match_table th,
-table.match_table td,
-table.match_table .td-link > * {
-   padding:1ex;
-}
-
-table.match_table .side-red {
-   text-align:left;
-}
-
-table.match_table .side-white {
-   text-align:right;
-}
-
-table.match_table .side-none {
-   text-align: center;
-}
-
-table.match_table tbody ul {
-   padding: 0;
-   margin: 0;
-}
-
-table.match_table tbody li {
-   display: inline-block;
-   list-style-type: none;
-   padding:1px;
-   text-align:center;
-   width:1rem
-}
-
-table.match_table tbody li.undo {
-   background-color: khaki;
-}
-
-table.match_table td.participant {
-   width:30ex;
-}
-
-table.match_table td.points,
-table.match_table td.penalty {
-   width:10ex;
-}
-
-table.match_table td.winner {
-   width:3ex;
-   text-align:center;
-}
-
-nav.match_nav th,
-nav.match_nav td {
-   text-align:center
-}
-
-.match_control {
-   display: flex;
-   flex-flow: row wrap;
-   align-items: center;
-   justify-content: space-between;
-   gap: 1rem;
-
-}
-
-.match_control button {
-   min-width: 4rem;
-   height: 3.5rem;
-   margin: 0;
-}
-
-.match_control button[value="undo"] {
-   min-width: 10rem;
-}
-
+/* replace Hansokus with the corresponding symbol */
 .pt-H,
 button[value="H"] {
    position: relative;
    font-size: 0;
-}
 
-.pt-H::before,
-button[value="H"]::before {
-   content: "";
-   display: inline-block;
+   &::before {
+      content: "";
+      display: inline-block;
 
-   width: 0;
-   height: 0;
+      width: 0;
+      height: 0;
 
-   border-left: 6px solid transparent;
-   border-right: 6px solid transparent;
-   border-bottom: 11px solid black;
-}
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 11px solid black;
+   }
 
-.pt-H::after {
-   content: "";
-   position: absolute;
-   left: 3px;
-   top: 2px;
-
-   width: 0;
-   height: 0;
-
-   border-left: 5px solid transparent;
-   border-right: 5px solid transparent;
-   border-bottom: 9px solid red;
 }
 
 li.pt-H {
+
    width: 14px !important;
+
+   &::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 2px;
+
+      width: 0;
+      height: 0;
+
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 9px solid red;
+   }
 }
 
-tr:first-child th.side-red {
-   background-color: red !important;
-}
-
-tr:first-child th.side-white {
-   background-color: white !important;
-}
-
-table.match_table thead {
-   border-bottom: 2px solid black;
-}
-
-table.match_table tr.selected,
-table.match_table tr.controls {
-   border-top: 2px solid black;
-   border-bottom: 2px solid black;
-}

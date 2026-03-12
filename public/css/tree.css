@@ -103,7 +103,7 @@
          border-right: var(--tree-line-style);
          position: absolute;
          left: 100%;  /* put it on the right border of tree item */
-         height: 75%; /* theoretically, 50% li-height + vertial grid gap, use 75% as a good estimation */
+         height: 75%; /* theoretically, 50% li-height + vertical grid gap, use 75% as a good estimation */
          width: calc(var(--tree-round-gap) / 2);
       }
 
@@ -225,26 +225,35 @@
       border: 2px solid #d3d3d3;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
       text-decoration: none;
-      color: black;
       transition: background 0.3s, color 0.3s;
-      background-color: #eee; /* default for inactive nodes */
+
+      /* default coloring for inactive nodes: */
+      background-color: #eee;
+      color: #555;
 
       &[href] {
+         /* default coloring for active nodes: */
          background-color: white;
+         color: black;
 
          &:hover {
+            /* coloring for hovered nodes: */
             background-color: #0077cc;
             color: #fff;
          }
       }
    }
 
+   /* coloring for unhovered, marked nodes: */
+
    &.completed a {
       border-color: #198754;
+      background-color: #D1E7DD;
    }
 
    &.ongoing a {
       border-color: darkkhaki;
+      background-color: #F5F1C8;
    }
 
    &.ready a {
