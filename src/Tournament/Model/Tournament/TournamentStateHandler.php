@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\Tournament;
 
@@ -9,8 +9,20 @@ class TournamentStateHandler
    }
 
    /**
+    * check whether changes should be tracked
+    */
+   public function trackChanges(): bool
+   {
+      /* do not track during "planning" state, but afterwards all trackable changes should be logged */
+      return match ($this->tournament->status)
+      {
+         TournamentStatus::Planning => false,
+         default => true,
+      };
+   }
+
+   /**
     * Returns a list of possible status transitions for the given tournament.
-    * @param Tournament $tournamentId
     * @return TournamentStatus[]
     */
    public function getPossibleTransitions(): array
@@ -26,7 +38,6 @@ class TournamentStateHandler
 
    /**
     * Checks if a transition to a new status is allowed for the given tournament.
-    * @param Tournament $tournamentId
     * @param TournamentStatus $newStatus
     * @return bool
     */
@@ -82,7 +93,7 @@ class TournamentStateHandler
             return false;
 
          default:
-            throw new \DomainException("Unhandled tournament status: " . var_export($this->tournament->status, true));
+            throw new \DomainException("Unhandled tournament status: " . $this->tournament->status->value);
       }
    }
 }
