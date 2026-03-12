@@ -61,25 +61,30 @@
         {% endfor -%}
         <td>
           <a href="{{ url_for('tournaments.participants.show', route_context.args|merge({'participantId': participant.id})) }}"
-            class="form-btn">Bearbeiten</a>
+            class="form-btn">{{ policy.isActionAllowed('ModifyParticipants')? "Bearbeiten" : "Details" }}</a>
+          {% if policy.isActionAllowed('DeleteParticipants') -%}
           <form method="POST"
             action="{{ url_for('tournaments.participants.delete', route_context.args|merge({'participantId': participant.id})) }}">
             <input type="hidden" name="_METHOD" value="DELETE">
             {{ form.submit('Löschen', confirm='%s, %s wirklich löschen?'|format(participant.lastname, participant.firstname)) }}
           </form>
+          {%- endif %}
         </td>
         </tr>
       {% endfor %}
     </tbody>
   </table>
+  {% if policy.isActionAllowed('ModifyParticipants') -%}
   <form method="POST" action="{{ url_for('tournaments.participants.bulk.update', route_context.args) }}" id="participant_list_form">
     <input type="hidden" name="_METHOD" value="PATCH">
     {{ form.submit('Speichern') }}
     {{ form.submit('Speichern und Teilnehmer zuweisen', 'shuffle_in', 'new') }}
     {{ form.submit('Speichern und Teilnehmer neu verteilen', 'shuffle_in', 'all', confirm="Wirklich alle Startpositionen neu zuweisen?") }}
   </form>
+  {%- endif %}
 </section>
 
+{% if policy.isActionAllowed('ImportParticipants') -%}
 <section>
 <h2>Teilnehmer importieren</h2>
 <form method="POST" action="{{ url_for('tournaments.participants.import.store', { 'tournamentId': tournament.id }) }}" id="participant_upload_form" enctype="multipart/form-data">
@@ -105,5 +110,7 @@
     {{ form.submit('Hinzufügen') }}
   </form>
 </section>
+
+{%- endif %}
 
 {% include 'base/footer.twig' %}
