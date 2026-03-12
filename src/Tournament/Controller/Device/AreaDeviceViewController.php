@@ -76,7 +76,7 @@ class AreaDeviceViewController
 
       return $this->view->render($response, 'device/categories_show.twig', [
          'pools' => $structure->pools->filter(fn($p) => $p->getArea() === $auth->area),
-         'ko'    => $structure->getFinaleRounds()->filterRounds(fn($n) => $n->getArea() === $auth->area),
+         'ko'    => $structure->getFinaleRounds()->filterRounds(fn($n) => $n->getArea() === $auth->area && $n->isReal()),
       ]);
    }
 

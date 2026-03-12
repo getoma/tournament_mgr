@@ -11,9 +11,9 @@
 {% if emph %}</em>{% endif %}
 {% endmacro %}
 
-{% macro printRoundName(revindex) -%}
+{% macro printRoundName(index, count) -%}
 {% set round_names = [ 'Finale', 'Halbfinale', 'Viertelfinale', 'Achtelfinale'] -%}
-{{ round_names[revindex]|default("Runde " ~ loop.index) }}
+{{ round_names[count-index-1]|default("Runde " ~ (index+1)) }}
 {%- endmacro %}
 
 
@@ -45,7 +45,7 @@
         {% if match.isTieBreak() -%}
     <tr class="label_row"><td colspan="5">Entscheidungskampf</td></tr>
         {%- elseif match_it.roundIdx() != current_round -%}
-    <tr class="label_row"><td colspan="5">{{ _self.printRoundName( match_it.roundCount() - 1 - match_it.roundIdx() ) }}</td></tr>
+    <tr class="label_row"><td colspan="5">{{ _self.printRoundName( match_it.roundIdx(), match_it.roundCount() ) }}</td></tr>
         {%- set current_round = match_it.roundIdx() %}
         {%- endif %}
         {%- set match_url = url_for(route_name, route_parameters|merge({'matchName': match.name})) %}
@@ -67,7 +67,7 @@
 <ol class="ko-tournament">
   {% for round in ko -%}
   {% if round is not empty -%}
-  <li><h3 class="round-caption">{{ _self.printRoundName(loop.revindex0 + last_round_offset) }}</h3>
+  <li><h3 class="round-caption">{{ _self.printRoundName(loop.index0, loop.length - last_round_offset) }}</h3>
     <ol class="ko-round">
       {% for node in round -%}
       <li class="ko-node{% if node.isCompleted() %} completed{% elseif node.isOngoing() %} ongoing{% elseif node.isDetermined %} ready{% endif %}">

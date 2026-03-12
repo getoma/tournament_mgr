@@ -23,7 +23,7 @@
   <h2>
     {%- if pool is not empty %}Pool {{pool}} - {%endif-%}
     Kampf {{node.getLocalId()}}
-    {%- if node_it.roundIdx() is not null %} ({{ part.printRoundName(node_it.roundCount() - node_it.roundIdx() - 1)}}){% endif -%}
+    {%- if node_it.roundIdx() is not null %} ({{ part.printRoundName(node_it.roundIdx(), node_it.roundCount())}}){% endif -%}
   </h2>
   {{ part.printMatchTable([node], node.getName(), update_route, route_context.args) }}
   {% if error is not empty %}
