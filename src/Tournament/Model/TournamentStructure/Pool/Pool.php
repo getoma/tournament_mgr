@@ -17,6 +17,8 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 class Pool
 {
    private MatchNodeCollection $matches;
+   /** @var Participant[] */
+   private array $slots = [];
    private ParticipantCollection $participants;
    private PoolRankCollection $ranking;
 
@@ -82,11 +84,89 @@ class Pool
       return $this->participants;
    }
 
-   public function setParticipants(ParticipantCollection $p): void
+   public function loadParticipants(ParticipantCollection $participants): void
    {
-      $this->participants = $p;
+      $this->participants = $participants;
+      $this->slots = [];
+      foreach( $participants as $p )
+      {
+         if( $slot = $p->categories[$this->category->id]?->slot_name )
+         {
+            list($poolId, $slotId) = static::splitSlotName($slot);
+            if( $poolId !== $this->name ) throw new \UnexpectedValueException('participant is assigned to a different pool');
+            $this->slots[$slotId] = $p;
+         }
+         else
+         {
+            throw new \UnexpectedValueException('participant is not assigned to a pool');
+         }
+      }
+
+      $this->recreateMatchList();
+   }
+
+   /**
+    * add a new participant and return their slot
+    */
+   public function addParticipant(Participant $p): void
+   {
+      /* plausibility check */
+      if( !$p->categories->keyExists($this->category->id) )
+      {
+         throw new \OutOfRangeException('participant not assigned to current category');
+      }
+
+      /* silently skip for already assigned participants */
+      if( $this->participants->contains($p) ) return;
+
+      /* add them to the generic list */
+      $this->participants[] = $p;
+
+      /* find a free slot and add them there */
+      error_log(join(", ", array_keys($this->slots)));
+      $slotId = 0;
+      while( isset($this->slots[$slotId]) ) $slotId += 1;
+      $this->slots[$slotId] = $p;
+
+      /* add the slot assignment into the participant */
+      $slotName = $this->name . '.' . $slotId;
+      $p->categories[$this->category->id]->slot_name = $slotName;
+
+      /* regenerate the matches */
+      $this->recreateMatchList();
+   }
+
+   private static function splitSlotName(string $slotName, bool $throw_if_invalid = true): ?array
+   {
+      if (preg_match('/^\d+\.\d+$/', $slotName)) // as defined above in addParticipant()
+      {
+         return explode('.', $slotName);
+      }
+      if ($throw_if_invalid) throw new \DomainException("'$slotName' is not a valid pool slot name");
+      return null;
+   }
+
+   /**
+    * (re-)generate the matches for the current list of participants
+    */
+   private function recreateMatchList(): void
+   {
+      /* consider the fact that there might be gaps in the slots, due to withdrawn participants
+       * for the match generation, fill those up with dummy participants, whose matches are
+       * removed at the end of the generation in addNewMatchesFor() */
       $this->matches = MatchNodeCollection::new();
-      $this->addNewMatchesFor($p);
+      $plist = ParticipantCollection::new();
+      ksort($this->slots);
+      foreach ($this->slots as $slotId => $p)
+      {
+         while ($plist->count() < $slotId)
+         {
+            $plist[] = Participant::dummy();
+         }
+         $plist[] = $p;
+      }
+
+      $this->addNewMatchesFor($plist);
    }
 
    public function getMatchList(): MatchNodeCollection
@@ -218,9 +298,9 @@ class Pool
       }
 
       /* check if there are further records for this pool for additional matches (-> decision matches) */
-      $matchId = $this->matches->count()-1;
+      $matchId = $this->getNextMatchId();
       $extId = 0;
-      while ( $matchRecords->keyExists($matchName = $this->nameFor(++$matchId, $extId))
+      while ( $matchRecords->keyExists($matchName = $this->nameFor($matchId, $extId))
             ||$matchRecords->keyExists($matchName = $this->nameFor($matchId, ++$extId)))
       {
          /** @var MatchRecord $record - fetch this additional record from the provided ones */
@@ -240,6 +320,8 @@ class Pool
          {
             throw new \DomainException("Invalid Match record for Pool " . $this->name . ": participants do not match");
          }
+
+         $matchId += 1; // go check for the next match
       }
       $this->current_extension = $extId - 1; # $extId is one beyond the last found
 
@@ -271,12 +353,14 @@ class Pool
    private function addNewMatchesFor(ParticipantCollection $p): MatchNodeCollection
    {
       $report  = $this->category->getMatchCreationHandler()->generate($p);
-      $matchId = $this->matches->count();
+      $matchId = $this->getNextMatchId();
       foreach ($report as $match)
       {
          $match->setName($this->nameFor($matchId++, $this->current_extension));
          $match->area = $this->area;
-         $this->matches[] = $match;
+         // only actually store matches without dummy participants
+         // we still calculate a name for them above to have fixed match ids regardless
+         if( $match->isReal() ) $this->matches[] = $match;
       }
       return $report;
    }
@@ -286,14 +370,41 @@ class Pool
     */
    private function nameFor(int $matchId, ?int $extension_id = 0): string
    {
-      return $this->name . ($extension_id? ".e".$extension_id : '') . "." . ($matchId+1);
+      return $this->name . ($extension_id? ".e".$extension_id : '') . "." . ($matchId);
    }
 
    /**
     * extract the extension id from a match name
     */
-   private function getExtensionId(string $name): ?int
+   static private function getExtensionId(string $name): ?int
    {
       return (preg_match('/^.+(?:\.e(\d+))\.\d+$/', $name, $matches) && isset($matches[1]))? (int)$matches[1] : null;
+   }
+
+   /**
+    * extract the plain match id from a match name
+    */
+   static private function getMatchId(string $name): ?int
+   {
+      return (preg_match('/\.(\d+)$/', $name, $matches) && isset($matches[1])) ? (int)$matches[1] : null;
+   }
+
+   /**
+    * get the latest match id
+    */
+   private function getNextMatchId(): int
+   {
+      return $this->matches->empty() ? 1 : $this->getMatchId($this->matches->last()->getName())+1;
+   }
+
+   /**
+    * extract the pool id/name from a slot name including a plausibility check whether this is even a valid slot name
+    * pool slot ids are of the pattern <pool id>.<pool start position>
+    */
+   public static function getPoolIdFromSlotName(string $slotName, bool $throw_if_invalid = true): ?string
+   {
+      $split = static::splitSlotName($slotName, $throw_if_invalid);
+      if($split) return $split[0];
+      else return null;
    }
 }

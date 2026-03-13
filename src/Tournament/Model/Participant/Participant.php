@@ -62,4 +62,22 @@ class Participant implements \Tournament\Model\Base\DbItem
       }
    }
 
+   /**
+    * in some cases, it might be necessary to have a placeholder participant for some calculations
+    * natively provide this. A dummy/placeholder participant is identified by having no lastname set
+    */
+   public static function dummy(): static
+   {
+      return new static(null, 0, '', '');
+   }
+
+   /**
+    * check whether this is a dummy/placeholder participant
+    * do NOT use id, id might also be null for participants that are not part of the DB, yet.
+    */
+   public function isDummy(): bool
+   {
+      return empty($this->lastname);
+   }
+
 }
