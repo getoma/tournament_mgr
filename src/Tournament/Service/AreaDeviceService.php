@@ -152,11 +152,19 @@ class AreaDeviceService
     */
    public function getArea(): ?Area
    {
-      if( $this->area === null )
+      return $this->getDeviceSession()? $this->area : null;
+   }
+
+   /**
+    * get the current device session record
+    */
+   public function getDeviceSession(): ?AreaDeviceSession
+   {
+      if ($this->device === null)
       {
          $this->validateSession() || $this->validateDeviceToken();
       }
-      return $this->area;
+      return $this->device;
    }
 
    /**
@@ -199,7 +207,6 @@ class AreaDeviceService
       if ($this->device)
       {
          $this->area = $this->tournamentRepo->getAreaById($this->device->area_id);
-         $this->repo->updateSessionActivity($this->device->id);
          return true;
       }
       else

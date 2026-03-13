@@ -57,9 +57,6 @@ class AuthController
          /* query the user instance to execute any login-hooks */
          $user = $this->authService->getCurrentUser();
 
-         /* Register login */
-         $this->userRepository->registerLogin($user);
-
          /* a successful login from anyone is a nice hook to clean up any expired reset tokens, so let's do it here */
          $this->passwordResetService->cleanupResetTokens();
 

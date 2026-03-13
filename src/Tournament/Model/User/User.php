@@ -13,7 +13,7 @@ class User extends \Base\Model\User implements \Tournament\Model\Base\DbItem
       string $email,
       public string $display_name,
       public readonly \DateTime $created_at,
-      public ?\DateTime $last_login = null,
+      public ?\DateTime $last_activity_at = null,
       public RoleCollection $roles = new RoleCollection(),
       bool $is_active = true,
       int $session_version = 1,

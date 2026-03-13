@@ -3,6 +3,7 @@
 namespace Tournament\Policy;
 
 use Tournament\Model\Area\Area;
+use Tournament\Model\AreaDevices\AreaDeviceSession;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\User\User;
 use Tournament\Model\User\Role;
@@ -12,6 +13,7 @@ final class AuthContext
    private function __construct(
       public readonly ?AuthType $authtype = null,
       public readonly ?User $user = null,
+      public readonly ?AreaDeviceSession $device = null,
       public readonly ?Tournament $tournament = null,
       public readonly ?Area $area = null,
    )
@@ -54,8 +56,8 @@ final class AuthContext
    }
 
    /* device account */
-   static public function as_device(Tournament $tournament, Area $area): static
+   static public function as_device(AreaDeviceSession $device, Tournament $tournament, Area $area): static
    {
-      return new static(authtype: AuthType::DEVICE, tournament: $tournament, area: $area);
+      return new static(authtype: AuthType::DEVICE, device: $device, tournament: $tournament, area: $area);
    }
 }
