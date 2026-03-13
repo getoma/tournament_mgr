@@ -445,6 +445,10 @@ input[type="checkbox"] {
    cursor: pointer;
 }
 
+label:has(input[type="checkbox"][disabled]) {
+   color: #aaa;
+}
+
 textarea {
   width: 100%;
   font-family: inherit;

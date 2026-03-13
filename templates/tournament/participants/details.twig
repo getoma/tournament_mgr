@@ -18,6 +18,10 @@
     {{ form.input('text', 'lastname', 'Nachname', prev.lastname ?? participant.lastname, errors.lastname, {'maxlength':100}, required=true) }}
     {{ form.input('text', 'firstname', 'Vorname', prev.firstname ?? participant.firstname, errors.firstname, {'maxlength':100}, required=true) }}
     {{ form.input('text', 'club', 'Verein/Verband', prev.club ?? participant.club, errors.club, {'maxlength':127}) }}
+    {% if participant.id -%}
+    {{ form.checkbox('withdrawn', 'Teilnehmer abgemeldet', checked: prev.withdrawn ?? participant.withdrawn, active: withdraw_allowed) }}
+    {%- endif %}
+
     <table>
       <thead>
         <tr><th>Kategorie</th><th>Teilnahme</th><th>Startslot</th></tr>

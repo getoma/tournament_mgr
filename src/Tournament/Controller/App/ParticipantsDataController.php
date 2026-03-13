@@ -24,6 +24,7 @@ use Respect\Validation\Validator as v;
 
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
+use Tournament\Repository\MatchDataRepository;
 
 class ParticipantsDataController
 {
@@ -33,6 +34,7 @@ class ParticipantsDataController
       private Twig $view,
       private ParticipantRepository $repo,
       private TournamentRepository $tournamentRepo,
+      private MatchDataRepository $matchDataRepo,
       private ParticipantImportService $importService,
       private TournamentStructureService $tournamentService,
       private TmpStorageService $storage,
@@ -452,11 +454,14 @@ class ParticipantsDataController
 
       $starting_slots = $this->getStartingSlotSelection($categories, $ctx->participant);
 
+      $withdrawal_allowed = $ctx->participant && !$this->matchDataRepo->hasParticipantPoints($ctx->participant->id);
+
       return $this->view->render($response, 'tournament/participants/details.twig', [
-         'tournament'     => $ctx->tournament,
-         'categories'     => $categories,
-         'starting_slots' => $starting_slots,
-         'participant'    => $ctx->participant ?? null, // null to get the form for a new participant
+         'tournament'       => $ctx->tournament,
+         'categories'       => $categories,
+         'starting_slots'   => $starting_slots,
+         'participant'      => $ctx->participant ?? null, // null to get the form for a new participant
+         'withdraw_allowed' => $withdrawal_allowed,
       ]);
    }
 
@@ -474,9 +479,14 @@ class ParticipantsDataController
 
       $data = $request->getParsedBody();
       $data['categories'] ??= [];
+      $data['withdrawn'] ??= false;
       $participant_rules = Participant::validationRules();
       $participant_rules['categories'] = $participant_rules['categories']->each(v::in($ctx->tournament->categories->column('id')));
       $participant_rules['pre_assign'] = v::arrayType();
+      if( !$ctx->participant || $this->matchDataRepo->hasParticipantPoints($ctx->participant->id) )
+      {
+         $participant_rules['withdrawn'] = v::templated('Teilnehmer kann nicht mehr abgemeldet werden', v::equals(false));
+      }
       $errors = DataValidationService::validate($data, $participant_rules);
 
       // return form if there are errors
@@ -510,6 +520,14 @@ class ParticipantsDataController
          // try to save
          if ($this->repo->saveParticipant($participant))
          {
+            // if participant was withdrawn, also delete any assigned matches that may already exist
+            // as well as any starting slot assignment, to free up this slot
+            if( $participant->withdrawn )
+            {
+               $this->matchDataRepo->deleteMatchRecordsByParticipantId($participant->id);
+               $this->repo->freeParticipantSlots($participant->id);
+            }
+
             return $this->prgService->redirect(
                $request, $response, 'tournaments.participants.show',
                $ctx->args + ['participantId' => $participant->id],

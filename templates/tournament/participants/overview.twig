@@ -40,12 +40,12 @@
     <tbody>
       {% for participant in participants %}
       <tr>
-        <td>{{ participant.lastname }}, {{ participant.firstname }}</td>
+        <td>{{ (participant.lastname ~ ", " ~ participant.firstname)|wrap_if(participant.withdrawn, 'del') }}</td>
         <td>{{ participant.club }} </td>
         {% for category in categories -%}
         <td class="checkbox">
           {%  if participant.categories[category.id] is defined %}
-          <span class="checkmark">X</span>
+          <span class="checkmark">{{ "X"|wrap_if(participant.withdrawn, 'del') }}</span>
             {%- set preset, assigned =
                     participant.categories[category.id].pre_assign? starting_slots[category.id][participant.categories[category.id].pre_assign] : '',
                     participant.categories[category.id].slot_name|humanizeSlotName %}
@@ -56,8 +56,8 @@
               {%- if slot_issue %} title="Aktuelle Startposition weicht von vorgegebenem Start in {{ preset }} ab"
               {%- elseif preset is not empty %} title="Startposition vorgegeben"{% endif %}>
               {%- if slot_issue %}<del>{{preset}}</del>{% endif -%}
-              ({{ slot }})</span>
-            {%- else -%}
+              {{ ("("~slot~")")|wrap_if(participant.withdrawn, 'del') }}</span>
+            {%- elseif not participant.withdrawn -%}
               {% set assignments_needed = true %}
             {%- endif %}
           {%- endif %}

@@ -55,6 +55,7 @@ final class ParticipantHandler
       foreach ($participants as $p)
       {
          /** @var Participant $p */
+         if( $p->withdrawn ) continue;
          $slot_name = $p->categories[$this->struc->category->id]->slot_name;
          if (isset($slot_name) && isset($slots[$slot_name])) $slots[$slot_name]->participant = $p;
          else $this->struc->unmapped_participants[] = $p;
@@ -71,6 +72,7 @@ final class ParticipantHandler
       foreach ($participants as $p)
       {
          /** @var Participant $p */
+         if( $p->withdrawn ) continue;
          $slot_name = $p->categories[$this->struc->category->id]->slot_name;
          if( $slot_name )
          {
@@ -113,6 +115,9 @@ final class ParticipantHandler
 
       /* extract all previous slot assignements */
       $assigned = $this->getSlotPlacements($starting_slots);
+
+      /* remove any withdrawn participants from the collection before populating */
+      $participants = $participants->filter(fn($p) => !$p->withdrawn);
 
       /* get the actual number of participants we have to allocate */
       $participantCount = $assigned->count() + $participants->count();

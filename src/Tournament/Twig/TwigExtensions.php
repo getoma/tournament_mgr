@@ -13,6 +13,7 @@ class TwigExtensions extends \Twig\Extension\AbstractExtension
          new TwigFilter('humanize', [$this, 'humanize']),
          new TwigFilter('time_delta', [$this, 'timeDelta']),
          new TwigFilter('split_code', [$this, 'splitCode']),
+         new TwigFilter('wrap_if', [$this, 'wrapIf'], ['is_safe' => ['html']]),
       ];
    }
 
@@ -66,5 +67,16 @@ class TwigExtensions extends \Twig\Extension\AbstractExtension
    public function hasClassName($obj, $className): bool
    {
       return (new \ReflectionClass($obj))->getShortName() === $className;
+   }
+
+   public function wrapIf(string $value, bool $condition, string $tag, array $attr = []): string
+   {
+      if (!$condition) return $value;
+      $attrString = '';
+      if( $attr )
+      {
+         $attrString = ' ' . implode(' ', array_map(fn($k) => sprintf('%s="%s"', $k, htmlspecialchars($attr[$k], ENT_QUOTES)), array_keys($attr)));
+      }
+      return new \Twig\Markup( sprintf('<%s%s>%s</%s>', $tag, $attrString, $value, $tag), 'UTF-8');
    }
 }
