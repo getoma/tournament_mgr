@@ -620,3 +620,7 @@ em {
       background-color: #007BFF;
    }
 }
+
+.button-box * {
+   display: inline-block;
+}
