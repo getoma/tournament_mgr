@@ -23,7 +23,7 @@ class NavigationStructureService
       $auth ??= AuthContext::as_anonymous();
       $ctx  ??= new RouteArgsContext();
       $policy = new TournamentPolicy($auth, $ctx);
-      $structure = static::preprocess($this->nav->structure($policy, $ctx));
+      $structure = static::preprocess($this->nav->structure($policy, $ctx, $auth));
       $args = $ctx?->args ?? [];
       $path = static::derivePath($structure, $active_route, $args);
       $active_routes = array_column($path, 'route');
@@ -50,9 +50,18 @@ class NavigationStructureService
          }
          else
          {
-            // if no active_if/visible_if conditions set, default to whether node has an actual label
-            $node['active_if']  ??= !empty($node['label']);
-            $node['visible_if'] ??= !empty($node['label']);
+            // disable this entry if no label is set
+            if( empty($node['label']) )
+            {
+               $node['active_if']  = false;
+               $node['visible_if'] = false;
+            }
+            else
+            {
+               // default active_if and visible_if to true
+               $node['active_if']  ??= true;
+               $node['visible_if'] ??= true;
+            }
             // preprocess any children as well
             if (isset($node['children'])) $node['children'] = static::preprocess($node['children']);
             // done

@@ -2,19 +2,29 @@
 
 namespace Templates;
 
+use Tournament\Model\User\Role;
 use Tournament\Policy\TournamentAction;
 use Tournament\Policy\TournamentPolicy;
+use Tournament\Policy\AuthContext;
 use Tournament\Service\RouteArgsContext;
 
 class Navigation
 {
    public const MAIN_MENU_DEPTH = 2;
 
-   static public function structure(TournamentPolicy $policy, ?RouteArgsContext $ctx = null): array
+   static public function structure(
+      TournamentPolicy $policy,
+      ?RouteArgsContext $ctx  = null,
+      ?AuthContext      $auth = null,
+   ): array
    {
       return [
-         [  'label' => 'Turniere',
-            'route' => 'tournaments.index'
+         /*********************************************************************
+          * DEFAULT MENU FOR NORMAL USERS
+          ********************************************************************/
+         [  'label'      => 'Turniere',
+            'route'      => 'tournaments.index',
+            'visible_if' => $auth?->isUser(),
          ],
 
          [  'label'      => 'Benutzerverwaltung',
@@ -24,13 +34,14 @@ class Navigation
 
          [  'label' => 'DB-Migration',
             'route' => 'dbmigration.show',
-            'visible_if' => \config::$test_interfaces,
+            'visible_if' => \config::$test_interfaces && $auth?->hasRole(Role::ADMIN),
          ],
 
-         [  'label' => $ctx?->tournament?->name,
-            'route' => 'tournaments.show',
-            'class' => 'separated',
-            'children' => [
+         [  'label'      => $ctx?->tournament?->name,
+            'route'      => 'tournaments.show',
+            'class'      => 'separated',
+            'visible_if' => $auth?->isUser(),
+            'children'   => [
                [  'foreach'   => $ctx?->tournament?->categories,
                   'route'     => 'tournaments.categories.show',
                   'label'     => fn($c) => $c->name,
@@ -75,11 +86,39 @@ class Navigation
                ],
 
                [  'label' => 'Geräte-Zugänge',
-                  'route' => 'tournaments.areas.devices.index',
+                  'route' => 'tournaments.devices.index',
                   'visible_if' => $policy->isActionAllowed(TournamentAction::ManageAreaDevices)
                ]
             ],
          ],
+
+         /*********************************************************************
+          * DEVICE ACCOUNT MENU
+          ********************************************************************/
+         [  'label'    => $auth?->area?->name,
+            'route'    => 'device.categories.index',
+            'children' => [
+               [  'route'      => 'device.categories.show',
+                  'label'      => $ctx?->category?->name,
+                  'children'   => [
+                     [  'label' => 'Pool ' . $ctx?->pool_name,
+                        'route' => 'device.categories.pools.show',
+                        'children' => [
+                           [
+                              'label' => 'Kampf ' . $ctx?->match_name,
+                              'route' => 'device.categories.pools.matches.show'
+                           ]
+                        ]
+                     ],
+
+                     [  'label' => 'Kampf ' . $ctx?->match_name,
+                        'route' => 'device.categories.ko.matches.show'
+                     ],
+                  ],
+               ]
+            ]
+         ]
+
       ];
    }
 }

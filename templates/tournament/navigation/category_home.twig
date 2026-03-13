@@ -6,19 +6,21 @@
 } %}
 
 <nav class="nav-cards">
+<ul>
 {% if pools is not empty %}
-  <a href="{{ url_for('tournaments.categories.pools.index', route_context.args) }}" class="card">
-    <h3>Pools</h3>
-  </a>
+  <li><a href="{{ url_for('tournaments.categories.pools.index', route_context.args) }}">
+    <b>Pools</b>
+  </a></li>
 {% endif %}
 {% if ko is defined %}
-  <a href="{{ url_for('tournaments.categories.ko.show', route_context.args) }}" class="card">
-    <h3>KO-Baum</h3>
-  </a>
+  <li><a href="{{ url_for('tournaments.categories.ko.show', route_context.args) }}">
+    <b>KO-Baum</b>
+  </a></li>
 {% endif %}
-  <a href="{{ url_for('tournaments.categories.edit', route_context.args) }}" class="card">
-    <h3>Konfiguration</h3>
-  </a>
+  <li><a href="{{ url_for('tournaments.categories.edit', route_context.args) }}">
+    <b>Konfiguration</b>
+  </a></li>
+</ul>
 </nav>
 
 {% if policy.isActionAllowed('RecordResults') %}

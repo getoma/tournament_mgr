@@ -25,38 +25,6 @@ class MatchHandlingService
    {
    }
 
-   /**
-    * get a summary of the current points of this match
-    */
-   public function getMatchPointSummary(MatchNode $node): array
-   {
-      $pointHdl  = $node->category->getMatchPointHandler();
-
-      /* load the list of points per participant */
-      if ($record = $node->getMatchRecord())
-      {
-         $points    = $pointHdl->getPoints($record);
-         $penalties = $pointHdl->getActivePenalties($record);
-         $pts = [];
-         foreach (['red' => $node->getRedParticipant(), 'white' => $node->getWhiteParticipant()] as $color => $participant)
-         {
-            $pts[$color] = [
-               'points'  => $points->for($participant),
-               'penalty' => $penalties->for($participant),
-               'undo'    => $record->points->for($participant)->filter(fn($p) => $p->isSolitary())->last()
-            ];
-         }
-      }
-      else
-      {
-         $pts = ['red' => null, 'white' => null];
-      }
-
-      $pts['available'] = $pointHdl->getPointList();
-
-      return $pts;
-   }
-
    public function updateMatchPoint(MatchNode $node, array $post_data): ?string
    {
       /* prepare error message */

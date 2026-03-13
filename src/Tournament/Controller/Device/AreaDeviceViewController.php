@@ -1,6 +1,6 @@
 <?php
 
-namespace Tournament\Controller\App;
+namespace Tournament\Controller\Device;
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -8,18 +8,22 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 
 use Tournament\Model\TournamentStructure\TournamentStructure;
-use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\Pool\Pool;
 
-use Tournament\Service\RouteArgsContext;
 use Tournament\Service\MatchHandlingService;
 use Tournament\Service\TournamentStructureService;
 
-use Tournament\Exception\EntityNotFoundException;
+use Tournament\Service\RouteArgsContext;
+use Tournament\Policy\AuthContext;
 
 use Base\Service\PrgService;
 
-class TournamentTreeController
+use Tournament\Exception\EntityNotFoundException;
+use Slim\Exception\HttpForbiddenException;
+
+class AreaDeviceViewController
 {
    public function __construct(
       private TournamentStructureService $structureLoadService,
@@ -31,37 +35,29 @@ class TournamentTreeController
    }
 
    /**
-    * Show a the pools of a specific category
+    * device access is limited to a specific area.
+    * But for knowing whether a specific entity is mapped to a specific area,
+    * we need to load the whole structure and match record list, which we do not
+    * want to do on policy level. Therefore the area access is checked here on Controller level
     */
-   public function showCategoryPools(Request $request, Response $response, array $args): Response
+   private function guardAccess(Request $request, Pool|MatchNode $entity, AuthContext $auth): void
    {
-      /** @var RouteArgsContext $ctx */
-      $ctx = $request->getAttribute('route_context');
-
-      // Load the tournament structure for this category
-      $structure = $this->structureLoadService->load($ctx->category);
-
-      return $this->view->render($response, 'tournament/navigation/category_Pool.twig', [
-         'pools' => $structure->pools,
-         'unmapped_participants' => $structure->unmapped_participants,
-      ]);
+      if ($entity->getArea() !== $auth->area)
+      {
+         throw new HttpForbiddenException($request, 'Zugriff nicht erlaubt');
+      }
    }
 
    /**
-    * Show a specific category KO
+    * Show all categories
     */
-   public function showCategorytree(Request $request, Response $response, array $args): Response
+   public function showCategories(Request $request, Response $response): Response
    {
-      /** @var RouteArgsContext $ctx */
-      $ctx = $request->getAttribute('route_context');
+      /** @var AuthContext $auth */
+      $auth = $request->getAttribute('auth_context');
 
-      // Load the tournament structure for this category
-      $structure = $this->structureLoadService->load($ctx->category);
-
-      return $this->view->render($response, 'tournament/navigation/category_KO.twig', [
-         'no_pools'   => $structure->pools->empty(),
-         'ko'         => $structure->getFinaleRounds(),
-         'unmapped_participants' => $structure->unmapped_participants,
+      return $this->view->render($response, 'device/categories_index.twig', [
+         'categories' => $auth->tournament->categories
       ]);
    }
 
@@ -72,14 +68,15 @@ class TournamentTreeController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
+      /** @var AuthContext $auth */
+      $auth = $request->getAttribute('auth_context');
 
       // Load the tournament structure for this category
       $structure = $this->structureLoadService->load($ctx->category);
 
-      return $this->view->render($response, 'tournament/navigation/category_home.twig', [
-         'pools'      => $structure->pools,
-         'ko'         => $structure->getFinaleRounds(),
-         'unmapped_participants' => $structure->unmapped_participants,
+      return $this->view->render($response, 'device/categories_show.twig', [
+         'pools' => $structure->pools->filter(fn($p) => $p->getArea() === $auth->area),
+         'ko'    => $structure->getFinaleRounds()->filterRounds(fn($n) => $n->getArea() === $auth->area && $n->isReal()),
       ]);
    }
 
@@ -90,12 +87,34 @@ class TournamentTreeController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
+      /** @var AuthContext $auth */
+      $auth = $request->getAttribute('auth_context');
+
       $structure ??= $this->structureLoadService->load($ctx->category);
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found');
 
-      return $this->view->render($response, 'tournament/navigation/pool_home.twig', [
-         'pool' => $pool,
-         'error' => $error,
+      /** @var Pool $pool */
+      $this->guardAccess($request, $pool, $auth);
+
+      /* select an active match from this pool */
+      $matches = $pool->getMatchList();
+      $selected = $request->getQueryParams()['selected'] ?? null;
+      if( $selected === null || !$matches->findNode($selected) )
+      {
+         /* default to the first uncompleted match, or the very last match if all completed */
+         $selected = $matches->filter(fn($n) => !$n->isCompleted())->first()?->getName() ?? $matches->last()?->getName();
+      }
+
+      /* provide the next pool for navigation */
+      $area_pool_list = $structure->pools->filter(fn($p) => $p->getArea() === $auth->area)->values();
+      $idx = array_search($pool, $area_pool_list);
+      $next_pool = $area_pool_list[$idx+1] ?? null;
+
+      return $this->view->render($response, 'device/pool_show.twig', [
+         'pool'      => $pool,
+         'next_pool' => $next_pool,
+         'selected'  => $selected,
+         'error'     => $error,
       ]);
    }
 
@@ -106,17 +125,23 @@ class TournamentTreeController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
+      /** @var AuthContext $auth */
+      $auth = $request->getAttribute('auth_context');
+
       $structure = $this->structureLoadService->load($ctx->category);
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found');
+
+      $this->guardAccess($request, $pool, $auth);
+
       $error = $this->matchService->addPoolTieBreak($pool);
 
-      if( $error )
+      if ($error)
       {
          return $this->showPool($request, $response, $args, $structure, $error);
       }
       else
       {
-         return $this->prgService->redirectBack($request, $response, 'tie_break_added');
+         return $this->prgService->redirect($request, $response, 'device.categories.pools.show', $ctx->args, 'tie_break_added');
       }
    }
 
@@ -127,8 +152,14 @@ class TournamentTreeController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
+      /** @var AuthContext $auth */
+      $auth = $request->getAttribute('auth_context');
+
       $structure = $this->structureLoadService->load($ctx->category);
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found');
+
+      $this->guardAccess($request, $pool, $auth);
+
       $error = $this->matchService->deletePoolTieBreak($pool, $args['decision_round']);
       /* forward to output page */
       if ($error)
@@ -141,66 +172,30 @@ class TournamentTreeController
       }
    }
 
-   /**
-    * RESET all match records for a specific category - TEMPORARY, FOR TESTING PURPOSES ONLY
-    */
-   public function resetMatchRecords(Request $request, Response $response, array $args): Response
+   public function showMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error = null): Response
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
-      $this->structureLoadService->resetMatchRecords($ctx->category);
-      return $this->prgService->redirectBack($request, $response, 'records_deleted');
-   }
-
-   /**
-    * reroll all participants
-    */
-   public function repopulate(Request $request, Response $response): Response
-   {
-      /** @var RouteArgsContext $ctx */
-      $ctx = $request->getAttribute('route_context');
-      $this->structureLoadService->repopulate($ctx->category);
-      return $this->prgService->redirectBack($request, $response, 'repopulated');
-   }
-
-   /**
-    * assign unslotted participants into the structure
-    */
-   public function addUnslottedParticipants(Request $request, Response $response): Response
-   {
-      /** @var RouteArgsContext $ctx */
-      $ctx = $request->getAttribute('route_context');
-      $this->structureLoadService->addParticipants($ctx->category);
-      return $this->prgService->redirectBack($request, $response, 'add_unslotted');
-   }
-
-   public function showMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error=null): Response
-   {
-      /** @var RouteArgsContext $ctx */
-      $ctx = $request->getAttribute('route_context');
+      /** @var AuthContext $auth */
+      $auth = $request->getAttribute('auth_context');
 
       /* load the structure and find the current node/match */
       $structure ??= $this->structureLoadService->load($ctx->category);
       $node = $structure->findNode($ctx->match_name, $ctx->pool_name ?? false) ?? new EntityNotFoundException($request, "unknown Match '{$ctx->match_name}'");
 
-      /* get pointers to the previous and next "real" matches */
-      $matchList = match($ctx->pool_name)
-      {
-         /* if pool given, get all of the current pool */
-         default => $structure->pools[$ctx->pool_name]->getMatchList(),
-         /* if outside pool, get all ko matches of this area that are "real" */
-         null    => $structure->getFinaleRounds()->filterRounds(fn($n) => $n->isReal() && $n->area === $node->area),
-      };
-      /** @var MatchNodeCollection|MatchRoundCollection $matchList */
+      $this->guardAccess($request, $node, $auth);
+
+      /* get pointers to the previous and next "real" matches for our area */
+      $matchList = $structure->getFinaleRounds()->filterRounds(fn($n) => $n->isReal() && $n->area === $auth->area);
+      /** @var MatchRoundCollection $matchList */
       $current_it = $matchList->getNodeIteratorAt($ctx->match_name);
 
-      return $this->view->render($response, 'tournament/match/match.twig', [
-         'type'     => isset($args['pool'])?'pool':'ko',
-         'pool'     => $args['pool']??null,
-         'node'     => $node,
-         'node_it'  => $current_it,
-         'area'     => $node->area,  // explicitly mark that we provide the match list for this area, only
-         'error'    => $error,
+      return $this->view->render($response, 'device/match.twig', [
+         'type'    => isset($args['pool']) ? 'pool' : 'ko',
+         'pool'    => $args['pool'] ?? null,
+         'node'    => $node,
+         'node_it' => $current_it,
+         'error'   => $error,
       ]);
    }
 
@@ -208,15 +203,19 @@ class TournamentTreeController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
+      /** @var AuthContext $auth */
+      $auth = $request->getAttribute('auth_context');
 
       /* load the structure and find the current node/match */
       $structure = $this->structureLoadService->load($ctx->category);
       $node = $structure->findNode($ctx->match_name, $ctx->pool_name ?? false) ?? new EntityNotFoundException($request, "unknown Match '{$ctx->match_name}'");
 
+      $this->guardAccess($request, $node, $auth);
+
       /* evaluate the match update data via our match service */
       $error = $this->matchService->updateMatchPoint($node, (array)$request->getParsedBody());
 
-      if( $error )
+      if ($error)
       {
          return $this->showMatch($request, $response, $args, $structure, $error);
       }

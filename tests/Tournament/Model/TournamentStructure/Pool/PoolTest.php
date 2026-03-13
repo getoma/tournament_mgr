@@ -4,6 +4,7 @@ namespace Tests\Tournament\Model\TournamentStructure\Pool;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
@@ -55,7 +56,7 @@ class PoolTest extends TestCase
    private function createParticipantList($num = 3): ParticipantCollection
    {
       $res = new ParticipantCollection();
-      for( $i = 1; $i <= 3; ++$i )
+      for( $i = 1; $i <= $num; ++$i )
       {
          $res[] = new Participant($i, 1, '', '');
       }
@@ -114,7 +115,10 @@ class PoolTest extends TestCase
 
    public static function numParticipantsProvider()
    {
-      return [ [2], [3], [4], [5] ];
+      foreach( range(2,5) as $cnt )
+      {
+         yield "$cnt Participants" => [$cnt];
+      }
    }
 
    /**
@@ -143,8 +147,8 @@ class PoolTest extends TestCase
 
    /**
     * participants added, but no matches conducted, yet.
-    * @dataProvider numParticipantsProvider
     */
+   #[DataProvider('numParticipantsProvider')]
    public function testFreshPool(int $numParticipants)
    {
       $dut = new Pool(self::POOL_NAME, $this->category);
@@ -193,8 +197,8 @@ class PoolTest extends TestCase
 
    /**
     * only first match started
-    * @dataProvider numParticipantsProvider
     */
+   #[DataProvider('numParticipantsProvider')]
    public function testStartedPool(int $numParticipants)
    {
       $dut = new Pool(self::POOL_NAME, $this->category);
@@ -228,8 +232,8 @@ class PoolTest extends TestCase
 
    /**
     * last match ongoing
-    * @dataProvider numParticipantsProvider
     */
+   #[DataProvider('numParticipantsProvider')]
    public function testOngoingPool(int $numParticipants)
    {
       $dut = new Pool(self::POOL_NAME, $this->category);
@@ -256,8 +260,8 @@ class PoolTest extends TestCase
 
    /**
     * fully decided pool
-    * @dataProvider numParticipantsProvider
     */
+   #[DataProvider('numParticipantsProvider')]
    public function testDecidedPool(int $numParticipants)
    {
       $dut = new Pool(self::POOL_NAME, $this->category);
@@ -283,11 +287,11 @@ class PoolTest extends TestCase
 
    /**
     * decided pool with a needed tie break
-    * @dataProvider numParticipantsProvider
     * REMARK: now uses CallSpy as number of calls to mpHdl are dynamically constructed,
     *         which is not natively supported by phpunit
     */
-   public function testTieBreakPool(int $numParticipants)
+   #[DataProvider('numParticipantsProvider')]
+   public function testTieBreakPool(int $numParticipants=3)
    {
       $dut = new Pool(self::POOL_NAME, $this->category);
 
@@ -306,11 +310,11 @@ class PoolTest extends TestCase
       $this->assertSame($plist, $pl);
 
       /**
-       * create the pool ranking where the first place is not decided, yet
+       * create a pool ranking where the first place is not decided, yet
        */
       $spy->clear();
       $ranks = PoolRankCollection::new(array_map(fn($p, $place) => new PoolRank($p, $place), $plist->values(),
-                                       array_merge([1,1], range(2,$plist->count()-1)) ));
+                                       array_merge([1,1], ($plist->count()>2? range(2,$plist->count()-1) : [])) ));
       $decision_participants = $plist->slice(0,2);
       $this->rankHdl->expects($this->once())->method('deriveRanking')->with($this->equalTo($matches))->willReturn($ranks);
 

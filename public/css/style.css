@@ -268,68 +268,66 @@ nav#account-menu ul:hover {
   display: block;
 }
 
-/* Card Style*/
+/* Navigation card Style*/
 
-.nav-cards {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  padding: 1rem;
-}
+.nav-cards > ul,
+.nav-cards > ol {
+   display: flex;
+   gap: 1.5rem;
+   flex-wrap: wrap;
+   justify-content: center;
+   padding: 1rem;
 
-.nav-cards .card {
-  flex: 1 1 220px;
-  max-width: 280px;
-  background-color: #ffffff; /* neutral */
-  color: #333;               /* dunkler Text */
-  border-radius: 12px;
-  padding: 2rem 1.5rem;
-  text-align: center;
-  text-decoration: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  transition: transform 0.3s, box-shadow 0.3s, color 0.3s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
-}
+   & > li {
+      display:contents;
+   }
 
-.nav-cards .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-}
+   & > li > a {
+      flex: 1 1 220px;
+      display:block;
+      max-width: 280px;
+      background-color: #ffffff; /* neutral */
+      border-radius: 12px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transition: transform 0.3s, box-shadow 0.3s, color 0.3s;
+      overflow: hidden;
+      color: #555;
 
-.nav-cards .card-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.75rem;
-  background: #f0f0f0;
-  padding: 0.5rem 0.75rem;
-  border-radius: 50%;
-}
+      &:hover {
+         transform: translateY(-4px);
+         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+      }
 
-.nav-cards .card h3 {
-  margin: 0.5rem 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
+      & > * {
+         display: block;
+      }
 
-.nav-cards .card p {
-  font-size: 0.9rem;
-  margin: 0;
-  color: #555;
-}
+      & > .separator {
+         display: none;
+      }
 
-@media (max-width: 768px) {
-  .nav-cards {
-    flex-direction: column;
-    align-items: center;
-  }
+      & > b {
+         color: #333;
+         margin: 0.5rem 0;
+         font-size: 1.2rem;
+         font-weight: 600;
+      }
 
-  .nav-cards .card {
-    max-width: 90%;
-  }
+      .details {
+         font-size: 0.9rem;
+      }
+   }
+
+   .img {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      background: #f0f0f0;
+      padding: 0.5rem 0.75rem;
+      border-radius: 50%;
+   }
 }
 
 /* Default-style für Tabellen */
@@ -351,7 +349,7 @@ table th, td {
 }
 
 table tbody tr:nth-child(even) {
-  background-color: #fafafa;
+  background-color: #f5f5f5;
 }
 
 table tbody tr:nth-child(odd) {
@@ -359,7 +357,7 @@ table tbody tr:nth-child(odd) {
 }
 
 table tbody tr:hover {
-  background-color: #f5f5f5;
+  background-color: #f0f0f0;
 }
 
 table td form {
@@ -484,48 +482,46 @@ tr.label_row td
    border: none;
    font-weight: bold;
    font-size: 90%;
-   padding-bottom: 0;
+   padding-bottom: 0.5ex;
+   text-align: center;
 }
 
 /* "Row-link"-Tabelle: jede Zeile/Zelle ist ein link */
-table.row-links td {
-   padding:0;
-}
+table.row-links tr:has(> td > a[href]:first-child:last-child),
+td.td-link:has(> a:first-child:last-child) {
 
-table.row-links tbody tr {
    transition: background 0.2s ease;
+
+   &:hover {
+      background-color: #007BFF;
+
+      & a[href] {
+         color: white;
+         background-color: #007BFF;
+      }
+   }
 }
 
-table.row-links tbody tr:hover {
-   background-color: #007BFF;
-}
+table.row-links td:has(> :first-child:last-child),
+td.td-link:has(> :first-child:last-child) {
 
-table.row-links tbody tr:hover a {
-   color: white;
-}
+   display: contents;
 
-table.row-links a {
-   display:block;
-   padding: 0.75rem 1rem;
-   color: black;
-   text-decoration: none !important;
+   & > * {
+      display: table-cell;
+      color: black;
+      text-decoration: none !important;
+      padding: 0.75rem 1rem;
+   }
 }
 
 /* tournament selection table: give it a minimum width for better optics */
-#tournament_list td:nth-child(1) { /* date column */
+#tournament_list a:nth-child(1) { /* date column */
    width: 10em;
 }
 
-#tournament_list td:nth-child(2) { /* tournament name */
+#tournament_list a:nth-child(2) { /* tournament name */
    min-width: 30em;
-}
-
-tr.label_row td
-{
-   border: none;
-   font-weight: bold;
-   font-size: 90%;
-   padding-bottom: 0;
 }
 
 /* error/ok message blocks */
@@ -604,4 +600,23 @@ button.danger[disabled] {
 
 .current-selection {
    font-weight: bold;
+}
+
+em {
+   font-style: normal;
+   font-weight: bold;
+}
+
+.stream-nav a {
+   display: inline-block;
+   padding: 1rem;
+   border: 1px solid #ccc;
+   border-radius: 5px;
+   text-decoration: none;
+   color: black;
+
+   &:hover {
+      color: white;
+      background-color: #007BFF;
+   }
 }

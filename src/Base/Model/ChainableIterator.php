@@ -8,7 +8,8 @@ namespace Base\Model;
  */
 interface ChainableIterator extends \SeekableIterator
 {
-   public function skip(int $count = 1): ChainableIterator;
-   public function back(int $count = 1): ChainableIterator;
+   public function copy(): ChainableIterator;
+   public function skip(): ChainableIterator;
+   public function back(): ChainableIterator;
    public function jump(int $position): ChainableIterator;
 }

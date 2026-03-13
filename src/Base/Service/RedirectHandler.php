@@ -14,7 +14,7 @@ final class RedirectHandler
       {
          $routeParser = RouteContext::fromRequest($request)->getRouteParser();
          return $response
-            ->withHeader('Location', $routeParser->urlFor($route, $routeArgs))
+            ->withHeader('Location', $routeParser->urlFor($route, $routeArgs, $request->getQueryParams()))
             ->withStatus(302);
       };
    }

@@ -13,7 +13,7 @@ class MatchNodeCollection extends \Base\Model\ObjectCollection
       return new MatchNodeIterator($this);
    }
 
-   public function getIteratorAt(string $name): MatchNodeIterator
+   public function getNodeIteratorAt(string $name): MatchNodeIterator
    {
       $result = $this->getIterator();
       $result->goto($name);
@@ -24,7 +24,7 @@ class MatchNodeCollection extends \Base\Model\ObjectCollection
    {
       try
       {
-         return $this->getIteratorAt($name)->current();
+         return $this->getNodeIteratorAt($name)->current();
       }
       catch( OutOfBoundsException )
       {

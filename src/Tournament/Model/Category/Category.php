@@ -3,6 +3,7 @@
 namespace Tournament\Model\Category;
 
 use Respect\Validation\Validator as v;
+use Tournament\Model\MatchPointHandler\MatchPointHandler;
 
 /**
  * Represents a competition category within a tournament.
@@ -13,6 +14,8 @@ class Category implements \Tournament\Model\Base\DbItem
 
    public CategoryConfiguration $config; // Configuration for the category
    public CategoryMode $mode;            // Tournament mode (e.g., "ko", "pool", "combined")
+
+   private MatchPointHandler $mpHdl;
 
    public function __construct(
       public ?int $id,                       // Unique identifier for the category
@@ -49,9 +52,10 @@ class Category implements \Tournament\Model\Base\DbItem
     * as it might depend on specific Category-wide configurations
     * (e.g. whether Hansokus cause Ippons)
     */
-   public function getMatchPointHandler(): \Tournament\Model\MatchPointHandler\MatchPointHandler
+   public function getMatchPointHandler(): MatchPointHandler
    {
-      return new \Tournament\Model\MatchPointHandler\KendoMatchPointHandler();
+      $this->mpHdl ??= new \Tournament\Model\MatchPointHandler\KendoMatchPointHandler();
+      return $this->mpHdl;
    }
 
    /**

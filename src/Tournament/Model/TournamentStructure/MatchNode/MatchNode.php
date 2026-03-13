@@ -5,8 +5,9 @@ namespace Tournament\Model\TournamentStructure\MatchNode;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
+use Tournament\Model\MatchRecord\MatchPoint;
+use Tournament\Model\MatchRecord\MatchPointCollection;
 use Tournament\Model\MatchRecord\MatchRecord;
-use Tournament\Model\MatchPointHandler\MatchPointHandler;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 
 /**
@@ -18,16 +19,18 @@ class MatchNode
 {
    private string $name;
 
+   public const RED   = "red";
+   public const WHITE = "white";
+
    public function __construct(
       string $node_name,
-      public readonly Category  $category,         // the category this node belongs to
-      public readonly MatchSlot $slotRed,          // slot contents may be modified, but the slot itself is fixed
-      public readonly MatchSlot $slotWhite,        // slot contents may be modified, but the slot itself is fixed
+      public readonly Category  $category,      // the category this node belongs to
+      public readonly MatchSlot $slotRed,       // slot contents may be modified, but the slot itself is fixed
+      public readonly MatchSlot $slotWhite,     // slot contents may be modified, but the slot itself is fixed
       public  ?Area $area = null,
       private bool $tie_break = false,
       private ?MatchRecord $matchRecord = null,
       public bool $frozen = false,              // whether match record data is frozen for this node or not
-
    )
    {
       if( $this->slotRed === $this->slotWhite )
@@ -49,6 +52,16 @@ class MatchNode
       return $this->name;
    }
 
+   public function getArea(): ?Area
+   {
+      return $this->area;
+   }
+
+   public function setArea(Area $area): void
+   {
+      $this->area = $area;
+   }
+
    /**
     * extract the "local fight number" from the name
     * This is supposed to be the number at the end of the name
@@ -56,6 +69,19 @@ class MatchNode
    public function getLocalId(): ?int
    {
       return preg_match('/\d+$/', $this->name, $matches)? $matches[0] : null;
+   }
+
+   /**
+    * get an in-slot as identified by the parameter
+    */
+   public function getSlot(string $side): MatchSlot
+   {
+      return match ($side)
+      {
+         self::RED   => $this->slotRed,
+         self::WHITE => $this->slotWhite,
+         default     => throw new \OutOfRangeException("invalid match side '$side'")
+      };
    }
 
    /**
@@ -222,7 +248,7 @@ class MatchNode
    }
 
    /**
-    * return participants - matchRecord has precedence
+    * return red-side participant - matchRecord has precedence
     */
    public function getRedParticipant(): ?Participant
    {
@@ -230,7 +256,7 @@ class MatchNode
    }
 
    /**
-    * return participants - matchRecord has precedence
+    * return white-side participant - matchRecord has precedence
     */
    public function getWhiteParticipant(): ?Participant
    {
@@ -238,27 +264,133 @@ class MatchNode
    }
 
    /**
-    * get number of points for the red participant
-    * @return null if match not started, yet
-    * @return int  number of points this participant has if match was started already
+    * return participant per parameter - matchRecord has precedence
     */
-   public function getRedPoints(): ?int
+   public function getParticipant(string $side): ?Participant
    {
-      if( !$this->matchRecord ) return null;
-      return $this->category->getMatchPointHandler()->getPoints($this->matchRecord)->for($this->matchRecord->redParticipant)->count();
+      return match($side)
+      {
+         self::RED   => $this->getRedParticipant(),
+         self::WHITE => $this->getWhiteParticipant(),
+         default     => throw new \OutOfRangeException("invalid match side '$side'")
+      };
    }
 
    /**
-    * get number of points for the white participant
+    * get list of points for the red participant
     * @return null if match not started, yet
-    * @return int  number of points this participant has if match was started already
+    * @return MatchPointCollection points this participant has if match was started already
     */
-   public function getWhitePoints(): ?int
+   public function getRedPoints(): ?MatchPointCollection
    {
-      if (!$this->matchRecord) return null;
-      return $this->category->getMatchPointHandler()->getPoints($this->matchRecord)->for($this->matchRecord->whiteParticipant)->count();
+      if( !$this->matchRecord ) return null;
+      return $this->category->getMatchPointHandler()->getPoints($this->matchRecord)->for($this->matchRecord->redParticipant);
    }
 
+   /**
+    * get list of points for the white participant
+    * @return null if match not started, yet
+    * @return MatchPointCollection points this participant has if match was started already
+    */
+   public function getWhitePoints(): ?MatchPointCollection
+   {
+      if (!$this->matchRecord) return null;
+      return $this->category->getMatchPointHandler()->getPoints($this->matchRecord)->for($this->matchRecord->whiteParticipant);
+   }
+
+   /**
+    * get list of points for a participant identified by parameter
+    * @return null if match not started, yet
+    * @return MatchPointCollection points this participant has if match was started already
+    */
+   public function getPoints(string $side): ?MatchPointCollection
+   {
+      return match ($side)
+      {
+         self::RED   => $this->getRedPoints(),
+         self::WHITE => $this->getWhitePoints(),
+         default     => throw new \OutOfRangeException("invalid match side '$side'")
+      };
+   }
+
+   /**
+    * get list of currently active penalties for the red participant
+    * @return null if match not started, yet
+    * @return MatchPointCollection active penalties this participant has if match was started already
+    */
+   public function getRedPenalties(): ?MatchPointCollection
+   {
+      if (!$this->matchRecord) return null;
+      return $this->category->getMatchPointHandler()->getActivePenalties($this->matchRecord)->for($this->matchRecord->redParticipant);
+   }
+
+   /**
+    * get list of currently active penalties for the white participant
+    * @return null if match not started, yet
+    * @return MatchPointCollection active penalties this participant has if match was started already
+    */
+   public function getWhitePenalties(): ?MatchPointCollection
+   {
+      if (!$this->matchRecord) return null;
+      return $this->category->getMatchPointHandler()->getActivePenalties($this->matchRecord)->for($this->matchRecord->whiteParticipant);
+   }
+
+   /**
+    * get list of currently active penalties for a participant identified by parameter
+    * @return null if match not started, yet
+    * @return MatchPointCollection active penalties this participant has if match was started already
+    */
+   public function getPenalties(string $side): ?MatchPointCollection
+   {
+      return match ($side)
+      {
+         self::RED   => $this->getRedPenalties(),
+         self::WHITE => $this->getWhitePenalties(),
+         default     => throw new \OutOfRangeException("invalid match side '$side'")
+      };
+   }
+
+   /**
+    * get the most current point or penalty of the red participant (e.g. for undo selection)
+    * @return null if no such point set, yet
+    * @return MatchPoint - the last point set for the red participant
+    */
+   public function getLastRedPoint(): ?MatchPoint
+   {
+      return $this->matchRecord?->points->for($this->matchRecord->redParticipant)->filter(fn($p) => $p->isSolitary())->last();
+   }
+
+   /**
+    * get the most current point or penalty of the white participant (e.g. for undo selection)
+    * @return null if no such point set, yet
+    * @return MatchPoint - the last point set for the white participant
+    */
+   public function getLastWhitePoint(): ?MatchPoint
+   {
+      return $this->matchRecord?->points->for($this->matchRecord->whiteParticipant)->filter(fn($p) => $p->isSolitary())->last();
+   }
+   /**
+    * get the most current point or penalty of a participant identified by parameter (e.g. for undo selection)
+    * @return null if no such point set, yet
+    * @return MatchPoint - the last point set for the participant
+    */
+   public function getLastPoint(string $side): ?MatchPoint
+   {
+      return match ($side)
+      {
+         self::RED   => $this->getLastRedPoint(),
+         self::WHITE => $this->getLastWhitePoint(),
+         default     => throw new \OutOfRangeException("invalid match side '$side'")
+      };
+   }
+
+   /**
+    * get the list of possible points that can be set
+    */
+   public function getPossiblePoints(): array
+   {
+      return $this->category->getMatchPointHandler()->getPointList();
+   }
 
    /**
     * get the winner of this match, or null if not decided, yet

@@ -20,27 +20,6 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
       return new static($data, $element_type);
    }
 
-   /**
-    * spawn a new object with the given content, skipping the offsetSet checks
-    */
-   protected function _spawn(iterable $data): static
-   {
-      $result = static::new([], $this->element_type);
-      $result->elements = $data;
-      return $result;
-   }
-
-   /**
-    * spawn a new ObjectCollection with the given content, skipping the offSet handling
-    * AND downgrading the class
-    */
-   protected function _downspawn(iterable $data): self
-   {
-      $result = self::new([], $this->element_type);
-      $result->elements = $data;
-      return $result;
-   }
-
    public function __construct(iterable $data = [], protected $element_type = null)
    {
       $this->element_type ??= static::DEFAULT_ELEMENTS_TYPE;
@@ -51,9 +30,30 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
       }
    }
 
+   /**
+    * spawn a new object with the given content, skipping the offsetSet checks
+    */
+   protected function clone_with(array $data): static
+   {
+      $result = new static([], $this->element_type);
+      $result->elements = $data;
+      return $result;
+   }
+
+   /**
+    * spawn a new ObjectCollection with the given content, skipping the offSet handling
+    * AND downgrading the class to a plain ObjectCollection
+    */
+   protected function clone_self_with(array $data): self
+   {
+      $result = new self([], $this->element_type);
+      $result->elements = $data;
+      return $result;
+   }
+
    public function copy(): static
    {
-      return $this->_spawn($this->elements);
+      return clone $this;
    }
 
    public function keyExists(int|string $key): bool
@@ -175,19 +175,19 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
 
    public function reverse(): static
    {
-      return $this->_spawn(array_reverse($this->elements));
+      return $this->clone_with(array_reverse($this->elements));
    }
 
    public function column_map(string $attr): self
    {
       $keys = array_column($this->elements, $attr);
-      return $this->_downspawn(array_combine($keys, $this->elements));
+      return $this->clone_self_with(array_combine($keys, $this->elements));
    }
 
    public function map_keys(callable $callback): self
    {
       $keys = array_map($callback, $this->elements);
-      return $this->_downspawn(array_combine($keys, $this->elements));
+      return $this->clone_self_with(array_combine($keys, $this->elements));
    }
 
    public function map(callable $callback): array
@@ -197,12 +197,12 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
 
    public function slice(int $offset, ?int $length = null): static
    {
-      return $this->_spawn(array_slice($this->elements, $offset, $length));
+      return $this->clone_with(array_slice($this->elements, $offset, $length));
    }
 
    public function filter(callable $callback, int $mode = 0): static
    {
-      return $this->_spawn(array_filter($this->elements, $callback, $mode), $this->element_type);
+      return $this->clone_with(array_filter($this->elements, $callback, $mode), $this->element_type);
    }
 
    public function intersect(ObjectCollection $other, ?callable $cmp = null): static
@@ -260,9 +260,9 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
 
    public function ksort(int $flags = SORT_REGULAR): static
    {
-      $cpy = $this->elements;
-      ksort($cpy, $flags);
-      return static::_spawn($cpy);
+      $result = clone $this;
+      ksort($result->elements, $flags);
+      return $result;
    }
 
    public function usort(callable $callback): static

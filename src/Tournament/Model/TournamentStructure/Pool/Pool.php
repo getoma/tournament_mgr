@@ -124,6 +124,15 @@ class Pool
    }
 
    /**
+    * check if current relevant ranks are in order
+    */
+   private function ranksValid(): bool
+   {
+      $num_winners = $this->category->config->pool_winners ?: self::DEFAULT_NUM_WINNERS;
+      return $this->getRanking()->slice(0, $num_winners)->all(fn($r, $i) => $r->rank === $i + 1);
+   }
+
+   /**
     * check whether the relevant ranks of this pool are decided
     * it is decided if, and only if
     * - all matches are completed
@@ -131,9 +140,7 @@ class Pool
     */
    public function isDecided(): bool
    {
-      if( !$this->isConducted() ) return false;
-      $num_winners = $this->category->config->pool_winners ?: self::DEFAULT_NUM_WINNERS;
-      return $num_winners === $this->getRanking()->filter(fn($r) => $r->rank <= $num_winners)->count();
+      return $this->isConducted() && $this->ranksValid();
    }
 
    /**
@@ -141,9 +148,7 @@ class Pool
     */
    public function needsDecisionRound(): bool
    {
-      if (!$this->isConducted()) return false;
-      $num_winners = $this->category->config->pool_winners ?: self::DEFAULT_NUM_WINNERS;
-      return $num_winners !== $this->getRanking()->filter(fn($r) => $r->rank <= $num_winners)->count();
+      return $this->isConducted() && !$this->ranksValid();
    }
 
    /**

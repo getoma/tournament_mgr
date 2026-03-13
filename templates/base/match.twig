@@ -1,15 +1,25 @@
 
-{% macro printSlot(slot, winner) %}
-{% if winner and slot.getParticipant() is same as(winner)%}<em>{%endif%}
-{%-if slot.getParticipant()%}{{slot.getParticipant().lastname}}, {{slot.getParticipant().firstname}}
-{%-else%}{{slot.str()}}
-{%-endif%}
-{% if winner and slot.getParticipant() is same as(winner)%}</em>{%endif%}
+{% macro printSlot(node, side) %}
+{% set slot, winner = node.getSlot(side), node.getWinner() -%}
+{% set emph = winner and slot.getParticipant() is same as(winner) -%}
+{% if emph %}<em>{% endif -%}
+{% if slot.getParticipant() -%}
+  {{ slot.getParticipant().lastname}}, {{slot.getParticipant().firstname }}
+{%- else -%}
+  {{ slot.str() }}
+{%- endif -%}
+{% if emph %}</em>{% endif %}
 {% endmacro %}
 
-{% macro printMatch(node) %}
-<span class="fight_participant red">{{_self.printSlot(node.slotRed, node.getWinner())}}</span> vs. <span class="fight_participant white">{{_self.printSlot(node.slotWhite, node.getWinner())}}</span>
-{% endmacro %}
+{% macro printRoundName(index, count) -%}
+{% set round_names = [ 'Finale', 'Halbfinale', 'Viertelfinale', 'Achtelfinale'] -%}
+{{ round_names[count-index-1]|default("Runde " ~ (index+1)) }}
+{%- endmacro %}
+
+
+{% macro printMatch(node) -%}
+<span class="participant side-red">{{_self.printSlot(node, 'red')}}</span><span class="separator"> vs. </span><span class="participant side-white">{{_self.printSlot(node, 'white')}}</span>
+{%- endmacro %}
 
 {% macro printChunkWinner(chunk) %}
 {%-if chunk.root.getWinner()%}{{chunk.root.getWinner().lastname}}, {{chunk.root.getWinner().firstname}}
@@ -18,60 +28,153 @@
 {%-endif%}
 {% endmacro %}
 
-{% macro printMatchLinks(matchList, route_parameters, route_name='tournaments.categories.ko.matches.show') -%}
+{% macro printMatchLinks(route_name, route_parameters, match_it, count = 3, current_round = null) -%}
 <table class="row-links">
   <thead>
     <tr>
       <th>Kampf</th>
-      <th class="redside" colspan="2">Kämpfer Rot</th>
-      <th class="whiteside" colspan="2">Kämpfer Weiß</th>
+      <th class="side-red" colspan="2">Kämpfer Rot</th>
+      <th class="side-white" colspan="2">Kämpfer Weiß</th>
     </tr>
   </thead>
   <tbody>
-    {% for match in matchList -%}
-    {% if match.isTieBreak() -%}
+    {% set current_round = current_round ?? match_it.roundIdx() -%}
+    {% for i in 1..count -%}
+      {% set match = match_it.current() -%}
+      {% if match is not null -%}
+        {% if match.isTieBreak() -%}
     <tr class="label_row"><td colspan="5">Entscheidungskampf</td></tr>
-    {%- endif %}
-    {%- set match_url = url_for(route_name, route_parameters|merge({'matchName': match.name})) %}
+        {%- elseif match_it.roundIdx() != current_round -%}
+    <tr class="label_row"><td colspan="5">{{ _self.printRoundName( match_it.roundIdx(), match_it.roundCount() ) }}</td></tr>
+        {%- set current_round = match_it.roundIdx() %}
+        {%- endif %}
+        {%- set match_url = url_for(route_name, route_parameters|merge({'matchName': match.name})) %}
     <tr>
-      <td class="match_name"><a href="{{match_url}}">{{match.getLocalId()}}</a></td>
-      <td class="participant_name redside"><a href="{{match_url}}">{{_self.printSlot(match.slotRed, match.getWinner())}}</a></td>
-      <td class="score redside"><a href="{{match_url}}">{{match.getRedPoints()}}</a></td>
-      <td class="score whiteside"><a href="{{match_url}}">{{match.getWhitePoints()}}</a></td>
-      <td class="participant_name whiteside"><a href="{{match_url}}">{{_self.printSlot(match.slotWhite, match.getWinner())}}</a></td>
+      <td class="node-name"><a href="{{match_url}}">{{match.getLocalId()}}</a></td>
+      <td class="participant side-red"><a href="{{match_url}}">{{_self.printSlot(match, 'red')}}</a></td>
+      <td class="score side-red"><a href="{{match_url}}">{{ match.getRedPoints().count() }}</a></td>
+      <td class="score side-white"><a href="{{match_url}}">{{ match.getWhitePoints().count() }}</a></td>
+      <td class="participant side-white"><a href="{{match_url}}">{{_self.printSlot(match, 'white')}}</a></td>
     </tr>
-    {% endfor -%}
+        {%- set match_it = match_it.skip() %}
+      {%- endif %}
+    {%- endfor %}
   </tbody>
 </table>
 {% endmacro -%}
 
-{% macro printKo(ko, chunks, route_param) %}
-<ul class="fight_tree">
-  {%- if chunks is defined %}
-  <li><span class="round_caption">Kampfflächen</span>
-    <ul class="fight_round">
-      {% for name, chunk in chunks %}
-      <li><span class="fight_name"><a href="{{ url_for('tournaments.categories.ko.chunks.show', route_param|merge({'chunk': name})) }}">Gewinner {{chunk.name}}</a></span>
-          <span class="fight_participant">{{_self.printChunkWinner(chunk)}}</span>
+{% macro printKo(ko, ko_route, route_param, last_round_offset = 0) %}
+<ol class="ko-tournament">
+  {% for round in ko -%}
+  {% if round is not empty -%}
+  <li><h3 class="round-caption">{{ _self.printRoundName(loop.index0, loop.length - last_round_offset) }}</h3>
+    <ol class="ko-round">
+      {% for node in round -%}
+      <li class="ko-node{% if node.isCompleted() %} completed{% elseif node.isOngoing() %} ongoing{% elseif node.isDetermined %} ready{% endif %}">
+        <a{% if node.isReal() %} href="{{ url_for(ko_route, route_param|merge({'matchName': node.name})) }}"{% endif %}>
+        <b><span class="node-name">Kampf {{node.name}}</span>
+        {% if node.area is defined %}<span class="area">({{node.area.name}})</span>{% endif %}</b>
+        {{ _self.printMatch(node) -}}
+        </a>
       </li>
-      {% endfor %}
-    </ul>
+    {% endfor -%}
+    </ol>
   </li>
-  {% endif %}
-  {% for round in ko %}
-  <li><span class="round_caption">Runde {{loop.index}}</span>
-    <ul class="fight_round">
-      {% for node in round %}
-      <li><span class="fight_name">
-        {%- if node.isReal() %}<a href="{{ url_for('tournaments.categories.ko.matches.show', route_param|merge({'matchName': node.name})) }}">{%endif-%}
-          Kampf {{node.name}}{% if node.area is defined %} ({{node.area.name}}){%endif%}
-        {%- if node.isReal() %}</a>{% endif -%}
-        </span>
-        {{ _self.printMatch(node) }}
-      </li>
-      {% endfor %}
-    </ul>
-  </li>
-  {% endfor %}
+  {% endif -%}
+  {% endfor -%}
+</ol>
+{% endmacro %}
+
+{% macro printPoints(points,undo) -%}
+<ul>
+  {% for pt in points -%}
+  <li class="pt-{{pt.point}}{% if pt is same as(undo) %} undo{% endif %}">{{pt.point}}</li>
+  {% endfor -%}
 </ul>
+{% endmacro -%}
+
+{% macro printMatchPointForm(node, side, update_route, route_parameters) -%}
+{% from 'base/form.twig' import submit -%}
+<form method="post" action="{{ url_for(update_route, route_parameters) }}" class="match_control">
+  {% set undo = node.getLastPoint(side) -%}
+  {% set participant = node.getParticipant(side) -%}
+  <input type="hidden" name="_METHOD" value="PATCH">
+  <input type="hidden" name="participant" value="{{ participant.id }}">
+  <input type="hidden" name="undo" value="{{ undo.id }}">
+  {% for name, pt in node.getPossiblePoints() -%}
+  {{ submit(pt, 'action', pt) }}
+  {% endfor -%}
+  {{ submit('Undo' ~ (undo? '(%s)'|format(undo.point) : ''), 'action', 'undo', active=undo is not null)}}
+  {{ submit('Als Gewinner setzen', 'action', 'winner', active=node.isModifiable() and node.getWinner() is not same as(participant)) }}
+</form>
+{% endmacro -%}
+
+{% macro printMatchTable(nodeList, activeNodeName, update_route, route_args) %}
+{% from 'base/form.twig' import submit -%}
+<table class="match_table">
+  <thead>
+    <tr>
+      {% if nodeList.count() > 1 %}<th rowspan="2"></th>{% endif %}
+      <th colspan="4" class="side-red">Kämpfer Rot</th>
+      <th colspan="4" class="side-white">Kämpfer Weiß</th>
+    </tr>
+    <tr>
+      <th class="side-red">Name</th><th class="side-red">Hansoku</th><th class="side-red">Punkte</th>
+      <th colspan="2" class="side-none">Sieger</th>
+      <th class="side-white">Punkte</th><th class="side-white">Hansoku</th><th class="side-white">Name</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for node in nodeList -%}
+    {% set nodeIsActive = activeNodeName==node.getName() -%}
+    <tr class="{{ nodeIsActive? "selected" : "inactive"}}{{ node.frozen? " frozen" : "" }}">
+      {% if nodeList.count() > 1 -%}
+      <td class="td-link">
+        {% if nodeIsActive -%}
+        <a>&gt;</a>
+        {%- else -%}
+        <a href="?selected={{ node.getName() }}">&gt;</a>
+        {%- endif %}
+      </td>
+      {%- endif %}
+      <td class="participant side-red">{{_self.printSlot(node, 'red')}}</td>
+      <td class="penalty side-red">{{_self.printPoints(node.getRedPenalties(), nodeIsActive? node.getLastRedPoint() : null)}}</td>
+      <td class="points side-red">{{_self.printPoints(node.getRedPoints, nodeIsActive? node.getLastRedPoint() : null)}}</td>
+      <td class="winner side-red">
+        {%- if node.isCompleted() -%}
+        {%- if node.isTied() %}-{% elseif node.getRedParticipant() is same as(node.getWinner()) %}X{% endif -%}
+        {%- endif -%}
+      </td>
+      <td class="winner side-white">
+        {%- if node.isCompleted() -%}
+        {%- if node.isTied() %}-{% elseif node.getWhiteParticipant() is same as(node.getWinner()) %}X{% endif -%}
+        {%- endif -%}
+      </td>
+      <td class="points side-white">{{_self.printPoints(node.getWhitePoints(), nodeIsActive? node.getLastWhitePoint() : null)}}</td>
+      <td class="penalty side-white">{{_self.printPoints(node.getWhitePenalties(), nodeIsActive? node.getLastWhitePoint(): null)}}</td>
+      <td class="participant side-white">{{_self.printSlot(node, 'white')}}</td>
+    </tr>
+    {% if nodeIsActive and node.isModifiable() and policy.isActionAllowed('RecordResults') -%}
+    <tr class="controls">
+      {%- set args = {'matchName': node.getName()}|merge(route_args) -%}
+      {% if nodeList.count() > 1 %}<td></td>{% endif %}
+      <td colspan="3" class="side-red">
+      {{ _self.printMatchPointForm(node, 'red', update_route, args) }}
+      </td>
+      <td colspan="2" class="side-none">
+        {% if node.tiesAllowed() -%}
+        <form method="post" action="{{ url_for(update_route, args) }}" class="match_control">
+          <input type="hidden" name="_METHOD" value="PATCH">
+          {{ submit('Unentschieden', 'action', 'tie', active=node.isModifiable() and not node.isTied()) }}
+        </form>
+        {%- endif %}
+      </td>
+      <td colspan="3" class="side-white">
+      {{ _self.printMatchPointForm(node, 'white', update_route, args) }}
+      </td>
+    </tr>
+    {%- endif %}
+    {%- endfor %}
+  </tbody>
+</table>
 {% endmacro %}

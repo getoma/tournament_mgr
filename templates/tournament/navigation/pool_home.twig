@@ -11,7 +11,7 @@
 <section class="pool_match_list">
   <h2>Kämpfe - Pool {{pool.getName()}}</h2>
   <nav id="pool_match_nav" class="match_nav">
-    {{part.printMatchLinks(pool.getMatchList(), route_parameters, 'tournaments.categories.pools.matches.show')}}
+    {{part.printMatchLinks('tournaments.categories.pools.matches.show', route_parameters, pool.getMatchList().getIterator(), pool.getMatchList().count())}}
   </nav>
   {% if error -%}
   <p class="error">{{ error }}</p>
