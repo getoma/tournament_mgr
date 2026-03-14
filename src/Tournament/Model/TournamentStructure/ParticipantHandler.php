@@ -341,8 +341,10 @@ final class ParticipantHandler
       $result   = ParticipantCollection::new();
 
       /* store the assigned slot name in each participant, and add them to the result */
+      $perPool = [];
       foreach ($assigned as $a)
       {
+         /** @var SlotPlacement $a */
          $a->participant->categories[$catId] ??= new CategoryAssignment($catId);
          /** @var SlotPlacement $a */
          if ($a->slot instanceof ParticipantSlot)
@@ -352,14 +354,21 @@ final class ParticipantHandler
          }
          else if ($a->slot instanceof PoolWinnerSlot)
          {
-            /* forward to pool */
-            $a->slot->pool->addParticipant($a->participant);
+            /* collect for each pool */
+            $perPool[$a->slot->pool->getName()]  ??= ParticipantCollection::new();
+            $perPool[$a->slot->pool->getName()][]  = $a->participant;
          }
          else
          {
             throw new \LogicException('unexpected slot type ' . get_class($a->slot));
          }
          $result[] = $a->participant;
+      }
+
+      /* now forward to all pools */
+      foreach( $perPool as $poolName => $participants )
+      {
+         $this->struc->pools[$poolName]->addParticipants($participants);
       }
 
       /* also add all unassigned participants to the result */

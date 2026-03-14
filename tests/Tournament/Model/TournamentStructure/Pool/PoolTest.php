@@ -12,6 +12,7 @@ use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchCreationHandler\MatchCreationHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
+use Tournament\Model\Participant\CategoryAssignment;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\PoolRankHandler\PoolRank;
@@ -58,7 +59,9 @@ class PoolTest extends TestCase
       $res = new ParticipantCollection();
       for( $i = 1; $i <= $num; ++$i )
       {
-         $res[] = new Participant($i, 1, '', '');
+         $p = new Participant($i, 1, 'Not', 'a Dummy');
+         $p->categories[] = new CategoryAssignment( $this->category->id );
+         $res[] = $p;
       }
       return $res;
    }
@@ -87,7 +90,7 @@ class PoolTest extends TestCase
       $res = $this->generateMatches($plist);
 
       $this->matchHdl->expects($this->once())->method('generate')
-      ->with($this->identicalTo($plist))
+      ->with($this->equalToCanonicalizing($plist))
       ->willReturn($res);
 
       return $res;
@@ -154,7 +157,7 @@ class PoolTest extends TestCase
       $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
-      $dut->setParticipants($plist);
+      $dut->addParticipants($plist);
 
       $this->assertEquals(self::POOL_NAME, $dut->getName());
       $this->assertNull($dut->getArea());
@@ -204,7 +207,7 @@ class PoolTest extends TestCase
       $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
-      $dut->setParticipants($plist);
+      $dut->addParticipants($plist);
 
       /**
        * create a match record for the first match
@@ -239,7 +242,7 @@ class PoolTest extends TestCase
       $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
-      $dut->setParticipants($plist);
+      $dut->addParticipants($plist);
       $dut->setMatchRecords($this->createMatchRecords($matches, lastOngoing: true));
 
       /**
@@ -267,7 +270,7 @@ class PoolTest extends TestCase
       $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
-      $dut->setParticipants($plist);
+      $dut->addParticipants($plist);
       $dut->setMatchRecords($this->createMatchRecords($matches));
 
       /**
@@ -301,13 +304,13 @@ class PoolTest extends TestCase
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->generateMatches($plist);
       $spy->addReturn($matches);
-      $dut->setParticipants($plist);
+      $dut->addParticipants($plist);
       $dut->setMatchRecords($this->createMatchRecords($matches));
 
       $this->assertEquals(1, $spy->count('generate'));
       $calls = $spy->callsOf('generate')[0];
       [$pl] = $calls['args'];
-      $this->assertSame($plist, $pl);
+      $this->assertEqualsCanonicalizing($plist, $pl);
 
       /**
        * create a pool ranking where the first place is not decided, yet

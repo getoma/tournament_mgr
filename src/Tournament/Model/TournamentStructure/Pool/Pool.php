@@ -108,29 +108,31 @@ class Pool
    /**
     * add a new participant and return their slot
     */
-   public function addParticipant(Participant $p): void
+   public function addParticipants(ParticipantCollection $participants): void
    {
-      /* plausibility check */
-      if( !$p->categories->keyExists($this->category->id) )
-      {
-         throw new \OutOfRangeException('participant not assigned to current category');
-      }
-
-      /* silently skip for already assigned participants */
-      if( $this->participants->contains($p) ) return;
-
-      /* add them to the generic list */
-      $this->participants[] = $p;
-
-      /* find a free slot and add them there */
-      error_log(join(", ", array_keys($this->slots)));
       $slotId = 0;
-      while( isset($this->slots[$slotId]) ) $slotId += 1;
-      $this->slots[$slotId] = $p;
+      foreach( $participants as $p )
+      {
+         /* silently skip for already assigned participants */
+         if ($this->participants->contains($p)) continue;
 
-      /* add the slot assignment into the participant */
-      $slotName = $this->name . '.' . $slotId;
-      $p->categories[$this->category->id]->slot_name = $slotName;
+         /* plausibility check */
+         if( !$p->categories->keyExists($this->category->id) )
+         {
+            throw new \OutOfRangeException('participant not assigned to current category');
+         }
+
+         /* add them to the generic list */
+         $this->participants[] = $p;
+
+         /* find a free slot and add them there */
+         while( isset($this->slots[$slotId]) ) $slotId += 1;
+         $this->slots[$slotId] = $p;
+
+         /* add the slot assignment into the participant */
+         $slotName = $this->name . '.' . $slotId;
+         $p->categories[$this->category->id]->slot_name = $slotName;
+      }
 
       /* regenerate the matches */
       $this->recreateMatchList();

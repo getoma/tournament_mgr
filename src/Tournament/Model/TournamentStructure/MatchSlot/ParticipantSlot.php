@@ -22,7 +22,7 @@ class ParticipantSlot extends MatchSlot
 
    public function getParticipant(): ?Participant
    {
-      return !$this->isBye()? $this->participant : null;
+      return $this->participant ?? null; // still return a dummy participant, therefore do not check on isBye()
    }
 
    public function freezeResult(): void
