@@ -6,12 +6,9 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 use Tournament\Model\Category\CategoryCollection;
-use Tournament\Model\Participant\Participant;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
-use Tournament\Model\TournamentStructure\Pool\Pool;
 
+use Tournament\Service\ParticipantHandlingService;
 use Tournament\Service\ParticipantImportService;
-use Tournament\Service\TournamentStructureService;
 use Tournament\Service\RouteArgsContext;
 
 use Tournament\Repository\TournamentRepository;
@@ -20,11 +17,12 @@ use Tournament\Repository\ParticipantRepository;
 use Base\Service\PrgService;
 use Base\Service\DataValidationService;
 use Base\Service\TmpStorageService;
+
 use Respect\Validation\Validator as v;
 
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
-use Tournament\Repository\MatchDataRepository;
+
 
 class ParticipantsDataController
 {
@@ -32,73 +30,19 @@ class ParticipantsDataController
 
    public function __construct(
       private Twig $view,
+      private ParticipantHandlingService $service,
       private ParticipantRepository $repo,
       private TournamentRepository $tournamentRepo,
-      private MatchDataRepository $matchDataRepo,
       private ParticipantImportService $importService,
-      private TournamentStructureService $tournamentService,
       private TmpStorageService $storage,
       private PrgService $prgService,
    ) {
    }
 
    /**
-    * retrieve the start slots for a category, to enable pre-assignment of starting slots
-    * if Participant provided as well, further filter them down to the selection available to that one
-    */
-   private function getStartingSlotSelection(CategoryCollection $categories, ?Participant $participant = null): array
-   {
-      $MATCH_PREFIX = 'Kampf';
-      $POOL_PREFIX = 'Pool';
-      $RANDOM_VALUE = '?';
-
-      $result = [];
-      foreach( $categories as $category )
-      {
-         $struc = $this->tournamentService->initialize($category); // only initialize the basic structure, without loading any actual data
-         $selection = ['' => $RANDOM_VALUE];
-
-         if( $struc->pools->empty() )
-         {
-            foreach($struc->ko->getFirstRound() as $node)
-            {
-               /** @var KoNode $node */
-               $selection[$node->getName()] = $MATCH_PREFIX . ' ' . $node->getName();
-            }
-         }
-         else
-         {
-            foreach ($struc->pools as $pool)
-            {
-               /** @var Pool $pool */
-               $selection[$pool->getName()] = $POOL_PREFIX . ' ' . $pool->getName();
-            }
-         }
-         $result[$category->id] = $selection;
-      }
-
-      if( $participant )
-      {
-         /* remove already taken starting slots from the selection */
-         foreach ($this->repo->getPreAssignmentsByTournamentId($participant->tournament_id) as $categoryId => $list)
-         {
-            foreach ($list as $pa)
-            {
-               if ($pa != $participant->categories[$categoryId]->pre_assign)
-               {
-                  unset($result[$categoryId][$pa]);
-               }
-            }
-         }
-      }
-
-      return $result;
-   }
-
-   /**
     * Render the participant list page with optional errors and previous input data
     */
-   private function renderParticipantList(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
+   public function showParticipantList(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
    {
       $tournament = $request->getAttribute('route_context')->tournament;
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
@@ -114,20 +58,12 @@ class ParticipantsDataController
       return $this->view->render($response, 'tournament/participants/overview.twig', [
          'tournament'     => $tournament,
          'categories'     => $categories,
-         'starting_slots' => $this->getStartingSlotSelection($categories),
+         'starting_slots' => $this->service->getStartingSlotSelection($categories),
          'participants'   => $participants,
          'prg_message'    => $status,
          'errors' => $errors,
          'prev'   => $prev,
       ]);
-   }
-
-   /**
-    * Show the participant list for a tournament
-    */
-   public function showParticipantList(Request $request, Response $response, array $args): Response
-   {
-      return $this->renderParticipantList($request, $response, $args);
    }
 
    /**
@@ -137,14 +73,8 @@ class ParticipantsDataController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
-
       $categories = $ctx->category? [ $ctx->category ] : $this->tournamentRepo->getCategoriesByTournamentId($ctx->tournament->id);
-
-      foreach( $categories as $c )
-      {
-         $this->tournamentService->addParticipants($c);
-      }
-
+      $this->service->assignParticipants($categories);
       return $this->prgService->redirectBack($request, $response, 'assigned');
    }
 
@@ -155,14 +85,8 @@ class ParticipantsDataController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
-
       $categories = $ctx->category ? [$ctx->category] : $this->tournamentRepo->getCategoriesByTournamentId($ctx->tournament->id);
-
-      foreach ($categories as $c)
-      {
-         $this->tournamentService->repopulate($c);
-      }
-
+      $this->service->shuffleParticipants($categories);
       return $this->prgService->redirectBack($request, $response, 'assigned');
    }
 
@@ -203,7 +127,7 @@ class ParticipantsDataController
       {
          // If there are errors, render the participant list with errors
          $errors['input_error'] = true;
-         return $this->renderParticipantList($request, $response, $args, $errors, $data);
+         return $this->showParticipantList($request, $response, $args, $errors, $data);
       }
 
       $import_ok = $this->repo->importParticipants($import_report['participants']);
@@ -223,7 +147,7 @@ class ParticipantsDataController
          $errors = [
             'sql_error' => $this->repo->getLastErrors(),
          ];
-         return $this->renderParticipantList($request, $response, $args, $errors);
+         return $this->showParticipantList($request, $response, $args, $errors);
       }
    }
 
@@ -263,7 +187,7 @@ class ParticipantsDataController
          }
       }
 
-      return $this->renderParticipantList($request, $response, $args, $errors, []);
+      return $this->showParticipantList($request, $response, $args, $errors);
    }
 
    /**
@@ -394,7 +318,7 @@ class ParticipantsDataController
          {
             // If there are errors, render the participant list directly with all info
             $errors = [ 'sql_error' => $this->repo->getLastErrors() ];
-            return $this->renderParticipantList($request, $response, $args, $errors, []);
+            return $this->showParticipantList($request, $response, $args, $errors);
          }
       }
       else
@@ -452,9 +376,9 @@ class ParticipantsDataController
       $ctx = $request->getAttribute('route_context');
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($ctx->tournament->id);
 
-      $starting_slots = $this->getStartingSlotSelection($categories, $ctx->participant);
+      $starting_slots = $this->service->getStartingSlotSelection($categories, $ctx->participant);
 
-      $withdrawal_allowed = $ctx->participant && !$this->matchDataRepo->hasParticipantPoints($ctx->participant->id);
+      $withdrawal_allowed = $ctx->participant && $this->service->mayWithdraw($ctx->participant);
 
       return $this->view->render($response, 'tournament/participants/details.twig', [
          'tournament'       => $ctx->tournament,
@@ -475,77 +399,32 @@ class ParticipantsDataController
       $ctx = $request->getAttribute('route_context');
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($ctx->tournament->id);
 
-      $starting_slots = $this->getStartingSlotSelection($categories, $ctx->participant);
-
       $data = $request->getParsedBody();
-      $data['categories'] ??= [];
-      $data['withdrawn'] ??= false;
-      $participant_rules = Participant::validationRules();
-      $participant_rules['categories'] = $participant_rules['categories']->each(v::in($ctx->tournament->categories->column('id')));
-      $participant_rules['pre_assign'] = v::arrayType();
-      if( !$ctx->participant || $this->matchDataRepo->hasParticipantPoints($ctx->participant->id) )
+      $errors = $this->service->validateParticipantData($data, $ctx->tournament->id, $ctx->participant);
+
+      if($errors)
       {
-         $participant_rules['withdrawn'] = v::templated('Teilnehmer kann nicht mehr abgemeldet werden', v::equals(false));
+         return $this->view->render($response, 'tournament/participants/details.twig', [
+            'tournament'  => $ctx->tournament,
+            'categories'  => $categories,
+            'participant' => $ctx->participant,
+            'errors'      => $errors,
+            'prev'        => $data,
+         ]);
       }
-      $errors = DataValidationService::validate($data, $participant_rules);
-
-      // return form if there are errors
-      if (!count($errors))
+      else
       {
-         // Update participant data
-         $participant = $ctx->participant;
-         if( isset($participant) )
-         {
-            $participant->updateFromArray($data);
-         }
-         else
-         {
-            $participant = Participant::createFromArray($ctx->tournament->id, $data);
-         }
+         $participant = $ctx->participant?
+            $this->service->patchParticipant($ctx->participant, $data)
+          : $this->service->storeParticipant($ctx->tournament, $data);
 
-         // take over pre-assigned slots
-         for( $i = 0; $i < count($data['categories']); ++$i )
-         {
-            $categoryId = $data['categories'][$i];
-
-            if( $assignment = $participant->categories[$categoryId] ?? null )
-            {
-               if( isset($starting_slots[$categoryId][$data['pre_assign'][$i]]) )
-               {
-                  $assignment->pre_assign = $data['pre_assign'][$i] ?: null;
-               }
-            }
-         }
-
-         // try to save
-         if ($this->repo->saveParticipant($participant))
-         {
-            // if participant was withdrawn, also delete any assigned matches that may already exist
-            // as well as any starting slot assignment, to free up this slot
-            if( $participant->withdrawn )
-            {
-               $this->matchDataRepo->deleteMatchRecordsByParticipantId($participant->id);
-               $this->repo->freeParticipantSlots($participant->id);
-            }
-
-            return $this->prgService->redirect(
-               $request, $response, 'tournaments.participants.show',
-               $ctx->args + ['participantId' => $participant->id],
-               $ctx->participant? 'updated' : 'created');
-         }
-         else
-         {
-            $errors['sql_error'] = $this->repo->getLastErrors();
-         }
+         return $this->prgService->redirect(
+            $request,
+            $response,
+            'tournaments.participants.show',
+            $ctx->args + ['participantId' => $participant->id],
+            $ctx->participant ? 'updated' : 'created'
+         );
       }
-
-      /* any error: */
-      return $this->view->render($response, 'tournament/participants/details.twig', [
-         'tournament'  => $ctx->tournament,
-         'categories'  => $categories,
-         'participant' => $participant,
-         'errors'      => $errors,
-         'prev'        => $data,
-      ]);
    }
 }
