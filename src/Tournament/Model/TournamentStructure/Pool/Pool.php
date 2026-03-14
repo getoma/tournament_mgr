@@ -140,7 +140,7 @@ class Pool
 
    private static function splitSlotName(string $slotName, bool $throw_if_invalid = true): ?array
    {
-      if (preg_match('/^\d+\.\d+$/', $slotName)) // as defined above in addParticipant()
+      if (preg_match('/^\w+\.\d+$/', $slotName)) // as defined above in addParticipant()
       {
          return explode('.', $slotName);
       }
