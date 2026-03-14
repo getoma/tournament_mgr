@@ -143,21 +143,40 @@ return function (\Slim\App $app)
 
          /* participants */
          $tgrp->get('/participants[/]', [ParticipantsDataController::class, 'showParticipantList'])->setName('tournaments.participants.index');
-         $tgrp->get('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'showParticipant'])->setName('tournaments.participants.show');
-         $tgrp->get('/participants/add', RedirectHandler::to('tournaments.participants.index'));
+         $tgrp->get('/participants/show/{participantId:\d+}', [ParticipantsDataController::class, 'showParticipantDetails'])->setName('tournaments.participants.show');
+         $tgrp->get('/participants/bulkadd', RedirectHandler::to('tournaments.participants.index'));
          $tgrp->get('/participants/upload', RedirectHandler::to('tournaments.participants.index'));
+         $tgrp->get('/participants/assign', RedirectHandler::to('tournaments.participants.index'));
+         $tgrp->get('/participants/shuffle', RedirectHandler::to('tournaments.participants.index'));
+
+         /* import/bulk add participants */
          $tgrp->group('', function (RouteCollectorProxy $pgrp)
          {
-            $pgrp->patch('/participants', [ParticipantsDataController::class, 'updateParticipantList'])->setName('tournaments.participants.bulk.update');
-            $pgrp->patch('/participants/{participantId:\d+}', [ParticipantsDataController::class, 'updateParticipant'])->setName('tournaments.participants.update');
-            $pgrp->delete('/participants/{participantId:\d+}/delete', [ParticipantsDataController::class, 'deleteParticipant'])->setName('tournaments.participants.delete');
-            $pgrp->post('/participants/add',    [ParticipantsDataController::class, 'addParticipants'])->setName('tournaments.participants.bulk.store');
+            $pgrp->post('/participants/bulkadd', [ParticipantsDataController::class, 'addParticipants'])->setName('tournaments.participants.bulk.store');
             $pgrp->post('/participants/import', [ParticipantsDataController::class, 'uploadParticipantFile'])->setName('tournaments.participants.import.store');
             $pgrp->get('/participants/import', [ParticipantsDataController::class, 'handleImport'])->setName('tournaments.participants.import.show');
             $pgrp->post('/participants/import/commit', [ParticipantsDataController::class, 'handleImport'])->setName('tournaments.participants.import.commit');
             $pgrp->delete('/participants/import', [ParticipantsDataController::class, 'abortUpload'])->setName('tournaments.participants.import.delete');
          }
-         )->add( $policyGuard->for(TournamentAction::ManageParticipants) );
+         )->add( $policyGuard->for(TournamentAction::ImportParticipants) );
+
+         /* add/modify participants */
+         $tgrp->group('', function (RouteCollectorProxy $pgrp)
+         {
+            $pgrp->get('/participants/new', [ParticipantsDataController::class, 'showParticipantDetails'])->setName('tournaments.participants.create');
+            $pgrp->post('/participants/new', [ParticipantsDataController::class, 'saveParticipant'])->setName('tournaments.participants.store');
+            $pgrp->patch('/participants/show/{participantId:\d+}', [ParticipantsDataController::class, 'saveParticipant'])->setName('tournaments.participants.update');
+            $pgrp->post('/participants/assign', [ParticipantsDataController::class, 'assignParticipants'])->setName('tournaments.participants.assign');
+         }
+         )->add( $policyGuard->for(TournamentAction::ModifyParticipants) );
+
+         /* fully re-shuffle participants */
+         $tgrp->post('/participants/shuffle', [ParticipantsDataController::class, 'shuffleParticipants'])->setName('tournaments.participants.shuffle')
+            ->add($policyGuard->for(TournamentAction::ShuffleParticipants));
+
+         /* delete participants */
+         $tgrp->delete('/participants/{participantId:\d+}/delete', [ParticipantsDataController::class, 'deleteParticipant'])->setName('tournaments.participants.delete')
+            ->add($policyGuard->for(TournamentAction::DeleteParticipants));
 
          /* area device account settings */
          $tgrp->group('/areas/devices', function (RouteCollectorProxy $agrp)
@@ -183,7 +202,7 @@ return function (\Slim\App $app)
                ->add($policyGuard->for(TournamentAction::ManageSetup));
 
             $cgrp->post('/addNewParticipants', [TournamentTreeController::class, 'addUnslottedParticipants'])->setName('tournaments.categories.assignParticipants')
-               ->add($policyGuard->for(TournamentAction::ManageParticipants));
+               ->add($policyGuard->for(TournamentAction::ModifyParticipants));
 
             /* Tournament tree navigation */
             $cgrp->get('/category', [TournamentTreeController::class, 'showCategoryHome'])->setName('tournaments.categories.show');

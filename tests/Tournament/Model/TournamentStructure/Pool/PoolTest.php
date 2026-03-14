@@ -12,6 +12,7 @@ use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchCreationHandler\MatchCreationHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
+use Tournament\Model\Participant\CategoryAssignment;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\PoolRankHandler\PoolRank;
@@ -23,6 +24,7 @@ use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
 use Tests\CallSpy;
+use Tests\IsSameParticipantList;
 
 class PoolTest extends TestCase
 {
@@ -58,7 +60,9 @@ class PoolTest extends TestCase
       $res = new ParticipantCollection();
       for( $i = 1; $i <= $num; ++$i )
       {
-         $res[] = new Participant($i, 1, '', '');
+         $p = new Participant($i, 1, 'Not', 'a Dummy');
+         $p->categories[] = new CategoryAssignment( $this->category->id );
+         $res[] = $p;
       }
       return $res;
    }
@@ -82,12 +86,12 @@ class PoolTest extends TestCase
       return $res;
    }
 
-   private function setMatchHdlExpectation(ParticipantCollection $plist): MatchNodeCollection
+   private function setMatchHdlExpectation(ParticipantCollection $plist, $count = 1): MatchNodeCollection
    {
       $res = $this->generateMatches($plist);
 
-      $this->matchHdl->expects($this->once())->method('generate')
-      ->with($this->identicalTo($plist))
+      $this->matchHdl->expects($this->exactly($count))->method('generate')
+      ->with(IsSameParticipantList::like($plist))
       ->willReturn($res);
 
       return $res;
@@ -154,7 +158,7 @@ class PoolTest extends TestCase
       $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
-      $dut->setParticipants($plist);
+      $dut->addParticipants($plist);
 
       $this->assertEquals(self::POOL_NAME, $dut->getName());
       $this->assertNull($dut->getArea());
@@ -204,7 +208,7 @@ class PoolTest extends TestCase
       $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
-      $dut->setParticipants($plist);
+      $dut->addParticipants($plist);
 
       /**
        * create a match record for the first match
@@ -239,7 +243,7 @@ class PoolTest extends TestCase
       $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
-      $dut->setParticipants($plist);
+      $dut->addParticipants($plist);
       $dut->setMatchRecords($this->createMatchRecords($matches, lastOngoing: true));
 
       /**
@@ -267,7 +271,7 @@ class PoolTest extends TestCase
       $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->setMatchHdlExpectation($plist);
-      $dut->setParticipants($plist);
+      $dut->addParticipants($plist);
       $dut->setMatchRecords($this->createMatchRecords($matches));
 
       /**
@@ -301,13 +305,13 @@ class PoolTest extends TestCase
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->generateMatches($plist);
       $spy->addReturn($matches);
-      $dut->setParticipants($plist);
+      $dut->addParticipants($plist);
       $dut->setMatchRecords($this->createMatchRecords($matches));
 
       $this->assertEquals(1, $spy->count('generate'));
       $calls = $spy->callsOf('generate')[0];
       [$pl] = $calls['args'];
-      $this->assertSame($plist, $pl);
+      $this->assertThat($pl, IsSameParticipantList::like($plist));
 
       /**
        * create a pool ranking where the first place is not decided, yet
@@ -342,4 +346,64 @@ class PoolTest extends TestCase
       $this->assertNotNull($dut->getCurrentDecisionRound());
       $this->assertEquals($decision_matches->values(), $dut->getDecisionMatches()->values());
    }
+
+   /**
+    * make sure reloading a pool from the DB yields the same results again
+    */
+   #[DataProvider('numParticipantsProvider')]
+   public function testReproducability(int $numParticipants = 3)
+   {
+      $plist = $this->createParticipantList($numParticipants);
+      $this->setMatchHdlExpectation($plist,2); // will check whether match creation is called with the same amount and order of participants both times
+
+      $dut = new Pool(self::POOL_NAME, $this->category);
+      $dut->addParticipants($plist);
+
+      $dut2 = new Pool(self::POOL_NAME, $this->category);
+      $dut2->loadParticipants($plist->reverse());
+   }
+
+   /**
+    * make sure pool handles slot holes in participants correctly
+    */
+   #[DataProvider('numParticipantsProvider')]
+   public function testSlotHandling(int $numParticipants = 3)
+   {
+      $spy = new CallSpy();
+      $this->matchHdl->method('generate')->willReturnCallback($spy->callback('generate'));
+
+      $plist = $this->createParticipantList($numParticipants);
+      $matches = $this->generateMatches($plist);
+      $spy->addReturn($matches);
+
+      $dut = new Pool(self::POOL_NAME, $this->category);
+      $dut->addParticipants($plist);
+
+      $this->assertEquals(1, $spy->count('generate'));
+      $calls = $spy->callsOf('generate')[0];
+      [$pl] = $calls['args'];
+      $this->assertThat($pl, IsSameParticipantList::like($plist));
+      $spy->clear();
+
+      /* remove a participant from the "middle" */
+      $remidx = intdiv($numParticipants-1, 2);
+      $first = array_slice($plist->values(), 0, $remidx);
+      $last = array_slice($plist->values(), $remidx+1);
+      $mplist = ParticipantCollection::new( array_merge($first, [Participant::dummy()], $last) );
+      $pplist = ParticipantCollection::new( array_merge($last, $first) ); // also change order
+
+      $matches_gen = $this->generateMatches($mplist);
+      $spy->addReturn($matches_gen);
+
+      $dut2 = new Pool(self::POOL_NAME, $this->category);
+      $dut2->loadParticipants($pplist);
+
+      $this->assertEquals(1, $spy->count('generate'));
+      $calls = $spy->callsOf('generate')[0];
+      [$pl] = $calls['args'];
+      $this->assertThat($pl, IsSameParticipantList::like($mplist));
+
+      $this->assertEquals($matches_gen->filter( fn($m) => $m->isReal() )->values(), $dut2->getMatchList()->values());
+   }
+
 }

@@ -54,64 +54,41 @@ final class TournamentPolicy
    }
 
    /**
+    * mapping of Actions to permissable states
+    */
+   private const StatePolicyMap = [
+      /* edit tournament details: name, date, notes */
+      TournamentAction::ManageDetails->value       => [ TournamentStatus::Planning, TournamentStatus::Planned, TournamentStatus::Running ],
+      /* re-configure the entire tournament: setting up categories and areas */
+      TournamentAction::ManageSetup->value         => [ TournamentStatus::Planning ],
+      /* bulk import only allowed during planning time */
+      TournamentAction::ImportParticipants->value  => [ TournamentStatus::Planning ],
+      /* adding/editing/disabling single participants - always allowed */
+      TournamentAction::ModifyParticipants->value  => [ TournamentStatus::Planning, TournamentStatus::Planned, TournamentStatus::Running ],
+      /* full deleting of participants only allowed during planning time.
+       * after that, participants can only be set to "withdrawn" via the modify action */
+      TournamentAction::DeleteParticipants->value  => [ TournamentStatus::Planning ],
+      /* re-shuffle all participants - only during planning stage */
+      TournamentAction::ShuffleParticipants->value => [ TournamentStatus::Planning ],
+      /* only provide area device services once the area are fixed after planning time */
+      TournamentAction::ManageAreaDevices->value   => [ TournamentStatus::Planned, TournamentStatus::Running ],
+      /* actually record any match results */
+      TournamentAction::RecordResults->value       => [ TournamentStatus::Running ],
+      /* update the state of the tournament */
+      TournamentAction::TransitionState->value     => [ TournamentStatus::Planning, TournamentStatus::Planned, TournamentStatus::Running ],
+      /* only allow to delete tournaments that are either freshly created, or completed */
+      TournamentAction::DeleteTournament->value    => [ TournamentStatus::Planning, TournamentStatus::Completed ]
+   ];
+
+   /**
     * Check if a specific action is allowed for a specific tournament status
     */
    private function checkStatePolicy(TournamentAction $action): bool
    {
-      $status = $this->route_context->tournament?->status ?? $this->auth_context->tournament?->status ?? null;
-      return match ($action)
-      {
-         TournamentAction::ManageDetails => match($status)
-         {
-            /* edit tournament details: name, date, notes */
-            TournamentStatus::Planning, TournamentStatus::Planned, TournamentStatus::Running => true,
-            default => false
-         },
-
-         TournamentAction::ManageSetup => match($status)
-         {
-            /* re-configure the entire tournament: setting up categories and areas, shuffling participants */
-            TournamentStatus::Planning => true,
-            default => false
-         },
-
-         TournamentAction::ManageParticipants => match($status)
-         {
-            /* adding/removing/editing single participants - always allowed           */
-            /* completely reshuffling participants is part of the ManageSetup action! */
-            TournamentStatus::Planning, TournamentStatus::Planned, TournamentStatus::Running => true,
-            default => false
-         },
-
-         TournamentAction::ManageAreaDevices => match($status)
-         {
-            TournamentStatus::Planned, TournamentStatus::Running => true,
-            default => false
-         },
-
-         TournamentAction::RecordResults => match ($status)
-         {
-            /* actually record any match results */
-            TournamentStatus::Running => true,
-            default => false
-         },
-
-         TournamentAction::TransitionState => match ($status)
-         {
-            /* update the state of the tournament */
-            TournamentStatus::Completed, null => false,
-            default => true
-         },
-
-         TournamentAction::DeleteTournament => match($status)
-         {
-            /* only allow to delete tournaments that are either freshly created, or completed */
-            TournamentStatus::Planning, TournamentStatus::Completed => true,
-            default => false
-         },
-
-         default => true // action is not dependend on tournament state, allow
-      };
+      if( !isset(self::StatePolicyMap[$action->value]) ) return true; // if no state policy defined for this action, allow it - not status dependent
+      $status = $this->route_context->tournament?->status ?? $this->auth_context->tournament?->status;
+      if( !isset($status) ) return false; // no valid status available - decline
+      return in_array($status, self::StatePolicyMap[$action->value]);
    }
 
    /**
@@ -127,7 +104,10 @@ final class TournamentPolicy
          case TournamentAction::ManageDetails:
          case TournamentAction::ManageOwners:
          case TournamentAction::ManageSetup:
-         case TournamentAction::ManageParticipants:
+         case TournamentAction::ImportParticipants:
+         case TournamentAction::ModifyParticipants:
+         case TournamentAction::DeleteParticipants:
+         case TournamentAction::ShuffleParticipants:
          case TournamentAction::ManageAreaDevices:
          case TournamentAction::TransitionState:
          case TournamentAction::DeleteTournament:

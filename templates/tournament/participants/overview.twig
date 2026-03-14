@@ -24,6 +24,7 @@
   {% if errors.input_error %}<p class="error">Teilnehmer konnten nicht importiert werden, bitte Eingaben überprüfen</p>{% endif -%}
   {% if errors.sql_error %}<p class="error">{{errors.sql_error}}</p>{% endif -%}
 {% endif -%}
+{%- set assignments_needed = false %}
 
   <table id="participants_list">
     <thead>
@@ -39,47 +40,62 @@
     <tbody>
       {% for participant in participants %}
       <tr>
-        <td>{{ participant.lastname }}, {{ participant.firstname }}</td>
+        <td>{{ (participant.lastname ~ ", " ~ participant.firstname)|wrap_if(participant.withdrawn, 'del') }}</td>
         <td>{{ participant.club }} </td>
         {% for category in categories -%}
         <td class="checkbox">
-          <input type="checkbox" name="category_{{category.id}}[]" value="{{participant.id}}" title="{{category.name}}" form="participant_list_form"
-            {%- if participant.categories[category.id] is defined %} checked{%endif%}>
-          {%- set preset, assigned =
-                  participant.categories[category.id].pre_assign? starting_slots[category.id][participant.categories[category.id].pre_assign] : '',
-                  participant.categories[category.id].slot_name|humanizeSlotName %}
-          {%- set slot = assigned|default(preset)|default('') %}
-          {%- set slot_issue = preset is not empty and slot != preset %}
-          {% if slot is not empty -%}
-          <span class="participant-assigned-slot{% if preset is not empty %} participant-preassigned-slot{% endif %}"
-            {%- if slot_issue %} title="Aktuelle Startposition weicht von vorgegebenem Start in {{ preset }} ab"
-            {%- elseif preset is not empty %} title="Startposition vorgegeben"{% endif %}>
-            {%- if slot_issue %}<del>{{preset}}</del>{% endif -%}
-            ({{ slot }})</span>
+          {%  if participant.categories[category.id] is defined %}
+          <span class="checkmark">{{ "X"|wrap_if(participant.withdrawn, 'del') }}</span>
+            {%- set preset, assigned =
+                    participant.categories[category.id].pre_assign? starting_slots[category.id][participant.categories[category.id].pre_assign] : '',
+                    participant.categories[category.id].slot_name|humanizeSlotName %}
+            {%- set slot = assigned|default(preset)|default('') %}
+            {%- set slot_issue = preset is not empty and slot != preset %}
+            {%- if slot is not empty %}
+            <span class="participant-assigned-slot{% if preset is not empty %} participant-preassigned-slot{% endif %}"
+              {%- if slot_issue %} title="Aktuelle Startposition weicht von vorgegebenem Start in {{ preset }} ab"
+              {%- elseif preset is not empty %} title="Startposition vorgegeben"{% endif %}>
+              {%- if slot_issue %}<del>{{preset}}</del>{% endif -%}
+              {{ ("("~slot~")")|wrap_if(participant.withdrawn, 'del') }}</span>
+            {%- elseif not participant.withdrawn -%}
+              {% set assignments_needed = true %}
+            {%- endif %}
           {%- endif %}
         </td>
         {% endfor -%}
         <td>
           <a href="{{ url_for('tournaments.participants.show', route_context.args|merge({'participantId': participant.id})) }}"
-            class="form-btn">Bearbeiten</a>
-          <form method="POST"
-            action="{{ url_for('tournaments.participants.delete', route_context.args|merge({'participantId': participant.id})) }}">
+             class="form-btn">{{ policy.isActionAllowed('ModifyParticipants')? "Bearbeiten" : "Details" }}</a>
+          {% if policy.isActionAllowed('DeleteParticipants') -%}
+          <form method="POST" action="{{ url_for('tournaments.participants.delete', route_context.args|merge({'participantId': participant.id})) }}">
             <input type="hidden" name="_METHOD" value="DELETE">
             {{ form.submit('Löschen', confirm='%s, %s wirklich löschen?'|format(participant.lastname, participant.firstname)) }}
           </form>
+          {%- endif %}
         </td>
         </tr>
       {% endfor %}
     </tbody>
   </table>
-  <form method="POST" action="{{ url_for('tournaments.participants.bulk.update', route_context.args) }}" id="participant_list_form">
-    <input type="hidden" name="_METHOD" value="PATCH">
-    {{ form.submit('Speichern') }}
-    {{ form.submit('Speichern und Teilnehmer zuweisen', 'shuffle_in', 'new') }}
-    {{ form.submit('Speichern und Teilnehmer neu verteilen', 'shuffle_in', 'all', confirm="Wirklich alle Startpositionen neu zuweisen?") }}
+  <div class="button-box">
+  {% if policy.isActionAllowed('ModifyParticipants') -%}
+  <p>
+    <a href="{{ url_for('tournaments.participants.create', route_context.args)}}" class="form-btn">Teilnehmer hinzufügen</a>
+  </p>
+  <form method="POST" action="{{ url_for('tournaments.participants.assign', route_context.args) }}">
+    {{ form.submit('Teilnehmer zuweisen', active: assignments_needed) }}
   </form>
+  {%- endif %}
+  {% if policy.isActionAllowed('ShuffleParticipants') -%}
+  <form method="POST" action="{{ url_for('tournaments.participants.shuffle', route_context.args)}}">
+    {{ form.submit('Teilnehmer neu verteilen', confirm="Wirklich alle Startpositionen neu zuweisen?") }}
+  </form>
+  {%- endif %}
+  </div>
 </section>
 
+
+{% if policy.isActionAllowed('ImportParticipants') -%}
 <section>
 <h2>Teilnehmer importieren</h2>
 <form method="POST" action="{{ url_for('tournaments.participants.import.store', { 'tournamentId': tournament.id }) }}" id="participant_upload_form" enctype="multipart/form-data">
@@ -99,11 +115,12 @@
       {{ form.checkbox('categories[]', category.name, category.id, category.id in prev.categories) }}
       {%- endfor %}
       {%- if errors.categories %}
-      <p class="error">{#{errors.categories}#}</p>
+      <p class="error">{{errors.categories}}</p>
       {% endif -%}
     </fieldset>
     {{ form.submit('Hinzufügen') }}
   </form>
 </section>
+{%- endif %}
 
 {% include 'base/footer.twig' %}

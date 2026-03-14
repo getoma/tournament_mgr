@@ -24,6 +24,7 @@ use Respect\Validation\Validator as v;
 
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
+use Tournament\Repository\MatchDataRepository;
 
 class ParticipantsDataController
 {
@@ -33,6 +34,7 @@ class ParticipantsDataController
       private Twig $view,
       private ParticipantRepository $repo,
       private TournamentRepository $tournamentRepo,
+      private MatchDataRepository $matchDataRepo,
       private ParticipantImportService $importService,
       private TournamentStructureService $tournamentService,
       private TmpStorageService $storage,
@@ -129,57 +131,39 @@ class ParticipantsDataController
    }
 
    /**
-    * Update the participant list for a tournament - this updates the mapping of participants to categories.
+    * Assign all unslotted participants for the current tournament
     */
-   public function updateParticipantList(Request $request, Response $response, array $args): Response
+   public function assignParticipants(Request $request, Response $response): Response
    {
-      $tournament = $request->getAttribute('route_context')->tournament;
-      $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
 
-      $validation_rules = [];
-      /* preprocess category input data */
-      foreach ($categories as $category)
+      $categories = $ctx->category? [ $ctx->category ] : $this->tournamentRepo->getCategoriesByTournamentId($ctx->tournament->id);
+
+      foreach( $categories as $c )
       {
-         $form_name = 'category_' . $category->id;
-         $validation_rules[$form_name] = v::oneOf(
-            v::nullType(),
-            v::arrayType()->each(v::numericVal()->intVal()->notEmpty()->min(0))
-         );
-      }
-      $validation_rules['shuffle_in'] = v::optional(v::stringType()->in(['new', 'all']));
-
-      $data = $request->getParsedBody();
-      $errors = DataValidationService::validate($data, $validation_rules);
-
-      // return form if there are errors
-      if ($errors)
-      {
-         $err  = ['participant_list' => $errors];
-         $prev = ['participant_list' => $data];
-         return $this->renderParticipantList($request, $response, $args, $err, $prev);
+         $this->tournamentService->addParticipants($c);
       }
 
-      // update the mapping of participants to categories
-      foreach ($categories as $category)
+      return $this->prgService->redirectBack($request, $response, 'assigned');
+   }
+
+   /**
+    * Re-shuffle all participants
+    */
+   public function shuffleParticipants(Request $request, Response $response): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
+      $categories = $ctx->category ? [$ctx->category] : $this->tournamentRepo->getCategoriesByTournamentId($ctx->tournament->id);
+
+      foreach ($categories as $c)
       {
-         $participantIds = $data['category_' . $category->id] ?? [];
-         $this->repo->setCategoryParticipants($category->id, $participantIds);
+         $this->tournamentService->repopulate($c);
       }
 
-      // if requested, reseed all participants
-      if( $data['shuffle_in'] ?? false )
-      {
-         foreach( $categories as $c )
-         {
-            match( $data['shuffle_in'] )
-            {
-               'all' => $this->tournamentService->repopulate($c),
-               'new' => $this->tournamentService->addParticipants($c),
-            };
-         }
-      }
-
-      return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args, ['status' => 'updated']);
+      return $this->prgService->redirectBack($request, $response, 'assigned');
    }
 
    /**
@@ -459,8 +443,10 @@ class ParticipantsDataController
    /**
     * Show the details of a participant in a tournament
     * This includes the participant's name and the categories they are registered in
+    * This method may also be called with no participant in the context to get the form
+    * to create a new participant.
     */
-   public function showParticipant(Request $request, Response $response, array $args): Response
+   public function showParticipantDetails(Request $request, Response $response, array $args): Response
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
@@ -468,11 +454,14 @@ class ParticipantsDataController
 
       $starting_slots = $this->getStartingSlotSelection($categories, $ctx->participant);
 
+      $withdrawal_allowed = $ctx->participant && !$this->matchDataRepo->hasParticipantPoints($ctx->participant->id);
+
       return $this->view->render($response, 'tournament/participants/details.twig', [
-         'tournament'     => $ctx->tournament,
-         'categories'     => $categories,
-         'starting_slots' => $starting_slots,
-         'participant'    => $ctx->participant,
+         'tournament'       => $ctx->tournament,
+         'categories'       => $categories,
+         'starting_slots'   => $starting_slots,
+         'participant'      => $ctx->participant ?? null, // null to get the form for a new participant
+         'withdraw_allowed' => $withdrawal_allowed,
       ]);
    }
 
@@ -480,7 +469,7 @@ class ParticipantsDataController
     * Update the details of a participant in a tournament
     * This includes updating the participant's name and categories they are registered in
     */
-   public function updateParticipant(Request $request, Response $response, array $args): Response
+   public function saveParticipant(Request $request, Response $response, array $args): Response
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
@@ -490,23 +479,36 @@ class ParticipantsDataController
 
       $data = $request->getParsedBody();
       $data['categories'] ??= [];
+      $data['withdrawn'] ??= false;
       $participant_rules = Participant::validationRules();
       $participant_rules['categories'] = $participant_rules['categories']->each(v::in($ctx->tournament->categories->column('id')));
       $participant_rules['pre_assign'] = v::arrayType();
+      if( !$ctx->participant || $this->matchDataRepo->hasParticipantPoints($ctx->participant->id) )
+      {
+         $participant_rules['withdrawn'] = v::templated('Teilnehmer kann nicht mehr abgemeldet werden', v::equals(false));
+      }
       $errors = DataValidationService::validate($data, $participant_rules);
 
       // return form if there are errors
       if (!count($errors))
       {
          // Update participant data
-         $ctx->participant->updateFromArray($data);
+         $participant = $ctx->participant;
+         if( isset($participant) )
+         {
+            $participant->updateFromArray($data);
+         }
+         else
+         {
+            $participant = Participant::createFromArray($ctx->tournament->id, $data);
+         }
 
          // take over pre-assigned slots
          for( $i = 0; $i < count($data['categories']); ++$i )
          {
             $categoryId = $data['categories'][$i];
 
-            if( $assignment = $ctx->participant->categories[$categoryId] ?? null )
+            if( $assignment = $participant->categories[$categoryId] ?? null )
             {
                if( isset($starting_slots[$categoryId][$data['pre_assign'][$i]]) )
                {
@@ -516,9 +518,20 @@ class ParticipantsDataController
          }
 
          // try to save
-         if ($this->repo->saveParticipant($ctx->participant))
+         if ($this->repo->saveParticipant($participant))
          {
-            return $this->prgService->redirect($request, $response, 'tournaments.participants.show', $args, 'updated');
+            // if participant was withdrawn, also delete any assigned matches that may already exist
+            // as well as any starting slot assignment, to free up this slot
+            if( $participant->withdrawn )
+            {
+               $this->matchDataRepo->deleteMatchRecordsByParticipantId($participant->id);
+               $this->repo->freeParticipantSlots($participant->id);
+            }
+
+            return $this->prgService->redirect(
+               $request, $response, 'tournaments.participants.show',
+               $ctx->args + ['participantId' => $participant->id],
+               $ctx->participant? 'updated' : 'created');
          }
          else
          {
@@ -526,10 +539,11 @@ class ParticipantsDataController
          }
       }
 
+      /* any error: */
       return $this->view->render($response, 'tournament/participants/details.twig', [
          'tournament'  => $ctx->tournament,
          'categories'  => $categories,
-         'participant' => $ctx->participant,
+         'participant' => $participant,
          'errors'      => $errors,
          'prev'        => $data,
       ]);

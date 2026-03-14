@@ -101,7 +101,7 @@ class TournamentStructure
     */
    public static function getPoolIdFromSlotName(string $slotName, bool $throw_if_invalid = true): ?string
    {
-      return ParticipantHandler::getPoolIdFromSlotName($slotName, $throw_if_invalid);
+      return Pool::getPoolIdFromSlotName($slotName, $throw_if_invalid);
    }
 
    /**

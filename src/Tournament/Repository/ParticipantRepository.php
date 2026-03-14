@@ -42,6 +42,7 @@ class ParticipantRepository
          lastname: $data['lastname'],
          firstname: $data['firstname'],
          club: $data['club'] ?: null,
+         withdrawn: (bool)($data['withdrawn'] ?? false),
       );
       $participant = $this->participants[$data['id']];
 
@@ -138,18 +139,14 @@ class ParticipantRepository
    }
 
    /**
-    * update a single participant slot
+    * free participant slots for a single participant
     */
-   public function updateParticipantSlot(int $categoryId, string $slot_name, int $participant_id)
+   public function freeParticipantSlots(int $participantId): bool
    {
-      $update_stmt = $this->pdo->prepare(
-         "UPDATE participants_categories SET slot_name=:slot_name WHERE category_id=:category_id AND participant_id=:participant_id"
+      $stmt = $this->pdo->prepare(
+         "UPDATE participants_categories SET slot_name=null WHERE participant_id=:participant_id"
       );
-      return $update_stmt->execute([
-         'slot_name' => $slot_name,
-         'category_id' => $categoryId,
-         'participant_id' => $participant_id
-      ]);
+      return $stmt->execute(['participant_id' => $participantId]);
    }
 
    /**
@@ -180,14 +177,14 @@ class ParticipantRepository
 
       if ($p->id)
       {
-         $stmt = $this->pdo->prepare("UPDATE participants SET lastname = :lastname, firstname = :firstname, club = :club WHERE id = :id");
-         $result = $stmt->execute($p->asArray(['id', 'lastname', 'firstname', 'club']));
+         $stmt = $this->pdo->prepare("UPDATE participants SET lastname=:lastname, firstname=:firstname, club=:club, withdrawn=:withdrawn WHERE id = :id");
+         $result = $stmt->execute($p->asArray(['id', 'lastname', 'firstname', 'club', 'withdrawn']));
       }
       else
       {
-         $stmt = $this->pdo->prepare( "INSERT INTO participants (tournament_id, lastname, firstname, club) "
-                                    . "VALUES (:tournament_id, :lastname, :firstname, :club)");
-         $result = $stmt->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club']));
+         $stmt = $this->pdo->prepare( "INSERT INTO participants (tournament_id, lastname, firstname, club, withdrawn) "
+                                    . "VALUES (:tournament_id, :lastname, :firstname, :club, :withdrawn)");
+         $result = $stmt->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club', 'withdrawn']));
          if ($result)
          {
             $p->id = $this->pdo->lastInsertId();

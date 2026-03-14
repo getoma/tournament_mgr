@@ -225,4 +225,29 @@ class MatchDataRepository
       $stmt = $this->pdo->prepare('DELETE FROM matches WHERE id = :matchId');
       return $stmt->execute(['matchId' => $matchId]);
    }
+
+   public function deleteMatchRecordsByParticipantId(int $id): bool
+   {
+      $stmt = $this->pdo->prepare('DELETE FROM matches WHERE red_id = ? OR white_id = ?');
+      return $stmt->execute([$id, $id]);
+   }
+
+   public function getMatchesByParticipantId(int $id): MatchRecordCollection
+   {
+      $stmt = $this->pdo->prepare('SELECT * FROM matches WHERE red_id = :id OR white_id = :id');
+      $stmt->execute(['id' => $id]);
+      $result = new MatchRecordCollection();
+      foreach( $stmt->fetchAll(PDO::FETCH_ASSOC) as $row )
+      {
+         $result[] = $this->createMatchRecordInstance($row);
+      }
+      return $result;
+   }
+
+   public function hasParticipantPoints(int $id): bool
+   {
+      $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM match_points WHERE participant_id = :id');
+      $stmt->execute(['id' => $id]);
+      return (int)$stmt->fetchColumn() > 0;
+   }
 }
