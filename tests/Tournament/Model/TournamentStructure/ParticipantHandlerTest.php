@@ -116,18 +116,17 @@ class ParticipantHandlerTest extends TestCase
       $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3, pool_winners: 2));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
-      $hdl = $structure;
 
       /* generate two rounds of participant additions */
       $first_list = $this->participantList(10, 1);
       $second_list = $this->participantList(3, 11);
 
       /* add first round to the structure */
-      $first_assignment = $hdl->populate($first_list);
+      $first_assignment = $structure->populate($first_list);
       /* store back the current slot assignment in a full copy to verify it after the next step */
       $first_slots = array_combine($first_assignment->column('id'), $first_assignment->map(fn($p) => $p->categories[1]->slot_name));
       /* add second round to the structure */
-      $full_assignment = $hdl->populate($second_list);
+      $full_assignment = $structure->populate($second_list);
 
       /* check whether the length of the returned lists match */
       $this->assertCount($first_list->count(), $first_assignment);

@@ -12,17 +12,17 @@ class ParticipantSlot extends MatchSlot
 
    public function isBye(): bool
    {
-      return $this->participant === null;
+      return $this->participant === null || $this->participant->isDummy();
    }
 
    public function str(): string
    {
-      return $this->isBye() ? '--' : 'Teilnehmer ' . $this->participant->id;
+      return !$this->isBye()? 'Teilnehmer ' . $this->participant->id : '--';
    }
 
    public function getParticipant(): ?Participant
    {
-      return $this->participant;
+      return $this->participant ?? null; // still return a dummy participant, therefore do not check on isBye()
    }
 
    public function freezeResult(): void

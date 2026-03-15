@@ -13,6 +13,7 @@ use Tournament\Model\TournamentStructure\MatchSlot\MatchSlotCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\ByeSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\PoolWinnerSlot;
+use Tournament\Model\TournamentStructure\Pool\Pool;
 
 /**
  * ParticipantHandler - handle assignment of Participants to starting slots for a given
@@ -54,6 +55,7 @@ final class ParticipantHandler
       foreach ($participants as $p)
       {
          /** @var Participant $p */
+         if( $p->withdrawn ) continue;
          $slot_name = $p->categories[$this->struc->category->id]->slot_name;
          if (isset($slot_name) && isset($slots[$slot_name])) $slots[$slot_name]->participant = $p;
          else $this->struc->unmapped_participants[] = $p;
@@ -70,10 +72,11 @@ final class ParticipantHandler
       foreach ($participants as $p)
       {
          /** @var Participant $p */
+         if( $p->withdrawn ) continue;
          $slot_name = $p->categories[$this->struc->category->id]->slot_name;
          if( $slot_name )
          {
-            $poolId = self::getPoolIdFromSlotName($slot_name);
+            $poolId = Pool::getPoolIdFromSlotName($slot_name);
             if ($this->struc->pools->keyExists($poolId))
             {
                $pool_participants[$poolId] ??= ParticipantCollection::new();
@@ -90,13 +93,10 @@ final class ParticipantHandler
          }
       }
 
-      /* forward the collected participants to each pool.
-       * Make sure they are always in the same order according slot number
-       */
-      $sorter = fn($a,$b) => $a->categories[$this->struc->category->id]->slot_name <=> $b->categories[$this->struc->category->id]->slot_name;
+      /* forward the collected participants to each pool. */
       foreach ($pool_participants as $id => $col)
       {
-         $this->struc->pools[$id]->setParticipants($col->usort($sorter));
+         $this->struc->pools[$id]->loadParticipants($col);
       }
    }
 
@@ -115,6 +115,9 @@ final class ParticipantHandler
 
       /* extract all previous slot assignements */
       $assigned = $this->getSlotPlacements($starting_slots);
+
+      /* remove any withdrawn participants from the collection before populating */
+      $participants = $participants->filter(fn($p) => !$p->withdrawn);
 
       /* get the actual number of participants we have to allocate */
       $participantCount = $assigned->count() + $participants->count();
@@ -336,11 +339,12 @@ final class ParticipantHandler
    {
       $catId    = $this->struc->category->id;
       $result   = ParticipantCollection::new();
-      $counters = [];
 
       /* store the assigned slot name in each participant, and add them to the result */
+      $perPool = [];
       foreach ($assigned as $a)
       {
+         /** @var SlotPlacement $a */
          $a->participant->categories[$catId] ??= new CategoryAssignment($catId);
          /** @var SlotPlacement $a */
          if ($a->slot instanceof ParticipantSlot)
@@ -350,18 +354,21 @@ final class ParticipantHandler
          }
          else if ($a->slot instanceof PoolWinnerSlot)
          {
-            /* pools - multiple participants per slot, we have to maintain a counter to ensure unique slot names for the Database */
-            $poolName = $a->slot->getName();
-            $counters[$poolName] ??= 0;
-            $slot_name = "{$poolName}.{$counters[$poolName]}";
-            $a->participant->categories[$catId]->slot_name = $slot_name;
-            $counters[$a->slot->getName()] += 1;
+            /* collect for each pool */
+            $perPool[$a->slot->pool->getName()]  ??= ParticipantCollection::new();
+            $perPool[$a->slot->pool->getName()][]  = $a->participant;
          }
          else
          {
             throw new \LogicException('unexpected slot type ' . get_class($a->slot));
          }
          $result[] = $a->participant;
+      }
+
+      /* now forward to all pools */
+      foreach( $perPool as $poolName => $participants )
+      {
+         $this->struc->pools[$poolName]->addParticipants($participants);
       }
 
       /* also add all unassigned participants to the result */
@@ -374,20 +381,6 @@ final class ParticipantHandler
 
       /* done */
       return $result;
-   }
-
-   /**
-    * extract the pool id from a slot name including a plausibility check
-    */
-   public static function getPoolIdFromSlotName(string $slotName, bool $throw_if_invalid = true): ?string
-   {
-      if (preg_match('/^\d+\.\d+$/', $slotName)) // as defined above in updateSlotAssignments()
-      {
-         list($poolId) = (explode('.', $slotName));
-         return $poolId;
-      }
-      if ($throw_if_invalid) throw new \InvalidArgumentException("'$slotName' is not a valid pool slot name");
-      return null;
    }
 
    /**

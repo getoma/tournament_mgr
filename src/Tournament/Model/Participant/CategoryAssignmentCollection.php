@@ -19,7 +19,7 @@ class CategoryAssignmentCollection extends \Base\Model\IdObjectCollection
       {
          $value = new CategoryAssignment($value->id);
       }
-      else if( is_int($value) )
+      else if( is_numeric($value) )
       {
          $value = new CategoryAssignment($value);
       }
