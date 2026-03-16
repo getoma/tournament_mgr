@@ -132,16 +132,24 @@ class ParticipantHandlingService
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($participant->tournament_id);
       $starting_slots = $this->getStartingSlotSelection($categories, $participant);
 
-      // take over pre-assigned slots
+      /* take over pre-assigned slots
+       * the form data is of following format right now (example):
+       * [ category_list: [ catA, catB, catC, ... ],  // full list of all categories
+       *   categories:    [ catB ],                   // only the assigned categories
+       *   pre_assign:    [ '', '1', '' ],            // full list of pre-assigns, indexed by category_list
+       */
+      $pre_assign_list = array_combine($data['category_list'], $data['pre_assign']);
       for ($i = 0; $i < count($data['categories']); ++$i)
       {
          $categoryId = $data['categories'][$i];
 
          if ($assignment = $participant->categories[$categoryId] ?? null)
          {
-            if (isset($starting_slots[$categoryId][$data['pre_assign'][$i]]))
+            $pre_assign = $pre_assign_list[$categoryId] ?? '';
+            if (isset($starting_slots[$categoryId][$pre_assign])) // if the selected slot really exists...
             {
-               $assignment->pre_assign = $data['pre_assign'][$i] ?: null;
+               // ... take it over
+               $assignment->pre_assign = $pre_assign ?: null;
             }
          }
       }
