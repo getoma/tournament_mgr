@@ -11,6 +11,9 @@ use Tournament\Model\Category\CategoryCollection;
 
 use PDO;
 use Tournament\Model\Category\CategoryConfiguration;
+use Tournament\Model\TournamentStructure\AreaMapping;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\Pool\Pool;
 use Tournament\Model\User\UserCollection;
 
 class TournamentRepository
@@ -262,12 +265,12 @@ class TournamentRepository
       if ($category->id)
       {
          $stmt = $this->pdo->prepare("UPDATE categories SET name = :name, mode = :mode, config_json = :config WHERE id = :id");
-         $result = $stmt->execute($category->asArray(['id', 'name', 'mode']) + ['config' => $category->config->json()]);
+         $result = $stmt->execute($category->asArray(['id', 'name', 'mode', 'config']));
       }
       else
       {
          $stmt = $this->pdo->prepare("INSERT INTO categories (tournament_id, name, mode, config_json) VALUES (:tournament_id, :name, :mode, :config)");
-         $result = $stmt->execute($category->asArray(['tournament_id', 'name', 'mode']) + ['config' => $category->config->json()]);
+         $result = $stmt->execute($category->asArray(['tournament_id', 'name', 'mode', 'config']));
          if ($result)
          {
             $category->id = $this->pdo->lastInsertId();
@@ -282,5 +285,40 @@ class TournamentRepository
    {
       $stmt = $this->pdo->prepare("DELETE FROM categories WHERE id = :id");
       return $stmt->execute(['id' => $id]);
+   }
+
+   public function getMatchAreaMappingByCategoryId(int $id): AreaMapping
+   {
+      $stmt = $this->pdo->prepare("SELECT type, name, area_id FROM match_areas WHERE category_id = ?");
+      $stmt->execute([$id]);
+      $result = new AreaMapping();
+      foreach( $stmt->fetchAll(\PDO::FETCH_ASSOC) as $e )
+      {
+         $result->store(...$e);
+      }
+      return $result;
+   }
+
+   public function storeAreaAssignment(MatchNode|Pool $entity)
+   {
+      $type = match(true)
+      {
+         $entity instanceof MatchNode => AreaMapping::NODE,
+         $entity instanceof Pool      => AreaMapping::POOL,
+         default => throw new \InvalidArgumentException('unsupported type ' . get_class($entity))
+      };
+
+      $stmt = $this->pdo->prepare(<<<QUERY
+         INSERT INTO match_areas (category_id, type, name, area_id) VALUES (:category_id, :type, :name, :area_id)
+         ON DUPLICATE KEY UPDATE area_id=:u_area_id
+      QUERY);
+
+      $stmt->execute([
+         'category_id' => $entity->category->id,
+         'type'        => $type,
+         'name'        => $entity->getName(),
+         'area_id'     => $entity->getArea()->id,
+         'u_area_id'   => $entity->getArea()->id,
+      ]);
    }
 }
