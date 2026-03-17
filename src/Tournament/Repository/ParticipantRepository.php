@@ -292,25 +292,23 @@ class ParticipantRepository
    {
       $this->errors = [];
       $this->pdo->beginTransaction();
-      $stmt_p = $this->pdo->prepare( "INSERT IGNORE INTO participants (tournament_id, lastname, firstname, club) "
+      $stmt_p = $this->pdo->prepare( "INSERT INTO participants (tournament_id, lastname, firstname, club) "
                                    . "VALUES (:tournament_id, :lastname, :firstname, :club)");
       $stmt_c = $this->pdo->prepare("INSERT IGNORE INTO participants_categories (participant_id, category_id) VALUES (?,?)");
 
       /** @var Participant $p */
       foreach ($participants as $p)
       {
-         if( $stmt_p->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club'])) )
+         if( !isset($p->id) ) // a really new participant, import the participant data itself
          {
-            $new_id = $this->pdo->lastInsertId();
-            if( $new_id ) $p->id = $this->pdo->lastInsertId();
-            foreach( $p->categories as $c )
-            {
-               $stmt_c->execute([$p->id, $c->categoryId]); // cannot fail
-            }
+            $stmt_p->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club']));
+            $p->id = $this->pdo->lastInsertId();
          }
-         else
+
+         /* also take over any category updates */
+         foreach( $p->categories as $c )
          {
-            $this->errors[] = $stmt_p->errorInfo()[2];
+            $stmt_c->execute([$p->id, $c->categoryId]); // cannot fail
          }
       }
       $this->pdo->commit();
