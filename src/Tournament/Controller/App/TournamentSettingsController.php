@@ -16,7 +16,6 @@ use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\Tournament\TournamentStatus;
 
 use Tournament\Service\RouteArgsContext;
-use Tournament\Service\TournamentStructureService;
 
 use Base\Service\PrgService;
 
@@ -29,7 +28,6 @@ class TournamentSettingsController
       private Twig $view,
       private TournamentRepository $repo,
       private UserRepository $user_repo,
-      private TournamentStructureService $structureLoadService,
       private PrgService $prgService,
    ) {
    }

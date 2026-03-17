@@ -30,6 +30,17 @@
 {% endif %}
 </section>
 
+{% if policy.isActionAllowed('ModifyMatchArea') and pool is empty and area_selection is not empty -%}
+<section class="area_mapping">
+  <h2>Kampffläche ändern</h2>
+  <form method="POST" action="{{ url_for('tournaments.categories.ko.matches.setArea', route_context.args)}}">
+    <input type="hidden" name="_METHOD" value="PATCH">
+    {{ form.select('area_id', 'Kampffläche', area_selection, node.getArea().id) }}
+    {{ form.submit('Speichern') }}
+  </form>
+</section>
+{%- endif %}
+
 {% if node_it.skip().valid() -%}
 <nav id="next_match_nav" class="match_nav">
   <h2>Nächste Kämpfe{{ area? " (" ~ area.name ~ ")" : "" }}</h2>

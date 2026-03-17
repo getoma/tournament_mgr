@@ -47,6 +47,15 @@ class Category implements \Tournament\Model\Base\DbItem
       $this->config->updateFromArray($data);
    }
 
+   protected function convertValue($key, $value): mixed
+   {
+      if( $value instanceof CategoryConfiguration )
+      {
+         return $value->json();
+      }
+      throw new \UnexpectedValueException(get_class($this) . ": Unexpected DbItem attribute for key '$key' of type " . get_class($value) ?? gettype($value));
+   }
+
    /**
     * put creation of MatchPointHandler into Category,
     * as it might depend on specific Category-wide configurations

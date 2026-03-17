@@ -50,4 +50,15 @@
   </table>
 </section>
 
+{% if policy.isActionAllowed('ModifyMatchArea') and area_selection is not empty -%}
+<section class="area_mapping">
+  <h2>Kampffläche ändern</h2>
+  <form method="POST" action="{{ url_for('tournaments.categories.pools.setArea', route_context.args)}}">
+    <input type="hidden" name="_METHOD" value="PATCH">
+    {{ form.select('area_id', 'Kampffläche', area_selection, pool.getArea().id) }}
+    {{ form.submit('Speichern') }}
+  </form>
+</section>
+{%- endif %}
+
 {% include 'base/footer.twig' %}

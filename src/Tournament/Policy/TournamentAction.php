@@ -10,6 +10,7 @@ enum TournamentAction: string
    case ManageDetails       = "ManageDetails";       // manage tournament details (name, date, notes)
    case ManageOwners        = "ManageOwners";        // allow to assign owners to a tournament
    case ManageSetup         = "ManageSetup";         // manage tournament setup (categories, areas, structure, shuffle participants)
+   case ModifyMatchArea     = "ModifyMatchArea";     // move a match (or an entire pool) to a different combat area than currently assigned
    case ImportParticipants  = "ImportParticipants";  // bulk import participants
    case ModifyParticipants  = "ModifyParticipants";  // modify participants, or add single participants
    case DeleteParticipants  = "DeleteParticipants";  // delete participants (without trace)

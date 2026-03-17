@@ -217,6 +217,12 @@ return function (\Slim\App $app)
             $cgrp->get('/pool/{pool}/addTieBreak', RedirectHandler::to('tournaments.categories.pools.show'));
             $cgrp->get('/pool/{pool}/delete/{decision_round}', RedirectHandler::to('tournaments.categories.pools.show'));
 
+            /* Area mapping update */
+            $cgrp->patch('/ko/{matchName}/setArea', [TournamentTreeController::class, 'setNodeArea'])->setName('tournaments.categories.ko.matches.setArea')
+               ->add($policyGuard->for(TournamentAction::ModifyMatchArea));
+            $cgrp->patch('/pool/{pool}/setArea', [TournamentTreeController::class, 'setPoolArea'])->setName('tournaments.categories.pools.setArea')
+               ->add($policyGuard->for(TournamentAction::ModifyMatchArea));
+
             /* Match Result recording */
             $cgrp->group('', function (RouteCollectorProxy $mgrp) use ($policyGuard)
             {

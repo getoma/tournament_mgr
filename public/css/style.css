@@ -371,17 +371,13 @@ table .checkbox {
 
 /* Hauptinhalt */
 
-main > section,
-main > nav {
+main > * {
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-main > * + section {
-   margin-top: 15px;
+  margin-bottom: 15px;
 }
 
 main h2 {

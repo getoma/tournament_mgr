@@ -157,6 +157,30 @@ class TournamentStructure
    }
 
    /**
+    * load a list of explicit area mappings into the structure
+    */
+   public function loadAreaMappings(AreaMapping $mapping)
+   {
+      foreach( $mapping->pool_mappings as $poolName => $area_id )
+      {
+         $area = $this->areas[$area_id];
+         $this->pools[$poolName]->setArea($area);
+      }
+
+      if( $mapping->node_mappings )
+      {
+         foreach( $this->ko->getMatchList() as $node )
+         {
+            if( $area_id = $mapping->node_mappings[$node->getName()]??null )
+            {
+               $area = $this->areas[$area_id];
+               $node->setArea($area);
+            }
+         }
+      }
+   }
+
+   /**
     * load a list of match records into the structure
     */
    public function loadMatchRecords(MatchRecordCollection $matchRecords)

@@ -61,6 +61,8 @@ final class TournamentPolicy
       TournamentAction::ManageDetails->value       => [ TournamentStatus::Planning, TournamentStatus::Planned, TournamentStatus::Running ],
       /* re-configure the entire tournament: setting up categories and areas */
       TournamentAction::ManageSetup->value         => [ TournamentStatus::Planning ],
+      /* moving a match to a different area is always allowed */
+      TournamentAction::ModifyMatchArea->value     => [TournamentStatus::Planning, TournamentStatus::Planned, TournamentStatus::Running],
       /* bulk import only allowed during planning time */
       TournamentAction::ImportParticipants->value  => [ TournamentStatus::Planning ],
       /* adding/editing/disabling single participants - always allowed */
@@ -104,6 +106,7 @@ final class TournamentPolicy
          case TournamentAction::ManageDetails:
          case TournamentAction::ManageOwners:
          case TournamentAction::ManageSetup:
+         case TournamentAction::ModifyMatchArea:
          case TournamentAction::ImportParticipants:
          case TournamentAction::ModifyParticipants:
          case TournamentAction::DeleteParticipants:

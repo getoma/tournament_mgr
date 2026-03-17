@@ -2,8 +2,11 @@
 
 namespace Tournament\Service;
 
+use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\Pool\Pool;
 use Tournament\Model\TournamentStructure\TournamentStructure;
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
@@ -71,8 +74,10 @@ class TournamentStructureService
    public function initialize(Category $category): TournamentStructure
    {
       $areas = $this->tournamentRepo->getAreasByTournamentId($category->tournament_id);
+      $area_mappings = $this->tournamentRepo->getMatchAreaMappingByCategoryId($category->id);
       $struc = new TournamentStructure($category, $areas);
       $struc->generateStructure();
+      $struc->loadAreaMappings($area_mappings);
       return $struc;
    }
 
@@ -83,6 +88,22 @@ class TournamentStructureService
    public function resetMatchRecords(Category $category): void
    {
       $this->matchDataRepo->deleteMatchRecordsByCategoryId($category->id);
+   }
+
+   public function updateAreaAssignment(MatchNode|Pool $entity, Area|int $area): void
+   {
+      if( is_int($area) )
+      {
+         $area = $this->tournamentRepo->getAreaById($area);
+      }
+
+      if( !$area instanceof Area )
+      {
+         throw new \OutOfRangeException('invalid area assigned');
+      }
+
+      $entity->setArea($area);
+      $this->tournamentRepo->storeAreaAssignment($entity);
    }
 
 }

@@ -18,6 +18,9 @@ use Tournament\Service\TournamentStructureService;
 use Tournament\Exception\EntityNotFoundException;
 
 use Base\Service\PrgService;
+use Base\Service\DataValidationService;
+
+use Respect\Validation\Validator as v;
 
 class TournamentTreeController
 {
@@ -96,6 +99,7 @@ class TournamentTreeController
       return $this->view->render($response, 'tournament/navigation/pool_home.twig', [
          'pool' => $pool,
          'error' => $error,
+         'area_selection' => $structure->areas->column('name', 'id'),
       ]);
    }
 
@@ -200,6 +204,7 @@ class TournamentTreeController
          'node'     => $node,
          'node_it'  => $current_it,
          'area'     => $node->area,  // explicitly mark that we provide the match list for this area, only
+         'area_selection' => $structure->areas->column('name', 'id'),
          'error'    => $error,
       ]);
    }
@@ -224,5 +229,45 @@ class TournamentTreeController
       {
          return $this->prgService->redirectBack($request, $response, 'match_updated');
       }
+   }
+
+   public function setNodeArea(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
+      $structure = $this->structureLoadService->initialize($ctx->category);
+      $node = $structure->findNode($ctx->match_name) ?? new EntityNotFoundException($request, "unknown Match '{$ctx->match_name}'");
+
+      $rules = [ 'area_id' => v::intVal()->in($structure->areas->column('id')) ];
+      $data = (array)$request->getParsedBody();
+      $errors = DataValidationService::validate($data, $rules);
+
+      if( !$errors )
+      {
+         $this->structureLoadService->updateAreaAssignment($node, $data['area_id']);
+      }
+
+      return $this->prgService->redirectBack($request, $response, 'area_updated');
+   }
+
+   public function setPoolArea(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
+      $structure = $this->structureLoadService->initialize($ctx->category);
+      $pool = $structure->pools[$ctx->pool_name] ?? throw new EntityNotFoundException($request, 'Pool not found');
+
+      $rules = ['area_id' => v::intVal()->in($structure->areas->column('id'))];
+      $data = (array)$request->getParsedBody();
+      $errors = DataValidationService::validate($data, $rules);
+
+      if (!$errors)
+      {
+         $this->structureLoadService->updateAreaAssignment($pool, $data['area_id']);
+      }
+
+      return $this->prgService->redirectBack($request, $response, 'area_updated');
    }
 }
