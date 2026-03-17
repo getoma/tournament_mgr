@@ -19,7 +19,6 @@ class Pool
    private MatchNodeCollection $matches;
    /** @var Participant[] */
    private array $slots = [];
-   private ParticipantCollection $participants;
    private PoolRankCollection $ranking;
 
    public const DEFAULT_NUM_WINNERS = 2;
@@ -33,7 +32,6 @@ class Pool
    )
    {
       $this->matches = MatchNodeCollection::new();
-      $this->participants = ParticipantCollection::new();
    }
 
    /**
@@ -81,12 +79,11 @@ class Pool
     */
    public function getParticipants(): ParticipantCollection
    {
-      return $this->participants;
+      return ParticipantCollection::new($this->slots);
    }
 
    public function loadParticipants(ParticipantCollection $participants): void
    {
-      $this->participants = $participants;
       $this->slots = [];
       foreach( $participants as $p )
       {
@@ -102,6 +99,10 @@ class Pool
          }
       }
 
+      /* store participants in slot order */
+      ksort($this->slots);
+
+      /* regenerate the matches */
       $this->recreateMatchList();
    }
 
@@ -111,19 +112,17 @@ class Pool
    public function addParticipants(ParticipantCollection $participants): void
    {
       $slotId = 0;
+      $current = $this->getParticipants();
       foreach( $participants as $p )
       {
          /* silently skip for already assigned participants */
-         if ($this->participants->contains($p)) continue;
+         if ($current->contains($p)) continue;
 
          /* plausibility check */
          if( !$p->categories->keyExists($this->category->id) )
          {
             throw new \OutOfRangeException('participant not assigned to current category');
          }
-
-         /* add them to the generic list */
-         $this->participants[] = $p;
 
          /* find a free slot and add them there */
          while( isset($this->slots[$slotId]) ) $slotId += 1;
@@ -133,6 +132,9 @@ class Pool
          $slotName = $this->name . '.' . $slotId;
          $p->categories[$this->category->id]->slot_name = $slotName;
       }
+
+      /* store participants in slot order */
+      ksort($this->slots);
 
       /* regenerate the matches */
       $this->recreateMatchList();
@@ -158,7 +160,6 @@ class Pool
        * removed at the end of the generation in addNewMatchesFor() */
       $this->matches = MatchNodeCollection::new();
       $plist = ParticipantCollection::new();
-      ksort($this->slots);
       foreach ($this->slots as $slotId => $p)
       {
          while ($plist->count() < $slotId)
@@ -302,6 +303,7 @@ class Pool
       /* check if there are further records for this pool for additional matches (-> decision matches) */
       $matchId = $this->getNextMatchId();
       $extId = 0;
+      $participants = $this->getParticipants();
       while ( $matchRecords->keyExists($matchName = $this->nameFor($matchId, $extId))
             ||$matchRecords->keyExists($matchName = $this->nameFor($matchId, ++$extId)))
       {
@@ -310,7 +312,7 @@ class Pool
 
          $p_red   = $record->redParticipant;
          $p_white = $record->whiteParticipant;
-         if( $this->participants->contains($p_red) && $this->participants->contains($p_white) )
+         if( $participants->contains($p_red) && $participants->contains($p_white) )
          {
             $red     = new ParticipantSlot($p_red);
             $white   = new ParticipantSlot($p_white);
