@@ -14,7 +14,7 @@
   <li><a href="{{url_for('tournaments.categories.pools.show', route_context.args|merge({'pool': pool.getName()}))}}">
     <p class="pool_name"><b>Pool {{pool.getName()}}{{ pool.area? " (" ~ pool.area.name ~")" : "" }}</b></p>
     <ul class="participant_list">
-      {% for slot in pool.participants %}
+      {% for slot in pool.getParticipants() %}
       <li>{{slot.lastname}}, {{slot.firstname}}</li>
       {% endfor %}
     </ul>
