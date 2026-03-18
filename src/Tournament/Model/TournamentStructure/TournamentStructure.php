@@ -254,6 +254,23 @@ class TournamentStructure
       return PoolCollection::new( array_map(fn($i) => new Pool($i+1, $this->category), range(0, $numPools - 1)) );
    }
 
+   private static function getByeIndexes(int $numBYEs, int $count): array
+   {
+      $step = ($count-1)/($numBYEs-1);
+      $maxIdx = $count-1;
+      $halfBYEs = ceil($numBYEs/2);
+
+      $result = [];
+      for ($i = 0; $i < $halfBYEs; $i++)
+      {
+         $pos = (int)round($i * $step);
+         $result[] = $pos;
+         if( count($result) < $numBYEs ) $result[] = $maxIdx - $pos;
+      }
+      sort($result);
+      return $result;
+   }
+
    /**
     * Create a knockout structure based on the pools.
     * This method will distribute the pool winner start slots so that participants of the first pool will meet
@@ -263,99 +280,68 @@ class TournamentStructure
     *
     * This is done by iteratively halving the pool winner lists into smaller clusters, with a conflict resolution
     * algorithm that determines the best canditates to add to each smaller chunk by a simple cost analysis.
+    *
+    * Current algorithm is fine-tuned to the setup of the DKenB DEM tournament. TBD to generalize this implementation
+    * Constraints:
+    * 1) only 2 winners per pool
+    * 2) at most the same number of BYE slots as there are pools
     */
    private function createPoolKoFirstRound(PoolCollection $pools, ?int $winnersPerPool = null): MatchNodeCollection
    {
-      $winnersPerPool ??= 2;
-      $poolsPerPlace = [array_fill(0, $winnersPerPool, $pools->keys())];
-      $splitTarget = $winnersPerPool * $pools->count(); // target for splitting the pool winners into two halves
-      $dummy_pool_id = $pools->count() + 1; // track IDs of dummy pools during splitting, which will be replaced by a wildcard later.
-      while ($splitTarget >= 4)
+      $winnersPerPool = 2; // for now, only support 2 winners per pool
+
+      $poolCount = $pools->count();
+      $pools = $pools->values(); // get 0-based indexing of pools
+      $startSlotCount = $winnersPerPool * $poolCount; // number of needed starting slots
+      $maxSlotCount = pow(2, ceil(log($startSlotCount, 2))); // number of existing starting slots for full tree
+      $start_slots = array_fill(0, $maxSlotCount, null);  // list of slots
+      $byeCount = $maxSlotCount - $startSlotCount;
+
+      /* place BYEs */
+      if( $byeCount )
       {
-         /* track usage of each pool while distributing pool winners, use pool ids as key */
-         $nextRound = [];
-         $splitTarget = ceil($splitTarget / 2); // halve the target for the next round, rounding up
-         /* split down each current chunk into two new clusters */
-         foreach ($poolsPerPlace as $chunk)
+         if( $byeCount > $poolCount ) throw new \LogicException("more BYEs than pools currently not supported");
+         $byeIdxList = static::getByeIndexes($byeCount/2, ceil($poolCount/2)); // symmetric indexes for bye slots
+         foreach( $byeIdxList as $idx )
          {
-            /* add a dummy pool entry if not an even number of entries
-             * always add them at lowest rank, so they will be assigned to top ranks at match pairing
-             */
-            if(array_sum(array_map('count', $chunk)) % 2) array_unshift($chunk[$winnersPerPool - 1], $dummy_pool_id++);
-
-            /* chunk format: [ 0 => [pool1_idx, pool2_idx, ...], 1 => [pool1_idx, pool2_idx, ...] ] */
-            $poolUsage = array_fill_keys(array_merge(...$chunk), 0); // to track usage of each available pool
-            $split_chunk = []; // the separated chunk for the next round
-            $split_count = 0; // count how many pools we have split so far
-            while ($split_count < $splitTarget)
-            {
-               /* select one new candidate from each placement rank, which will result into selecting
-                * from a different pool each time - as a result, pool members will be separated across clusters
-                */
-               for ($i = 0; ($i < $winnersPerPool) && ($split_count < $splitTarget); ++$i)
-               {
-                  // find the pool with the least usage
-                  $chunkPoolUsage = array_intersect_key($poolUsage, array_flip($chunk[$i]));
-                  if(empty($chunkPoolUsage)) continue;
-                  $poolId = array_search(min($chunkPoolUsage), $chunkPoolUsage);
-                  // add the pool to the split chunk
-                  $split_chunk[$i][] = $poolId;
-                  // and remove it from the current chunk
-                  $chunk[$i] = array_diff($chunk[$i], [$poolId]);
-                  // increment the usage of the pool
-                  $poolUsage[$poolId] += $winnersPerPool - $i; // the higher the rank, the higher the recorded usage
-                  $split_count++;
-               }
-            }
-
-            /* prepare next round of splitting */
-            $nextRound[] = $split_chunk;
-            $nextRound[] = $chunk;
+            $start_slots[2*$idx+1] = new ByeSlot();
+            $start_slots[$maxSlotCount-2*$idx-1] = new ByeSlot();
          }
-         $poolsPerPlace = $nextRound; // set the next round of pools to the current round
       }
 
-      /* now we have an array of clusters in $poolsPerPlace,
-       * each with 2 or 3 pools, that we can use to create the first round of the knockout structure */
+      /* place first ranked
+       * - even-numbered pools start to center
+       * - odd-numbered pools end to center
+       * Checking for bye slots not needed - byeSlots are always on white slots,
+       * while we are now placing everyone into red slots
+       */
+      for( $i = 0; $i < $poolCount; $i += 2 )
+      {
+         $start_slots[$i] = new PoolWinnerSlot($pools[$i], 1);
+         $start_slots[$maxSlotCount-$i-2] = new PoolWinnerSlot($pools[$i+1], 1);
+      }
+
+      /* now fill everything up with second ranked
+       * - even-numbered pools end to center
+       * - odd-numbered pools start to center
+       * fill up any still unused slot
+       */
+      $first_half_pos = 0;
+      $second_half_pos = $maxSlotCount - 1;
+      for( $i = 0; $i < $poolCount; $i += 2 )
+      {
+         while( $start_slots[$first_half_pos] !== null  ) $first_half_pos += 1;
+         $start_slots[$first_half_pos] = new PoolWinnerSlot($pools[$i+1], 2);
+         while( $start_slots[$second_half_pos] !== null ) $second_half_pos -= 1;
+         $start_slots[$second_half_pos] = new PoolWinnerSlot($pools[$i], 2);
+      }
+
+      /* done, now generate the first round of matches from the start slots */
       $firstRound = MatchNodeCollection::new(); // current round of matches, will be filled with MatchNode objects
       $nextMatchId = 1; // local match ID, starting at 1
-      foreach ($poolsPerPlace as $chunk)
+      foreach( array_chunk($start_slots, 2) as $slots )
       {
-         // format of chunk: [ 0 => [poolId1, poolId2, ...], 1 => [poolId1, poolId2, ...] ]
-         // with the key being the place/rank of the pool winner in the knockout structure
-         ksort($chunk); // make sure array is sorted by place/rank
-         $slots = [];
-         foreach ($chunk as $place => $poolIds)
-         {
-            // create PoolWinnerSlot objects for each pool winner in the chunk
-            foreach ($poolIds as $poolId)
-            {
-               if( $pools->keyExists($poolId) ) // catch dummy pools that may have been generated during the splitting
-               {
-                  $slots[] = new PoolWinnerSlot($pools[$poolId], $place + 1); // place starts at 0, but we want it to start at 1
-               }
-               else
-               {
-                  $slots[] = new ByeSlot();
-               }
-            }
-         }
-
-         if (count($slots) === 2)
-         {
-            $firstRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slots[0], slotWhite: $slots[1] );
-         }
-         elseif(count($slots) === 3)
-         {
-            // one BYE needed, pair it with the best ranking participant in this chunk
-            $firstRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slots[0], slotWhite: new ByeSlot());
-            $firstRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slots[1], slotWhite: $slots[2]);
-         }
-         else
-         {
-            // sanity check, impossible with the split algorithm above
-            throw new \LogicException('Unexpected number of slots in chunk: ' . count($slots));
-         }
+         $firstRound[] = new KoNode($nextMatchId++, $this->category, $slots[0], $slots[1]);
       }
       return $firstRound;
    }
