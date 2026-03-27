@@ -3,6 +3,7 @@
 namespace Tests\Tournament\Model\TournamentStructure\MatchNode;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\Stub;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
@@ -39,11 +40,11 @@ class KoNodeTest extends TestCase
    protected function setUp(): void
    {
       $this->mpHdl = $this->createStub(MatchPointHandler::class);
-      $category = $this->getMockBuilder(Category::class)
+      $category = $this->getStubBuilder(Category::class)
          ->enableOriginalConstructor()
          ->setConstructorArgs([1, 1, 'test', CategoryMode::KO])
-         ->getMock();
-      $category->expects($this->any())->method('getMatchPointHandler')->willReturn($this->mpHdl);
+         ->getStub();
+      $category->method('getMatchPointHandler')->willReturn($this->mpHdl);
       $this->category = $category;
 
       /* for testing, set up a KO tree according ROUNDS config */
@@ -174,17 +175,25 @@ class KoNodeTest extends TestCase
          {
             $next[] = [$rank_idx+1, $node->slotRed->matchNode, $redParticipant];
          }
-         else
+         else if($node->slotRed instanceof Stub)
          {
             $node->slotRed->method('getParticipant')->willReturn($redParticipant);
+         }
+         else
+         {
+            throw new \LogicException('unexpected type for red slot');
          }
          if ($node->slotWhite instanceof MatchWinnerSlot)
          {
             $next[] = [$rank_idx+1, $node->slotWhite->matchNode, $whiteParticipant];
          }
-         else
+         else if($node->slotWhite instanceof Stub)
          {
             $node->slotWhite->method('getParticipant')->willReturn($whiteParticipant);
+         }
+         else
+         {
+            throw new \LogicException('unexpected type for white slot');
          }
          /* create the match record */
          $records[] = new MatchRecord(
