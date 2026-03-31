@@ -1,10 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\PlacementCostCalculator;
 
 use Tournament\Model\Participant\Participant;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
-use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
+use Tournament\Model\TournamentStructure\KoTree;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 
 class GenericPlacementCostCalculator implements PlacementCostCalculator
@@ -43,16 +42,16 @@ class GenericPlacementCostCalculator implements PlacementCostCalculator
       return $cost;
    }
 
-   public function loadStructure(KoNode $root): void
+   public function loadStructure(KoTree $ko): void
    {
       /* derive the paths for each node and collect all starting slots */
       $root_path = [];
       $start_slots = [];
-      $node_stack = [$root];
+      $node_stack = [$ko->root];
       while ($node = array_shift($node_stack))
       {
          $path = $root_path[$node->getName()] ?? [];
-         foreach ([$node->slotRed, $node->slotWhite] as $slot)
+         foreach ($node->getSlots() as $slot)
          {
             $node_path = array_merge([$node], $path);
             if ($slot instanceof MatchWinnerSlot)

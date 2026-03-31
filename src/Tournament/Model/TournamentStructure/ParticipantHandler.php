@@ -7,8 +7,9 @@ use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\Participant\CategoryAssignment;
 use Tournament\Model\PlacementCostCalculator\SlotPlacement;
 use Tournament\Model\PlacementCostCalculator\SlotPlacmentCollection;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
+use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlotCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\ByeSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
@@ -144,7 +145,7 @@ final class ParticipantHandler
          {
             /* pre-assign value is a MatchNode Name/ID, assign to its red slot */
             $node = $first_round->findNode($pre_assign_slot);
-            if (isset($node) && !$node->slotRed->getParticipant()) $slotName = $node->slotRed->getName();
+            if (isset($node) && !$node->getRedParticipant()) $slotName = $node->getRedSlot()->getName();
          }
          else
          {
@@ -389,11 +390,14 @@ final class ParticipantHandler
    private function getSlots(MatchNodeCollection $nodes): MatchSlotCollection
    {
       $result = MatchSlotCollection::new();
+      /** @var MatchNode $node */
       foreach ($nodes as $node)
       {
-         /** @var KoNode $node */
-         if ($node->slotRed->getName())   $result[$node->slotRed->getName()] = $node->slotRed;
-         if ($node->slotWhite->getName()) $result[$node->slotWhite->getName()] = $node->slotWhite;
+         foreach( MatchSide::cases() as $side )
+         {
+            $slot = $node->getSlot($side);
+            if( $slot->getName() ) $result[$slot->getName()] = $slot;
+         }
       }
       return $result->ksort(SORT_STRING);
    }

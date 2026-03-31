@@ -1,4 +1,6 @@
-<?php
+<?php declare(strict_types=1);
+
+namespace Tests\Tournament\Model\TournamentStructure;
 
 use PHPUnit\Framework\TestCase;
 
@@ -8,7 +10,7 @@ use Tournament\Model\Category\CategoryConfiguration;
 use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\TournamentStructure;
 
 
@@ -41,8 +43,8 @@ class ParticipantHandlerTest extends TestCase
       // All BYEs should have ended up in the white slots
       foreach ($rounds[0] as $match)
       {
-         $this->assertFalse($match->slotRed->isBye());
-         $this->assertTrue($match->slotWhite->isBye());
+         $this->assertFalse($match->getRedSlot()->isBye());
+         $this->assertTrue($match->getWhiteSlot()->isBye());
       }
    }
 
@@ -102,8 +104,8 @@ class ParticipantHandlerTest extends TestCase
        */
       foreach ($structure->ko->getFirstRound() as $node)
       {
-         $this->assertFalse($node->slotRed->isBye());
-         $this->assertTrue($node->slotWhite->isBye());
+         $this->assertFalse($node->getRedSlot()->isBye());
+         $this->assertTrue($node->getWhiteSlot()->isBye());
       }
    }
 
@@ -188,7 +190,7 @@ class ParticipantHandlerTest extends TestCase
    public function testClubSpreadPools()
    {
       $pool_count = 4;
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(ceil(log($pool_count*2, 2))));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(intval(ceil(log($pool_count*2, 2)))));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $this->assertCount($pool_count, $structure->pools);
@@ -253,7 +255,7 @@ class ParticipantHandlerTest extends TestCase
    public function testClubSpreadKo()
    {
       $max_participant_count = 8;
-      $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(ceil(log($max_participant_count, 2))));
+      $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(intval(ceil(log($max_participant_count, 2)))));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
 
@@ -295,9 +297,9 @@ class ParticipantHandlerTest extends TestCase
          /* verify that on no node, two participants do have the same club */
          foreach ($structure->ko->getFirstRound() as $node)
          {
-            /** @var KoNode $node */
-            $red = $node->slotRed->getParticipant();
-            $white = $node->slotWhite->getParticipant();
+            /** @var MatchNode $node */
+            $red = $node->getRedParticipant();
+            $white = $node->getWhiteParticipant();
             if( isset($red) && isset($white) )
             {
                $this->assertNotEquals($red->club, $white->club, 'participants of same club put into the same start fight!');

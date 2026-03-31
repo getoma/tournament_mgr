@@ -1,9 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\TournamentStructure;
 
 use Tournament\Model\Area\AreaCollection;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\Pool\PoolCollection;
 
@@ -36,22 +35,21 @@ final class AreaAssignmentHandler
     * Distribute the ko tree to the areas.
     * parameter $cluster currently ignored, TBD
     */
-   public static function assignKoAreas(KoNode $root, AreaCollection $areas, ?int $cluster): void
+   public static function assignKoAreas(KoTree $ko, AreaCollection $areas, ?int $cluster): void
    {
       $numAreas   = $areas->count();
       $area_usage = array_fill(0, $numAreas, 0); // track usage of each area
-      $rounds     = $root->getRounds();
+      $rounds     = $ko->getRounds();
       $areas_i    = $areas->values();
 
       $area_usage = self::symmetricDistributeAreas($rounds->first(), $areas_i);
 
-      /** @var KoNode $node */
       foreach ($rounds->slice(1) as $round)
       {
          if( $round->count() === 1 )
          {
             /* finale always in the center */
-            $round->first()->area = $areas_i[intdiv($numAreas-1,2)];
+            $round->first()->setArea($areas_i[intdiv($numAreas-1,2)]);
          }
          else
          {
@@ -108,7 +106,7 @@ final class AreaAssignmentHandler
       $area_cnt = 0;
       foreach ($round as $node)
       {
-         $node->area = $areas[$area_idx];
+         $node->setArea($areas[$area_idx]);
          if (++$area_cnt >= $area_usage[$area_idx])
          {
             $area_idx += 1;
@@ -136,13 +134,13 @@ final class AreaAssignmentHandler
       /* first trivial assignment: if both incoming nodes were on the same area, use this one here as well */
       foreach ($round as $node)
       {
-         list($redSlot, $whiteSlot) = [$node->slotRed, $node->slotWhite];
+         list($redSlot, $whiteSlot) = [$node->getRedSlot(), $node->getWhiteSlot()];
          /** @var MatchWinnerSlot $redSlot */
          /** @var MatchWinnerSlot $whiteSlot */
-         if ($redSlot->matchNode->area === $whiteSlot->matchNode->area)
+         if ($redSlot->matchNode->getArea() === $whiteSlot->matchNode->getArea())
          {
-            $node->area = $redSlot->matchNode->area;
-            $area_idx = array_find_key($areas, fn($a) => $a === $node->area);
+            $node->setArea($redSlot->matchNode->getArea());
+            $area_idx = array_find_key($areas, fn($a) => $a === $node->getArea());
             $usage[$area_idx] += 1;
          }
       }
@@ -153,15 +151,15 @@ final class AreaAssignmentHandler
       $idx_assignment = [];
       foreach ($round->slice(0, $nodeCount / 2) as $node_idx => $node)
       {
-         if ($node->area) continue; // already assigned in first step
+         if ($node->getArea()) continue; // already assigned in first step
 
-         list($redSlot, $whiteSlot) = [$node->slotRed, $node->slotWhite];
+         list($redSlot, $whiteSlot) = [$node->getRedSlot(), $node->getWhiteSlot()];
          /** @var MatchWinnerSlot $redSlot */
          /** @var MatchWinnerSlot $whiteSlot */
 
          /* decide between the two incoming nodes based on the current area usage */
-         $redAreaIdx = array_find_key($areas, fn($a) => $a === $redSlot->matchNode->area);
-         $whiteAreaIdx = array_find_key($areas, fn($a) => $a === $whiteSlot->matchNode->area);
+         $redAreaIdx = array_find_key($areas, fn($a) => $a === $redSlot->matchNode->getArea());
+         $whiteAreaIdx = array_find_key($areas, fn($a) => $a === $whiteSlot->matchNode->getArea());
          if($usage[$redAreaIdx] === $usage[$whiteAreaIdx] )
          {
             /* we can freely select - use the "outer one" */
@@ -172,7 +170,7 @@ final class AreaAssignmentHandler
             /* use the one with less usage */
             $area_idx = $usage[$redAreaIdx] < $usage[$whiteAreaIdx]? $redAreaIdx : $whiteAreaIdx;
          }
-         $node->area = $areas[$area_idx];
+         $node->setArea($areas[$area_idx]);
          $usage[$area_idx] += 1;
          $idx_assignment[$node_idx] = $area_idx;
       }
@@ -182,7 +180,7 @@ final class AreaAssignmentHandler
       {
          $node_idx = $nodeCount - 1 - $sister_node_idx;
          $area_idx = $numAreas  - 1 - $sister_area_idx;
-         $round[$node_idx]->area = $areas[$area_idx];
+         $round[$node_idx]->setArea($areas[$area_idx]);
          $usage[$area_idx] += 1;
       }
 

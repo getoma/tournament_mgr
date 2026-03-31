@@ -1,12 +1,12 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\TournamentStructure\MatchSlot;
 
-use Tournament\Model\Participant\Participant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 
 class ParticipantSlot extends MatchSlot
 {
-   public function __construct(public ?Participant $participant = null, public ?string $slotName = null)
+   public function __construct(public ?MatchParticipant $participant = null, public ?string $slotName = null)
    {
    }
 
@@ -20,7 +20,7 @@ class ParticipantSlot extends MatchSlot
       return !$this->isBye()? 'Teilnehmer ' . $this->participant->id : '--';
    }
 
-   public function getParticipant(): ?Participant
+   public function getParticipant(): ?MatchParticipant
    {
       return $this->participant ?? null; // still return a dummy participant, therefore do not check on isBye()
    }

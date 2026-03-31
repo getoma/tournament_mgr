@@ -1,10 +1,10 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\MatchCreationHandler;
 
 use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\ParticipantCollection;
-use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 
@@ -12,7 +12,6 @@ class GenericMatchCreationHandler implements MatchCreationHandler
 {
    public function __construct(public Category $category)
    {
-
    }
 
    public function generate(ParticipantCollection $participants): MatchNodeCollection
@@ -23,21 +22,21 @@ class GenericMatchCreationHandler implements MatchCreationHandler
       if( $participants->count() === 3 )
       {
          return MatchNodeCollection::new([
-            new MatchNode(0, $this->category, new ParticipantSlot($p[0]), new ParticipantSlot($p[1])),
-            new MatchNode(0, $this->category, new ParticipantSlot($p[0]), new ParticipantSlot($p[2])),
-            new MatchNode(0, $this->category, new ParticipantSlot($p[1]), new ParticipantSlot($p[2])),
+            new SoloMatch("", $this->category, new ParticipantSlot($p[0]), new ParticipantSlot($p[1])),
+            new SoloMatch("", $this->category, new ParticipantSlot($p[0]), new ParticipantSlot($p[2])),
+            new SoloMatch("", $this->category, new ParticipantSlot($p[1]), new ParticipantSlot($p[2])),
          ]);
 
       }
       else if( $participants->count() === 4 )
       {
          return MatchNodeCollection::new( [
-            new MatchNode(0, $this->category, new ParticipantSlot($p[0]), new ParticipantSlot($p[1])),
-            new MatchNode(0, $this->category, new ParticipantSlot($p[2]), new ParticipantSlot($p[3])),
-            new MatchNode(0, $this->category, new ParticipantSlot($p[0]), new ParticipantSlot($p[3])),
-            new MatchNode(0, $this->category, new ParticipantSlot($p[0]), new ParticipantSlot($p[2])),
-            new MatchNode(0, $this->category, new ParticipantSlot($p[1]), new ParticipantSlot($p[2])),
-            new MatchNode(0, $this->category, new ParticipantSlot($p[1]), new ParticipantSlot($p[3])),
+            new SoloMatch("", $this->category, new ParticipantSlot($p[0]), new ParticipantSlot($p[1])),
+            new SoloMatch("", $this->category, new ParticipantSlot($p[2]), new ParticipantSlot($p[3])),
+            new SoloMatch("", $this->category, new ParticipantSlot($p[0]), new ParticipantSlot($p[3])),
+            new SoloMatch("", $this->category, new ParticipantSlot($p[0]), new ParticipantSlot($p[2])),
+            new SoloMatch("", $this->category, new ParticipantSlot($p[1]), new ParticipantSlot($p[2])),
+            new SoloMatch("", $this->category, new ParticipantSlot($p[1]), new ParticipantSlot($p[3])),
          ]);
       }
       else
@@ -74,7 +73,7 @@ class GenericMatchCreationHandler implements MatchCreationHandler
                   $red       = new ParticipantSlot($p_red);
                   $white     = new ParticipantSlot($p_white);
                   $matchId   = $result->count();
-                  $result[] = new MatchNode($matchId, $this->category, $red, $white);
+                  $result[] = new SoloMatch(strval($matchId), $this->category, $red, $white);
                }
             }
 

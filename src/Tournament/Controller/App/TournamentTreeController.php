@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Controller\App;
 
@@ -63,7 +63,7 @@ class TournamentTreeController
 
       return $this->view->render($response, 'tournament/navigation/category_KO.twig', [
          'no_pools'   => $structure->pools->empty(),
-         'ko'         => $structure->getFinaleRounds(),
+         'ko_rounds'  => $structure->getFinaleRounds(),
          'unmapped_participants' => $structure->unmapped_participants,
       ]);
    }
@@ -81,7 +81,7 @@ class TournamentTreeController
 
       return $this->view->render($response, 'tournament/navigation/category_home.twig', [
          'pools'      => $structure->pools,
-         'ko'         => $structure->getFinaleRounds(),
+         'ko_rounds'  => $structure->getFinaleRounds(),
          'unmapped_participants' => $structure->unmapped_participants,
       ]);
    }
@@ -133,7 +133,7 @@ class TournamentTreeController
       $ctx = $request->getAttribute('route_context');
       $structure = $this->structureLoadService->load($ctx->category);
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found');
-      $error = $this->matchService->deletePoolTieBreak($pool, $args['decision_round']);
+      $error = $this->matchService->deletePoolTieBreak($pool, (int)$args['decision_round']);
       /* forward to output page */
       if ($error)
       {
@@ -193,7 +193,7 @@ class TournamentTreeController
          /* if pool given, get all of the current pool */
          default => $structure->pools[$ctx->pool_name]->getMatchList(),
          /* if outside pool, get all ko matches of this area that are "real" */
-         null    => $structure->getFinaleRounds()->filterRounds(fn($n) => $n->isReal() && $n->area === $node->area),
+         null    => $structure->getFinaleRounds()->filterRounds(fn($n) => $n->isReal() && $n->getArea() === $node->getArea()),
       };
       /** @var MatchNodeCollection|MatchRoundCollection $matchList */
       $current_it = $matchList->getNodeIteratorAt($ctx->match_name);
@@ -203,7 +203,7 @@ class TournamentTreeController
          'pool'     => $args['pool']??null,
          'node'     => $node,
          'node_it'  => $current_it,
-         'area'     => $node->area,  // explicitly mark that we provide the match list for this area, only
+         'area'     => $node->getArea(),  // explicitly mark that we provide the match list for this area, only
          'area_selection' => $structure->areas->column('name', 'id'),
          'error'    => $error,
       ]);

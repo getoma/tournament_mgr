@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tests\Tournament\Model\TournamentStructure\Pool;
 
@@ -19,6 +19,7 @@ use Tournament\Model\PoolRankHandler\PoolRank;
 use Tournament\Model\PoolRankHandler\PoolRankCollection;
 use Tournament\Model\PoolRankHandler\PoolRankHandler;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\Pool\Pool;
@@ -79,7 +80,7 @@ class PoolTest extends TestCase
          {
             $red   = new ParticipantSlot($parr[$i]);
             $white = new ParticipantSlot($parr[$j]);
-            $res[] = new MatchNode($matchid++, $this->category, $red, $white);
+            $res[] = new SoloMatch(strval($matchid++), $this->category, $red, $white);
          }
       }
 
@@ -106,10 +107,10 @@ class PoolTest extends TestCase
       foreach ($matches as $m)
       {
          /** @var MatchNode $m */
-         $record = new MatchRecord($m_id++, $m->getName(), $category, $area, $m->slotRed->getParticipant(), $m->slotWhite->getParticipant());
+         $record = new MatchRecord($m_id++, $m->getName(), $category, $area, $m->getRedParticipant(), $m->getWhiteParticipant());
          if (!$lastOngoing || ($m_id < $matches->count()) )
          {
-            $record->winner = $m->slotRed->getParticipant();
+            $record->winner = $m->getRedParticipant();
             $record->finalized_at = new \DateTime();
          }
          $records[] = $record;
@@ -165,7 +166,7 @@ class PoolTest extends TestCase
       $this->assertNull($dut->getArea());
       foreach ($dut->getMatchList() as $m)
       {
-         $this->assertNull($m->area);
+         $this->assertNull($m->getArea());
       }
       $this->assertCount($plist->count(), $dut->getParticipants());
       $this->assertCount($matches->count(), $dut->getMatchList());
@@ -183,7 +184,7 @@ class PoolTest extends TestCase
       $this->assertSame($area, $dut->getArea());
       foreach( $dut->getMatchList() as $m )
       {
-         $this->assertSame($area, $m->area);
+         $this->assertSame($area, $m->getArea());
       }
 
       /**

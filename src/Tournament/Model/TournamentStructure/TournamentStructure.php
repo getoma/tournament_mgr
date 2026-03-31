@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\TournamentStructure;
 
@@ -6,7 +6,6 @@ use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\PoolWinnerSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\ByeSlot;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\TournamentStructure\KoChunk;
 use Tournament\Model\TournamentStructure\Pool\PoolCollection;
 
@@ -16,8 +15,10 @@ use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNodeBase;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
+use Tournament\Model\TournamentStructure\MatchNode\SoloKoMatch;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
 /**
@@ -33,8 +34,8 @@ class TournamentStructure
    /** @var PoolCollection list of pools */
    public PoolCollection $pools;
 
-   /** @var KoNode finale node of the KO tree */
-   public ?KoNode $ko = null;
+   /** @var KoTree the root of the tournament ko tree */
+   public ?KoTree $ko = null;
 
    /** @var KoChunk[] list of KO clusters*/
    private array $clusters = [];
@@ -66,7 +67,7 @@ class TournamentStructure
    {
       if ($this->category->mode === CategoryMode::KO)
       {
-         $this->ko = $this->fillKO( $this->createKoFirstRound($this->category->config->num_rounds) );
+         $this->fillKO( $this->createKoFirstRound($this->category->config->num_rounds) );
       }
       elseif ($this->category->mode === CategoryMode::Pool)
       {
@@ -76,7 +77,7 @@ class TournamentStructure
       {
          $cfg = $this->category->config;
          $this->pools = $this->createAutoPools($cfg->num_rounds, $cfg->pool_winners, $cfg->max_pools);
-         $this->ko = $this->fillKO( $this->createPoolKoFirstRound($this->pools, $this->category->config->pool_winners) );
+         $this->fillKO( $this->createPoolKoFirstRound($this->pools, $this->category->config->pool_winners) );
       }
       else
       {
@@ -105,11 +106,11 @@ class TournamentStructure
    }
 
    /**
-    * extract the KoNode name from a slot name - Node slot naming is defined by the KoNode class
+    * extract the MatchNode name from a slot name - Node slot naming is defined by the MatchNodeBase class
     */
    public static function getKoNodeNameFromSlotName(string $slotName, bool $throw_if_invalid = true): ?string
    {
-      return KoNode::getNodeNameFromSlotName($slotName, $throw_if_invalid);
+      return MatchNodeBase::getNodeNameFromSlotName($slotName, $throw_if_invalid);
    }
 
    /**
@@ -235,7 +236,7 @@ class TournamentStructure
    private function createKoFirstRound(int $numRounds): MatchNodeCollection
    {
       return MatchNodeCollection::new( array_map(
-         fn($i) => new KoNode($i, $this->category, new ParticipantSlot(), new ParticipantSlot()),
+         fn($i) => new SoloKoMatch(strval($i), $this->category, new ParticipantSlot(), new ParticipantSlot()),
          range(1, pow(2, $numRounds - 1))
       ));
    }
@@ -251,7 +252,7 @@ class TournamentStructure
       $numSlots = pow(2, $numRounds);
       $numPools = pow(2, floor(log($numSlots / $winnersPerPool, 2))); // number of pools, must be a power of 2, rest filled up with BYEs
       if( $maxPools > 0 ) $numPools = min($maxPools, $numPools);
-      return PoolCollection::new( array_map(fn($i) => new Pool($i+1, $this->category), range(0, $numPools - 1)) );
+      return PoolCollection::new( array_map(fn($i) => new Pool(strval($i+1), $this->category), range(0, $numPools - 1)) );
    }
 
    /**
@@ -343,13 +344,13 @@ class TournamentStructure
 
          if (count($slots) === 2)
          {
-            $firstRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slots[0], slotWhite: $slots[1] );
+            $firstRound[] = new SoloKoMatch(strval($nextMatchId++), $this->category, slotRed: $slots[0], slotWhite: $slots[1] );
          }
          elseif(count($slots) === 3)
          {
             // one BYE needed, pair it with the best ranking participant in this chunk
-            $firstRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slots[0], slotWhite: new ByeSlot());
-            $firstRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slots[1], slotWhite: $slots[2]);
+            $firstRound[] = new SoloKoMatch(strval($nextMatchId++), $this->category, slotRed: $slots[0], slotWhite: new ByeSlot());
+            $firstRound[] = new SoloKoMatch(strval($nextMatchId++), $this->category, slotRed: $slots[1], slotWhite: $slots[2]);
          }
          else
          {
@@ -364,7 +365,7 @@ class TournamentStructure
     * complete the KO tree from a list of first-round-matches.
     * Store the final node in the class and set the number of finale rounds
     */
-   private function fillKO(MatchNodeCollection $currentRound): KoNode
+   private function fillKO(MatchNodeCollection $currentRound): void
    {
       $nextMatchId = $currentRound->count()+1; // next match ID, starting after the last match in the first round
       // use the current round to create the next round until we reach the finale
@@ -376,9 +377,9 @@ class TournamentStructure
          {
             $slotRed   = new MatchWinnerSlot($previousRound[$i]);
             $slotWhite = new MatchWinnerSlot($previousRound[$i + 1]);
-            $currentRound[] = new KoNode($nextMatchId++, $this->category, slotRed: $slotRed, slotWhite: $slotWhite);
+            $currentRound[] = new SoloKoMatch(strval($nextMatchId++), $this->category, slotRed: $slotRed, slotWhite: $slotWhite);
          }
       }
-      return $currentRound->first();
+      $this->ko = new KoTree($currentRound->first());
    }
 }

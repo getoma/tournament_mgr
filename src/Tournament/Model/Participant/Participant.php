@@ -1,10 +1,10 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\Participant;
 
 use Respect\Validation\Validator as v;
 
-class Participant implements \Tournament\Model\Base\DbItem
+class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant
 {
    use \Tournament\Model\Base\DbItemTrait;
 
@@ -67,12 +67,21 @@ class Participant implements \Tournament\Model\Base\DbItem
    }
 
    /**
-    * in some cases, it might be necessary to have a placeholder participant for some calculations
-    * natively provide this. A dummy/placeholder participant is identified by having no lastname set
+    * MatchParticipant interface
     */
-   public static function dummy(): static
+   public function getId(): int
    {
-      return new static(null, 0, '', '');
+      return $this->id;
+   }
+
+   public function getDisplayName(): string
+   {
+      return $this->lastname . ", " . $this->firstname;
+   }
+
+   public function isComposite(): bool
+   {
+      return false;
    }
 
    /**
@@ -84,4 +93,12 @@ class Participant implements \Tournament\Model\Base\DbItem
       return empty($this->lastname);
    }
 
+   /**
+    * in some cases, it might be necessary to have a placeholder participant for some calculations
+    * natively provide this. A dummy/placeholder participant is identified by having no lastname set
+    */
+   public static function dummy(): static
+   {
+      return new static(null, 0, '', '');
+   }
 }

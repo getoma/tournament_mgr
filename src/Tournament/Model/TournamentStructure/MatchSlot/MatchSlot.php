@@ -1,8 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\TournamentStructure\MatchSlot;
 
-use Tournament\Model\Participant\Participant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 
 abstract class MatchSlot
 {
@@ -15,7 +15,7 @@ abstract class MatchSlot
     * return the participant in this slot,
     * or null if not decided, yet.
     */
-   abstract public function getParticipant(): ?Participant;
+   abstract public function getParticipant(): ?MatchParticipant;
 
    /**
     * whether this slot represents a BYE

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tests\Tournament\Model\MatchCreationHandler;
 
@@ -29,8 +29,8 @@ class GenericMatchCreationHandlerTest extends TestCase
       $p2 = new Participant(2, 1, '', '');
       $matchList = $tst->generate(new ParticipantCollection([$p1, $p2]));
       $this->assertCount(1, $matchList);
-      $this->assertEquals($p1, $matchList->first()->slotRed->getParticipant());
-      $this->assertEquals($p2, $matchList->first()->slotWhite->getParticipant());
+      $this->assertEquals($p1, $matchList->first()->getRedParticipant());
+      $this->assertEquals($p2, $matchList->first()->getWhiteParticipant());
    }
 
    /**
@@ -46,14 +46,14 @@ class GenericMatchCreationHandlerTest extends TestCase
 
       $this->assertCount(3, $matchList);
       /* A vs B */
-      $this->assertEquals($p[0], $matchList[0]->slotRed->getParticipant());
-      $this->assertEquals($p[1], $matchList[0]->slotWhite->getParticipant());
+      $this->assertEquals($p[0], $matchList[0]->getRedParticipant());
+      $this->assertEquals($p[1], $matchList[0]->getWhiteParticipant());
       /* A vs C */
-      $this->assertEquals($p[0], $matchList[1]->slotRed->getParticipant());
-      $this->assertEquals($p[2], $matchList[1]->slotWhite->getParticipant());
+      $this->assertEquals($p[0], $matchList[1]->getRedParticipant());
+      $this->assertEquals($p[2], $matchList[1]->getWhiteParticipant());
       /* B vs C */
-      $this->assertEquals($p[1], $matchList[2]->slotRed->getParticipant());
-      $this->assertEquals($p[2], $matchList[2]->slotWhite->getParticipant());
+      $this->assertEquals($p[1], $matchList[2]->getRedParticipant());
+      $this->assertEquals($p[2], $matchList[2]->getWhiteParticipant());
    }
 
    /**
@@ -69,23 +69,23 @@ class GenericMatchCreationHandlerTest extends TestCase
 
       $this->assertCount(6, $matchList);
       /* A vs B */
-      $this->assertEquals($p[0], $matchList[0]->slotRed->getParticipant());
-      $this->assertEquals($p[1], $matchList[0]->slotWhite->getParticipant());
+      $this->assertEquals($p[0], $matchList[0]->getRedParticipant());
+      $this->assertEquals($p[1], $matchList[0]->getWhiteParticipant());
       /* C vs D */
-      $this->assertEquals($p[2], $matchList[1]->slotRed->getParticipant());
-      $this->assertEquals($p[3], $matchList[1]->slotWhite->getParticipant());
+      $this->assertEquals($p[2], $matchList[1]->getRedParticipant());
+      $this->assertEquals($p[3], $matchList[1]->getWhiteParticipant());
       /* A vs D */
-      $this->assertEquals($p[0], $matchList[2]->slotRed->getParticipant());
-      $this->assertEquals($p[3], $matchList[2]->slotWhite->getParticipant());
+      $this->assertEquals($p[0], $matchList[2]->getRedParticipant());
+      $this->assertEquals($p[3], $matchList[2]->getWhiteParticipant());
       /* A vs C */
-      $this->assertEquals($p[0], $matchList[3]->slotRed->getParticipant());
-      $this->assertEquals($p[2], $matchList[3]->slotWhite->getParticipant());
+      $this->assertEquals($p[0], $matchList[3]->getRedParticipant());
+      $this->assertEquals($p[2], $matchList[3]->getWhiteParticipant());
       /* B vs C */
-      $this->assertEquals($p[1], $matchList[4]->slotRed->getParticipant());
-      $this->assertEquals($p[2], $matchList[4]->slotWhite->getParticipant());
+      $this->assertEquals($p[1], $matchList[4]->getRedParticipant());
+      $this->assertEquals($p[2], $matchList[4]->getWhiteParticipant());
       /* B vs D */
-      $this->assertEquals($p[1], $matchList[5]->slotRed->getParticipant());
-      $this->assertEquals($p[3], $matchList[5]->slotWhite->getParticipant());
+      $this->assertEquals($p[1], $matchList[5]->getRedParticipant());
+      $this->assertEquals($p[3], $matchList[5]->getWhiteParticipant());
    }
 
    /**
@@ -131,13 +131,13 @@ class GenericMatchCreationHandlerTest extends TestCase
       foreach($matchList as $match)
       {
          /* participants were not in previous match */
-         $this->assertFalse(in_array($match->slotRed->getParticipant(), $previous));
-         $this->assertFalse(in_array($match->slotWhite->getParticipant(), $previous));
-         $previous = [$match->slotRed->getParticipant(), $match->slotWhite->getParticipant()];
+         $this->assertFalse(in_array($match->getRedParticipant(), $previous));
+         $this->assertFalse(in_array($match->getWhiteParticipant(), $previous));
+         $previous = [$match->getRedParticipant(), $match->getWhiteParticipant()];
 
          /* remove this pairing from our checklist */
-         $id1 = $match->slotRed->getParticipant()->id;
-         $id2 = $match->slotWhite->getParticipant()->id;
+         $id1 = $match->getRedParticipant()->id;
+         $id2 = $match->getWhiteParticipant()->id;
          unset($pairings["{$id1},{$id2}"]);
          unset($pairings["{$id2},{$id1}"]);
       }

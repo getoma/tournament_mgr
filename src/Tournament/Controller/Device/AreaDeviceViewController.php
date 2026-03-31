@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Controller\Device;
 
@@ -75,8 +75,8 @@ class AreaDeviceViewController
       $structure = $this->structureLoadService->load($ctx->category);
 
       return $this->view->render($response, 'device/categories_show.twig', [
-         'pools' => $structure->pools->filter(fn($p) => $p->getArea() === $auth->area),
-         'ko'    => $structure->getFinaleRounds()->filterRounds(fn($n) => $n->getArea() === $auth->area && $n->isReal()),
+         'pools'     => $structure->pools->filter(fn($p) => $p->getArea() === $auth->area),
+         'ko_rounds' => $structure->getFinaleRounds()->filterRounds(fn($n) => $n->getArea() === $auth->area && $n->isReal()),
       ]);
    }
 
@@ -160,7 +160,7 @@ class AreaDeviceViewController
 
       $this->guardAccess($request, $pool, $auth);
 
-      $error = $this->matchService->deletePoolTieBreak($pool, $args['decision_round']);
+      $error = $this->matchService->deletePoolTieBreak($pool, (int)$args['decision_round']);
       /* forward to output page */
       if ($error)
       {
@@ -186,7 +186,7 @@ class AreaDeviceViewController
       $this->guardAccess($request, $node, $auth);
 
       /* get pointers to the previous and next "real" matches for our area */
-      $matchList = $structure->getFinaleRounds()->filterRounds(fn($n) => $n->isReal() && $n->area === $auth->area);
+      $matchList = $structure->getFinaleRounds()->filterRounds(fn($n) => $n->isReal() && $n->getArea() === $auth->area);
       /** @var MatchRoundCollection $matchList */
       $current_it = $matchList->getNodeIteratorAt($ctx->match_name);
 

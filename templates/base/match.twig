@@ -63,9 +63,9 @@
 </table>
 {% endmacro -%}
 
-{% macro printKo(ko, ko_route, route_param, last_round_offset = 0) %}
+{% macro printKo(ko_rounds, ko_route, route_param, last_round_offset = 0) %}
 <ol class="ko-tournament">
-  {% for round in ko -%}
+  {% for round in ko_rounds -%}
   {% if round is not empty -%}
   <li><h3 class="round-caption">{{ _self.printRoundName(loop.index0, loop.length - last_round_offset) }}</h3>
     <ol class="ko-round">
@@ -127,7 +127,7 @@
   <tbody>
     {% for node in nodeList -%}
     {% set nodeIsActive = activeNodeName==node.getName() -%}
-    <tr class="{{ nodeIsActive? "selected" : "inactive"}}{{ node.frozen? " frozen" : "" }}">
+    <tr class="{{ nodeIsActive? "selected" : "inactive"}}{{ node.isFrozen()? " frozen" : "" }}">
       {% if nodeList.count() > 1 -%}
       <td class="td-link">
         {% if nodeIsActive -%}

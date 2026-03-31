@@ -2,9 +2,8 @@
 
 namespace Tournament\Model\TournamentStructure\MatchNode;
 
-/**
- * interface to mark a KO tree node
- */
-interface KoNode extends MatchNode
+enum MatchSide: string
 {
+   case RED   = 'red';
+   case WHITE = 'white';
 }

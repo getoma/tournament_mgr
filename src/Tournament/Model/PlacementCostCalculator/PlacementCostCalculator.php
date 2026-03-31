@@ -1,12 +1,12 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\PlacementCostCalculator;
 
 use Tournament\Model\Participant\Participant;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
+use Tournament\Model\TournamentStructure\KoTree;
 
 interface PlacementCostCalculator
 {
    function calculateCost(Participant $candidate, string $slotName, SlotPlacmentCollection $placed): float;
-   function loadStructure(KoNode $root): void;
+   function loadStructure(KoTree $ko): void;
 }

@@ -1,4 +1,6 @@
-<?php
+<?php declare(strict_types=1);
+
+namespace Tests\Tournament\Model\TournamentStructure;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -8,6 +10,7 @@ use Tournament\Model\Area\AreaCollection;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryConfiguration;
 use Tournament\Model\Category\CategoryMode;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\PoolWinnerSlot;
 use Tournament\Model\TournamentStructure\TournamentStructure;
@@ -51,7 +54,7 @@ class TournamentStructureTest extends TestCase
       $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3, pool_winners: null));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
-      $this->assertNotNull($structure->ko);
+      $this->assertNotNull($structure->ko?->root);
       $this->assertNotEmpty($structure->pools);
 
       $rounds = $structure->ko->getRounds();
@@ -118,11 +121,13 @@ class TournamentStructureTest extends TestCase
       $match_count = array_fill_keys(range(1,$pool_winners), 0);
       $wildcard_count = array_fill_keys(range(1, $pool_winners), 0);
       /* count the number of matches and wildcards per pool result rank */
-      /** @var KoNode $node */
+      /** @var MatchNode $node */
       foreach($structure->ko->getFirstRound() as $node)
       {
-         $red_rank   = ($node->slotRed instanceof PoolWinnerSlot)? $node->slotRed->rank : null;
-         $white_rank = ($node->slotWhite instanceof PoolWinnerSlot) ? $node->slotWhite->rank : null;
+         $redSlot = $node->getRedSlot();
+         $whiteSlot = $node->getWhiteSlot();
+         $red_rank   = ($redSlot instanceof PoolWinnerSlot)? $redSlot->rank : null;
+         $white_rank = ($whiteSlot instanceof PoolWinnerSlot) ? $whiteSlot->rank : null;
 
          if( isset($white_rank) && isset($red_rank) )
          {
@@ -192,7 +197,7 @@ class TournamentStructureTest extends TestCase
          $this->assertSame($area, $pool->getArea());
          foreach ($pool->getMatchList() as $node)
          {
-            $this->assertSame($area, $node->area);
+            $this->assertSame($area, $node->getArea());
          }
       }
 
@@ -204,25 +209,26 @@ class TournamentStructureTest extends TestCase
          foreach( $round as $node )
          {
             /* any area assigned at all? */
-            $this->assertIsObject($node->area, "no area assigned to KO node");
+            $this->assertIsObject($node->getArea(), "no area assigned to KO node");
 
             /* if both in-nodes are on the same area, this node should also be on this area */
-            if( $node->slotRed instanceof MatchWinnerSlot && $node->slotWhite instanceof MatchWinnerSlot
-               && $node->slotRed->matchNode->area === $node->slotWhite->matchNode->area )
+            list($slotRed, $slotWhite) = [$node->getRedSlot(), $node->getWhiteSlot()];
+            if( $slotRed instanceof MatchWinnerSlot && $slotWhite instanceof MatchWinnerSlot
+               && $slotRed->matchNode->getArea() === $slotWhite->matchNode->getArea() )
             {
-               $this->assertSame($node->slotRed->matchNode->area, $node->area, "area shift within the same cluster");
+               $this->assertSame($slotRed->matchNode->getArea(), $node->getArea(), "area shift within the same cluster");
             }
 
             /* areas shall be assigned "in order" */
             if( isset($prev_area) )
             {
-               $this->assertGreaterThanOrEqual($prev_area->id, $node->area->id);
+               $this->assertGreaterThanOrEqual($prev_area->id, $node->getArea()->id);
             }
-            $prev_area = $node->area;
+            $prev_area = $node->getArea();
 
             /* count matches per area */
-            $tracker[$node->area->id] ??= 0;
-            $tracker[$node->area->id] += 1;
+            $tracker[$node->getArea()->id] ??= 0;
+            $tracker[$node->getArea()->id] += 1;
          }
 
          /* after each round, the cummulated area distribution needs to be equal within a certain tolerance

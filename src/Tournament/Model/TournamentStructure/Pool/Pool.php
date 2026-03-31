@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\TournamentStructure\Pool;
 
@@ -13,6 +13,7 @@ use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\PoolRankHandler\PoolRank;
 use Tournament\Model\PoolRankHandler\PoolRankCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
+use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 
 class Pool
 {
@@ -69,7 +70,7 @@ class Pool
       /** @var MatchNode $node */
       foreach ($this->matches as $node)
       {
-         $node->area = $area;
+         $node->setArea($area);
       }
    }
 
@@ -294,7 +295,7 @@ class Pool
    {
       foreach ($this->matches as $match)
       {
-         if ($matchRecords->keyExists($match->getName()))
+         if ($match instanceof SoloMatch && $matchRecords->keyExists($match->getName()))
          {
             $match->setMatchRecord($matchRecords[$match->getName()]);
          }
@@ -316,7 +317,7 @@ class Pool
          {
             $red     = new ParticipantSlot($p_red);
             $white   = new ParticipantSlot($p_white);
-            $newNode = new MatchNode($matchName, $this->category, $red, $white, $this->area);
+            $newNode = new SoloMatch($matchName, $this->category, $red, $white, $this->area);
             $newNode->setMatchRecord($record);
             $this->matches[] = $newNode;
          }
@@ -335,7 +336,7 @@ class Pool
          $fixedMatches = $this->matches->filter( fn($node) => $this->getExtensionId($node->getName()) !== $this->current_extension );
          foreach( $fixedMatches as $node )
          {
-            $node->frozen = true;
+            $node->freeze();
          }
       }
    }
@@ -347,7 +348,7 @@ class Pool
    {
       foreach ($this->matches as $match)
       {
-         $match->frozen = true;
+         $match->freeze();
       }
    }
 
@@ -361,7 +362,7 @@ class Pool
       foreach ($report as $match)
       {
          $match->setName($this->nameFor($matchId++, $this->current_extension));
-         $match->area = $this->area;
+         $match->setArea($this->area);
          // only actually store matches without dummy participants
          // we still calculate a name for them above to have fixed match ids regardless
          if( $match->isReal() ) $this->matches[] = $match;
