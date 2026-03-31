@@ -1,9 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace Tests\Tournament\Model\TournamentStructure\MatchNode;
+namespace Tests\Tournament\Model\TournamentStructure;
 
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\Stub;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
@@ -11,21 +10,23 @@ use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\Participant;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\MatchPointHandler\MatchPointHandler;
+use Tournament\Model\TournamentStructure\KoTree;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\MatchNode\SoloKoMatch;
 
 /**
- * test all additional functionalities of KoNode (compared to MatchNode)
+ * test KoTree traversal methods
  */
-class KoNodeTest extends TestCase
+class KoTreeTest extends TestCase
 {
    const ROUNDS = 3;
 
-   /** @var KoNode $node - the root node and node-under-test */
-   protected KoNode $node;
-   /** @var KoNode[] - flat list of all created nodes as test input */
+   /** @var KoTree $ko - the ko tree under test */
+   protected KoTree $ko;
+   /** @var MatchNode[] - flat list of all created nodes as test input */
    protected array $node_list;
    /** @var Stub[] list of all starting slots (ParticipantSlots, basically) */
    protected array $start_slots;
@@ -35,7 +36,7 @@ class KoNodeTest extends TestCase
    protected Category $category;
 
    /**
-    * create a KoNode tree with ROUNDS rounds, and fill up above member variables
+    * create a KO tree with ROUNDS rounds, and fill up above member variables
     */
    protected function setUp(): void
    {
@@ -56,7 +57,7 @@ class KoNodeTest extends TestCase
             $this->start_slots[] = $a = $this->createStub(ParticipantSlot::class);
             /** @var ParticipantSlot $b */
             $this->start_slots[] = $b = $this->createStub(ParticipantSlot::class);
-            return new KoNode("test_".$i, $category, $a, $b);
+            return new SoloKoMatch("test_".$i, $category, $a, $b);
          }
          , range(1, $round1_cnt) );
 
@@ -72,12 +73,12 @@ class KoNodeTest extends TestCase
          {
             $slotRed   = new MatchWinnerSlot($previousRound[$i]);
             $slotWhite = new MatchWinnerSlot($previousRound[$i + 1]);
-            $node = new KoNode("test_" . $nextMatchId++, $category, slotRed: $slotRed, slotWhite: $slotWhite);
+            $node = new SoloKoMatch("test_" . $nextMatchId++, $category, slotRed: $slotRed, slotWhite: $slotWhite);
             $currentRound[] = $node;
             $this->node_list[] = $node;
          }
       }
-      $this->node = $currentRound[0];
+      $this->ko = new KoTree($currentRound[0]);
    }
 
    /**
@@ -85,7 +86,7 @@ class KoNodeTest extends TestCase
     */
    public function testGetRounds(): void
    {
-      $rounds = $this->node->getRounds();
+      $rounds = $this->ko->getRounds();
       $this->assertCount(self::ROUNDS, $rounds);
 
       $node_idx = 0;
@@ -99,7 +100,7 @@ class KoNodeTest extends TestCase
       }
 
       /* also, check the output of the very related method getMatchList() */
-      $this->assertSame($this->node_list, $this->node->getMatchList()->values());
+      $this->assertSame($this->node_list, $this->ko->getMatchList()->values());
    }
 
    /**
@@ -109,9 +110,9 @@ class KoNodeTest extends TestCase
    {
       foreach( $this->node_list as $node )
       {
-         $this->assertSame($node, $this->node->findByName($node->getName()));
+         $this->assertSame($node, $this->ko->findByName($node->getName()));
       }
-      $this->assertSame(null, $this->node->findByName("bla"));
+      $this->assertSame(null, $this->ko->findByName("bla"));
    }
 
    /**
@@ -122,7 +123,7 @@ class KoNodeTest extends TestCase
       $sortCbk = fn($a, $b) => $a->id <=> $b->id;
 
       $participants = [];
-      $this->assertEmpty($this->node->getParticipantList());
+      $this->assertEmpty($this->ko->getParticipantList());
 
       // start with adding a participant to the start, end and somewhere in the middle
       $index = [0, count($this->start_slots)-1, count($this->start_slots)/2, count($this->start_slots)/4];
@@ -138,7 +139,7 @@ class KoNodeTest extends TestCase
 
          // get list of participants and see if it matches
          usort($participants, $sortCbk);
-         $received = $this->node->getParticipantList();
+         $received = $this->ko->getParticipantList();
          usort($received, $sortCbk);
          $this->assertSame($participants, $received);
       }
@@ -156,12 +157,12 @@ class KoNodeTest extends TestCase
        */
       $pid = 1;
       $ranks = [[new Participant($pid++, 1, '', '')]];
-      $next = [[1, $this->node, $ranks[0][0]]];
+      $next = [[1, $this->ko->root, $ranks[0][0]]];
       $records = MatchRecordCollection::new();
       $red_winner = true;
       while( count($next) )
       {
-         /** @var KoNode $node */
+         /** @var MatchNode $node */
          /* fetch/create input data */
          list($rank_idx, $node, $winner) = array_shift($next);
          $defeated = new Participant($pid++, 1, '', '');
@@ -171,29 +172,24 @@ class KoNodeTest extends TestCase
          /* assign participants to slots */
          $redParticipant   = $red_winner ? $winner : $defeated;
          $whiteParticipant = $red_winner ? $defeated : $winner;
-         if( $node->slotRed instanceof MatchWinnerSlot )
+         list( $slotRed, $slotWhite ) = [ $node->getRedSlot(), $node->getWhiteSlot() ];
+         if( $slotRed instanceof MatchWinnerSlot )
          {
-            $next[] = [$rank_idx+1, $node->slotRed->matchNode, $redParticipant];
-         }
-         else if($node->slotRed instanceof Stub)
-         {
-            $node->slotRed->method('getParticipant')->willReturn($redParticipant);
+            $next[] = [$rank_idx+1, $slotRed->matchNode, $redParticipant];
          }
          else
          {
-            throw new \LogicException('unexpected type for red slot');
+            /** @var Stub $slotRed */
+            $slotRed->method('getParticipant')->willReturn($redParticipant);
          }
-         if ($node->slotWhite instanceof MatchWinnerSlot)
+         if ($slotWhite instanceof MatchWinnerSlot)
          {
-            $next[] = [$rank_idx+1, $node->slotWhite->matchNode, $whiteParticipant];
-         }
-         else if($node->slotWhite instanceof Stub)
-         {
-            $node->slotWhite->method('getParticipant')->willReturn($whiteParticipant);
+            $next[] = [$rank_idx+1, $slotWhite->matchNode, $whiteParticipant];
          }
          else
          {
-            throw new \LogicException('unexpected type for white slot');
+            /** @var Stub $slotWhite */
+            $slotWhite->method('getParticipant')->willReturn($whiteParticipant);
          }
          /* create the match record */
          $records[] = new MatchRecord(
@@ -205,7 +201,7 @@ class KoNodeTest extends TestCase
          $red_winner = !$red_winner;
       }
 
-      /* also add another unrelated match record to ensure KoNode doesn't trip over it */
+      /* also add another unrelated match record to ensure record loading doesn't trip over it */
       $records[] = new MatchRecord(
          1, "test_dummy", $this->category, $area,
          new Participant($pid++, 1, '', ''),
@@ -214,12 +210,12 @@ class KoNodeTest extends TestCase
          tie_break: false, finalized_at: null );
 
       /* now assign the match records */
-      $this->node->setMatchRecords($records);
+      $this->ko->setMatchRecords($records);
 
       /* ... and check whether the ranks are reconstructed accordingly */
       for( $i=0; $i < self::ROUNDS+1; ++$i )
       {
-         $received_ranks = $this->node->getRanked($i+1);
+         $received_ranks = $this->ko->getRanked($i+1);
          $this->assertSame($ranks[$i], $received_ranks->values());
       }
    }

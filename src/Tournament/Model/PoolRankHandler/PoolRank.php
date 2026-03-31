@@ -2,12 +2,12 @@
 
 namespace Tournament\Model\PoolRankHandler;
 
-use Tournament\Model\Participant\Participant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 
 class PoolRank
 {
    public function __construct(
-      public Participant $participant,
+      public MatchParticipant $participant,
       public int $rank = 0,
       public int $wins = 0,
       public int $ties = 0,

@@ -15,7 +15,7 @@
     <p class="pool_name"><b>Pool {{pool.getName()}}{{ pool.area? " (" ~ pool.area.name ~")" : "" }}</b></p>
     <ul class="participant_list">
       {% for slot in pool.getParticipants() %}
-      <li>{{slot.lastname}}, {{slot.firstname}}</li>
+      <li>{{slot.getDisplayName()}}</li>
       {% endfor %}
     </ul>
   </a></li>
@@ -29,7 +29,7 @@
   <h2>Nicht zugewiesen</h2>
   <ul>
     {% for p in unmapped_participants %}
-    <li>{{p.lastname}}, {{p.firstname}}</li>
+    <li>{{p.getDisplayName()}}</li>
     {% endfor %}
   </ul>
   <form action="{{url_for('tournaments.categories.assignParticipants', route_context.args)}}" method="post">

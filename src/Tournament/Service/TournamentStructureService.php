@@ -4,10 +4,12 @@ namespace Tournament\Service;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
-use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\Participant\Participant;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 use Tournament\Model\TournamentStructure\TournamentStructure;
+
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
 use Tournament\Repository\TournamentRepository;
@@ -34,7 +36,7 @@ class TournamentStructureService
       $matchRecords = $this->matchDataRepo->getMatchRecordsByCategoryId($category->id);
 
       $struc = $this->initialize($category);
-      $struc->loadParticipants($participants);
+      $struc->loadParticipants($participants->filter(fn($p) => !$p->withdrawn));
       $struc->loadMatchRecords($matchRecords);
       return $struc;
    }
@@ -46,7 +48,7 @@ class TournamentStructureService
    {
       $struc = $this->initialize($category);
       $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
-      $slot_assignment = $struc->populate($participants);
+      $slot_assignment = $struc->populate($participants->filter(fn($p) => !$p->withdrawn));
       $this->participantRepo->updateAllParticipantSlots($category->id, $slot_assignment);
       return $struc;
    }
@@ -54,9 +56,9 @@ class TournamentStructureService
    /**
     * add a new list of participants to an already populated structure
     * @param Category|TournamentStructure $struc - the tournament structure to add participants to (optionally identified by the category)
-    * @param ParticipantCollection $participants - the participants to add, defaults to $struc->unmapped_participants
+    * @param MatchParticipantCollection $participants - the participants to add, defaults to $struc->unmapped_participants
     */
-   public function addParticipants(Category|TournamentStructure $struc, ?ParticipantCollection $participants = null): TournamentStructure
+   public function addParticipants(Category|TournamentStructure $struc, ?MatchParticipantCollection $participants = null): TournamentStructure
    {
       if ($struc instanceof Category)
       {

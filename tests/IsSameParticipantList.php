@@ -3,19 +3,19 @@
 namespace Tests;
 
 use Base\Model\ObjectCollection;
-use Tournament\Model\Participant\ParticipantCollection;
 
 use PHPUnit\Framework\ExpectationFailedException;
 
 use SebastianBergmann\Comparator\ComparisonFailure;
 use SebastianBergmann\Comparator\Factory as ComparatorFactory;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 
 final class IsSameParticipantList extends \PHPUnit\Framework\Constraint\Constraint
 {
-   private $expected;
+   private array $expected;
 
    public function __construct(
-      ParticipantCollection $expected
+      MatchParticipantCollection $expected
    )
    {
       $this->expected = $expected->values();
@@ -58,7 +58,7 @@ final class IsSameParticipantList extends \PHPUnit\Framework\Constraint\Constrai
       return 'is same list like (' . join(',', array_column($this->expected, 'id')) . ')';
    }
 
-   final public static function like(ParticipantCollection $expected): static
+   final public static function like(MatchParticipantCollection $expected): static
    {
       return new static($expected);
    }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tests\Tournament\Model\TournamentStructure\Pool;
 
@@ -13,13 +13,15 @@ use Tournament\Model\MatchCreationHandler\MatchCreationHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\Participant;
-use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\PoolRankHandler\PoolRank;
 use Tournament\Model\PoolRankHandler\PoolRankCollection;
 use Tournament\Model\PoolRankHandler\PoolRankHandler;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
+use Tournament\Model\TournamentStructure\MatchParticipant\DummyMatchParticipant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
 use Tests\CallSpy;
@@ -54,9 +56,9 @@ class PoolTest extends TestCase
       $this->category = $category;
    }
 
-   private function createParticipantList($num = 3): ParticipantCollection
+   private function createParticipantList($num = 3): MatchParticipantCollection
    {
-      $res = new ParticipantCollection();
+      $res = new MatchParticipantCollection();
       for( $i = 1; $i <= $num; ++$i )
       {
          $p = new Participant($i, 1, 'Not', 'a Dummy');
@@ -66,7 +68,7 @@ class PoolTest extends TestCase
       return $res;
    }
 
-   private function generateMatches(ParticipantCollection $plist): MatchNodeCollection
+   private function generateMatches(MatchParticipantCollection $plist): MatchNodeCollection
    {
       $pcount = $plist->count();
       $parr = $plist->values();
@@ -78,14 +80,14 @@ class PoolTest extends TestCase
          {
             $red   = new ParticipantSlot($parr[$i]);
             $white = new ParticipantSlot($parr[$j]);
-            $res[] = new MatchNode($matchid++, $this->category, $red, $white);
+            $res[] = new SoloMatch(strval($matchid++), $this->category, $red, $white);
          }
       }
 
       return $res;
    }
 
-   private function setMatchHdlExpectation(ParticipantCollection $plist, $count = 1): MatchNodeCollection
+   private function setMatchHdlExpectation(MatchParticipantCollection $plist, $count = 1): MatchNodeCollection
    {
       $res = $this->generateMatches($plist);
 
@@ -105,10 +107,10 @@ class PoolTest extends TestCase
       foreach ($matches as $m)
       {
          /** @var MatchNode $m */
-         $record = new MatchRecord($m_id++, $m->getName(), $category, $area, $m->slotRed->getParticipant(), $m->slotWhite->getParticipant());
+         $record = new MatchRecord($m_id++, $m->getName(), $category, $area, $m->getRedParticipant(), $m->getWhiteParticipant());
          if (!$lastOngoing || ($m_id < $matches->count()) )
          {
-            $record->winner = $m->slotRed->getParticipant();
+            $record->winner = $m->getRedParticipant();
             $record->finalized_at = new \DateTime();
          }
          $records[] = $record;
@@ -164,7 +166,7 @@ class PoolTest extends TestCase
       $this->assertNull($dut->getArea());
       foreach ($dut->getMatchList() as $m)
       {
-         $this->assertNull($m->area);
+         $this->assertNull($m->getArea());
       }
       $this->assertCount($plist->count(), $dut->getParticipants());
       $this->assertCount($matches->count(), $dut->getMatchList());
@@ -182,7 +184,7 @@ class PoolTest extends TestCase
       $this->assertSame($area, $dut->getArea());
       foreach( $dut->getMatchList() as $m )
       {
-         $this->assertSame($area, $m->area);
+         $this->assertSame($area, $m->getArea());
       }
 
       /**
@@ -391,8 +393,8 @@ class PoolTest extends TestCase
       $remidx = intdiv($numParticipants-1, 2);
       $first = array_slice($plist->values(), 0, $remidx);
       $last = array_slice($plist->values(), $remidx+1);
-      $mplist = ParticipantCollection::new( array_merge($first, [Participant::dummy()], $last) );
-      $pplist = ParticipantCollection::new( array_merge($last, $first) ); // also change order
+      $mplist = MatchParticipantCollection::new( array_merge($first, [new DummyMatchParticipant(false)], $last) );
+      $pplist = MatchParticipantCollection::new( array_merge($last, $first) ); // also change order
 
       $matches_gen = $this->generateMatches($mplist);
       $spy->addReturn($matches_gen);

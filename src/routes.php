@@ -215,7 +215,7 @@ return function (\Slim\App $app)
             $cgrp->get('/ko/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('tournaments.categories.ko.matches.show');
             $cgrp->get('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'showMatch'])->setName('tournaments.categories.pools.matches.show');
             $cgrp->get('/pool/{pool}/addTieBreak', RedirectHandler::to('tournaments.categories.pools.show'));
-            $cgrp->get('/pool/{pool}/delete/{decision_round}', RedirectHandler::to('tournaments.categories.pools.show'));
+            $cgrp->get('/pool/{pool}/delete/{decision_round:\d+}', RedirectHandler::to('tournaments.categories.pools.show'));
 
             /* Area mapping update */
             $cgrp->patch('/ko/{matchName}/setArea', [TournamentTreeController::class, 'setNodeArea'])->setName('tournaments.categories.ko.matches.setArea')
@@ -229,7 +229,7 @@ return function (\Slim\App $app)
                $mgrp->patch('/ko/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('tournaments.categories.ko.matches.update');
                $mgrp->patch('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('tournaments.categories.pools.matches.update');
                $mgrp->post('/pool/{pool}/addTieBreak', [TournamentTreeController::class, 'addPoolTieBreak'])->setName('tournaments.categories.pools.decision.add');
-               $mgrp->delete('/pool/{pool}/delete/{decision_round}', [TournamentTreeController::class, 'deletePoolDecisionRound'])->setName('tournaments.categories.pools.decision.delete');
+               $mgrp->delete('/pool/{pool}/delete/{decision_round:\d+}', [TournamentTreeController::class, 'deletePoolDecisionRound'])->setName('tournaments.categories.pools.decision.delete');
                $mgrp->post('resetResults', [TournamentTreeController::class, 'resetMatchRecords'])->setName('tournaments.categories.resetMatchRecords');
             })
             ->add($policyGuard->for(TournamentAction::RecordResults));

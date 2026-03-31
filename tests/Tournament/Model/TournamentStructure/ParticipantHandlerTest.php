@@ -1,28 +1,31 @@
-<?php
+<?php declare(strict_types=1);
+
+namespace Tests\Tournament\Model\TournamentStructure;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Tournament\Model\TestStubs\TestMatchParticipant;
 
 use Tournament\Model\Area\AreaCollection;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryConfiguration;
 use Tournament\Model\Category\CategoryMode;
-use Tournament\Model\Participant\Participant;
-use Tournament\Model\Participant\ParticipantCollection;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
+use Tournament\Model\TournamentStructure\Pool\Pool;
 use Tournament\Model\TournamentStructure\TournamentStructure;
-
 
 class ParticipantHandlerTest extends TestCase
 {
-   private function participantList(int $num, int|ParticipantCollection $id_start = 1, ?string $club = null): ParticipantCollection
+   private function participantList(int $num, int|MatchParticipantCollection $id_start = 1, ?string $club = null): MatchParticipantCollection
    {
-      if( $id_start instanceof ParticipantCollection )
+      if( $id_start instanceof MatchParticipantCollection )
       {
          // use an already existing participant collection to derive the next id
-         $id_start = $id_start->empty()? 1 : max($id_start->column('id')) + 1;
+         $id_start = $id_start->empty()? 1 : max($id_start->map(fn($p) => $p->getId())) + 1;
       }
-      return new ParticipantCollection(
-         array_map( fn($i) => new Participant($i, 0, "firstname_".$i, "lastname_".$i, $club),
+      return new MatchParticipantCollection(
+         array_map( fn($i) => new TestMatchParticipant($i, "name_".$i, $club, false),
          range($id_start,$id_start+$num-1) ) );
    }
 
@@ -41,8 +44,8 @@ class ParticipantHandlerTest extends TestCase
       // All BYEs should have ended up in the white slots
       foreach ($rounds[0] as $match)
       {
-         $this->assertFalse($match->slotRed->isBye());
-         $this->assertTrue($match->slotWhite->isBye());
+         $this->assertFalse($match->getRedSlot()->isBye());
+         $this->assertTrue($match->getWhiteSlot()->isBye());
       }
    }
 
@@ -58,8 +61,8 @@ class ParticipantHandlerTest extends TestCase
       $structure->generateStructure();
       $assignment = $structure->populate($participants);
 
-      $assigned = array_map(fn($p) => $p->id, $assignment->values());
-      $given = array_map(fn($p) => $p->id, $participants->values());
+      $assigned = array_map(fn($p) => $p->getId(), $assignment->values());
+      $given = array_map(fn($p) => $p->getId(), $participants->values());
       $this->assertEqualsCanonicalizing($assigned, $given);
 
       // 4 pools
@@ -94,7 +97,7 @@ class ParticipantHandlerTest extends TestCase
       $this->assertCount($first_list->count() + $second_list->count(), $full_assignment);
       $firstExtracted = $full_assignment->intersect_key($first_assignment);
       $this->assertEqualsCanonicalizing($first_assignment, $firstExtracted, 'original assignments modified');
-      $secondExtracted = array_uintersect($full_assignment->values(), $second_list->values(), fn($a,$b) => $a->id <=> $b->id);
+      $secondExtracted = array_uintersect($full_assignment->values(), $second_list->values(), fn($a,$b) => $a->getId() <=> $b->getId());
       $this->assertEqualsCanonicalizing($second_list->values(), $secondExtracted, 'second participant list not matching');
 
       /* with 8 participants and 4 rounds (=2**4=16 participants),
@@ -102,8 +105,8 @@ class ParticipantHandlerTest extends TestCase
        */
       foreach ($structure->ko->getFirstRound() as $node)
       {
-         $this->assertFalse($node->slotRed->isBye());
-         $this->assertTrue($node->slotWhite->isBye());
+         $this->assertFalse($node->getRedSlot()->isBye());
+         $this->assertTrue($node->getWhiteSlot()->isBye());
       }
    }
 
@@ -124,7 +127,7 @@ class ParticipantHandlerTest extends TestCase
       /* add first round to the structure */
       $first_assignment = $structure->populate($first_list);
       /* store back the current slot assignment in a full copy to verify it after the next step */
-      $first_slots = array_combine($first_assignment->column('id'), $first_assignment->map(fn($p) => $p->categories[1]->slot_name));
+      $first_slots = array_combine($first_assignment->map(fn($p) => $p->getId()), $first_assignment->map(fn($p) => $p->getStartSlot($category)));
       /* add second round to the structure */
       $full_assignment = $structure->populate($second_list);
 
@@ -135,7 +138,7 @@ class ParticipantHandlerTest extends TestCase
       /* make sure the first assignment didn't get modified */
       foreach( $first_slots as $pid => $slot_name )
       {
-         $this->assertEquals($slot_name, $full_assignment[$pid]->categories[1]->slot_name, "Pre-existing slot assignments got modified!");
+         $this->assertEquals($slot_name, $full_assignment[$pid]->getStartSlot($category), "Pre-existing slot assignments got modified!");
       }
 
       /* check pool allocation of final result */
@@ -188,7 +191,7 @@ class ParticipantHandlerTest extends TestCase
    public function testClubSpreadPools()
    {
       $pool_count = 4;
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(ceil(log($pool_count*2, 2))));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(intval(ceil(log($pool_count*2, 2)))));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $this->assertCount($pool_count, $structure->pools);
@@ -200,10 +203,10 @@ class ParticipantHandlerTest extends TestCase
 
       $cumulated = [];
       $slots = [];
-      $all_participants = ParticipantCollection::new();
+      $all_participants = MatchParticipantCollection::new();
       foreach( $setup as $step => $club_setup )
       {
-         $participants = ParticipantCollection::new();
+         $participants = MatchParticipantCollection::new();
          foreach($club_setup as $club => $count)
          {
             $pl = $this->participantList($count * $pool_count, $all_participants, $club);
@@ -220,13 +223,13 @@ class ParticipantHandlerTest extends TestCase
          {
             foreach ($slotting as $pid => $slotName)
             {
-               $this->assertEquals($slotName, $all_participants[$pid]->categories[1]->slot_name, "assignment for Participant $pid got modified");
+               $this->assertEquals($slotName, $all_participants[$pid]->getStartSlot($category), "assignment for Participant $pid got modified");
             }
          }
 
          /* store back the slots that were assigned in this round */
          $new_assigned = $assigned->filter( fn($p) => $participants->contains($p) );
-         $slots[$step] = array_combine($new_assigned->column('id'), $new_assigned->map(fn($p) => $p->categories[1]->slot_name) );
+         $slots[$step] = array_combine($new_assigned->map(fn($p) => $p->getId()), $new_assigned->map(fn($p) => $p->getStartSlot($category)) );
 
          /* verify that each pool has the expected number of participants per club */
          foreach ($structure->pools as $pool)
@@ -235,8 +238,9 @@ class ParticipantHandlerTest extends TestCase
             $tracker = [];
             foreach( $pool->getParticipants() as $p )
             {
-               $tracker[$p->club] ??= 0;
-               $tracker[$p->club] += 1;
+               /** @var MatchParticipant $p */
+               $tracker[$p->getClub()] ??= 0;
+               $tracker[$p->getClub()] += 1;
             }
 
             foreach( $tracker as $club => $cnt )
@@ -253,7 +257,7 @@ class ParticipantHandlerTest extends TestCase
    public function testClubSpreadKo()
    {
       $max_participant_count = 8;
-      $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(ceil(log($max_participant_count, 2))));
+      $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(intval(ceil(log($max_participant_count, 2)))));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
 
@@ -264,10 +268,10 @@ class ParticipantHandlerTest extends TestCase
 
       $cumulated = [];
       $slots = [];
-      $all_participants = ParticipantCollection::new();
+      $all_participants = MatchParticipantCollection::new();
       foreach ($setup as $step => $club_setup)
       {
-         $participants = ParticipantCollection::new();
+         $participants = MatchParticipantCollection::new();
          foreach ($club_setup as $club => $count)
          {
             $pl = $this->participantList($count, $all_participants, $club);
@@ -284,23 +288,23 @@ class ParticipantHandlerTest extends TestCase
          {
             foreach ($slotting as $pid => $slotName)
             {
-               $this->assertEquals($slotName, $all_participants[$pid]->categories[1]->slot_name, "assignment for Participant $pid got modified");
+               $this->assertEquals($slotName, $all_participants[$pid]->getStartSlot($category), "assignment for Participant $pid got modified");
             }
          }
 
          /* store back the slots that were assigned in this round */
          $new_assigned = $assigned->filter(fn($p) => $participants->contains($p));
-         $slots[$step] = array_combine($new_assigned->column('id'), $new_assigned->map(fn($p) => $p->categories[1]->slot_name));
+         $slots[$step] = array_combine($new_assigned->map(fn($p) => $p->getId()), $new_assigned->map(fn($p) => $p->getStartSlot($category)));
 
          /* verify that on no node, two participants do have the same club */
          foreach ($structure->ko->getFirstRound() as $node)
          {
-            /** @var KoNode $node */
-            $red = $node->slotRed->getParticipant();
-            $white = $node->slotWhite->getParticipant();
+            /** @var MatchNode $node */
+            $red = $node->getRedParticipant();
+            $white = $node->getWhiteParticipant();
             if( isset($red) && isset($white) )
             {
-               $this->assertNotEquals($red->club, $white->club, 'participants of same club put into the same start fight!');
+               $this->assertNotEquals($red->getClub(), $white->getClub(), 'participants of same club put into the same start fight!');
             }
          }
       }

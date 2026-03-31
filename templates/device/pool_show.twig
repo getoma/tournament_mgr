@@ -49,7 +49,7 @@
       {% for entry in pool.getRanking() -%}
       <tr>
         <td>{{entry.rank}}</td>
-        <td>{{entry.participant.lastname}}, {{entry.participant.firstname}}</td>
+        <td>{{entry.participant.getDisplayName()}}</td>
         <td>{{entry.wins}}</td>
         <td>{{entry.ties}}</td>
         <td>{{entry.points}}</td>
