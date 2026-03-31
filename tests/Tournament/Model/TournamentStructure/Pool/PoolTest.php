@@ -46,12 +46,12 @@ class PoolTest extends TestCase
       $this->rankHdl  = $this->createMock(PoolRankHandler::class);
       $this->matchHdl = $this->createMock(MatchCreationHandler::class);
 
-      $category = $this->getMockBuilder(Category::class)
+      $category = $this->getStubBuilder(Category::class)
          ->enableOriginalConstructor()
          ->setConstructorArgs([1, 1, 'test', CategoryMode::Combined])
-         ->getMock();
-      $category->expects($this->any())->method('getPoolRankHandler')->willReturn($this->rankHdl);
-      $category->expects($this->any())->method('getMatchCreationHandler')->willReturn($this->matchHdl);
+         ->getStub();
+      $category->method('getPoolRankHandler')->willReturn($this->rankHdl);
+      $category->method('getMatchCreationHandler')->willReturn($this->matchHdl);
       $this->category = $category;
    }
 
@@ -130,6 +130,7 @@ class PoolTest extends TestCase
     */
    public function testEmptyPool()
    {
+      $this->matchHdl->expects($this->never())->method('generate');
       $dut = new Pool(self::POOL_NAME, $this->category);
       $this->assertEquals(self::POOL_NAME, $dut->getName());
       $this->assertNull($dut->getArea());
@@ -300,7 +301,7 @@ class PoolTest extends TestCase
       $dut = new Pool(self::POOL_NAME, $this->category);
 
       $spy = new CallSpy();
-      $this->matchHdl->method('generate')->willReturnCallback($spy->callback('generate'));
+      $this->matchHdl->expects($this->atLeastOnce())->method('generate')->willReturnCallback($spy->callback('generate'));
 
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->generateMatches($plist);
@@ -353,6 +354,7 @@ class PoolTest extends TestCase
    #[DataProvider('numParticipantsProvider')]
    public function testReproducability(int $numParticipants = 3)
    {
+      $this->rankHdl->expects($this->never())->method('deriveRanking');
       $plist = $this->createParticipantList($numParticipants);
       $this->setMatchHdlExpectation($plist,2); // will check whether match creation is called with the same amount and order of participants both times
 
@@ -369,8 +371,9 @@ class PoolTest extends TestCase
    #[DataProvider('numParticipantsProvider')]
    public function testSlotHandling(int $numParticipants = 3)
    {
+      $this->rankHdl->expects($this->never())->method('deriveRanking');
       $spy = new CallSpy();
-      $this->matchHdl->method('generate')->willReturnCallback($spy->callback('generate'));
+      $this->matchHdl->expects($this->atLeastOnce())->method('generate')->willReturnCallback($spy->callback('generate'));
 
       $plist = $this->createParticipantList($numParticipants);
       $matches = $this->generateMatches($plist);

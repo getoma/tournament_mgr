@@ -62,11 +62,11 @@ class MatchNodeTest extends TestCase
 
       $this->mpHdl = $this->createStub(MatchPointHandler::class);
 
-      $category = $this->getMockBuilder(Category::class)
+      $category = $this->getStubBuilder(Category::class)
          ->enableOriginalConstructor()
          ->setConstructorArgs([1, 1, 'test', CategoryMode::Combined])
-         ->getMock();
-      $category->expects($this->any())->method('getMatchPointHandler')->willReturn($this->mpHdl);
+         ->getStub();
+      $category->method('getMatchPointHandler')->willReturn($this->mpHdl);
       $this->category = $category;
 
       $this->node = new MatchNode("test", $category, $this->redSlot, $this->whiteSlot);
