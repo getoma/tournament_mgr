@@ -32,6 +32,17 @@ class SoloMatch extends MatchNodeBase
       $this->setMatchRecord($matchRecord);
    }
 
+   public function isComposite(): bool
+   {
+      return false;
+   }
+
+   /* return submatches for composite nodes */
+   public function getSubMatches(): ?MatchNodeCollection
+   {
+      return null;
+   }
+
    /**
     * set the match record associated with this match node
     * verify that the match record is consistent with this node
@@ -149,7 +160,6 @@ class SoloMatch extends MatchNodeBase
 
    /**
     * get the winner of this match, or null if not decided, yet
-    * @return Participant|null
     */
    public function getWinner(): ?MatchParticipant
    {
@@ -162,7 +172,6 @@ class SoloMatch extends MatchNodeBase
 
    /**
     * get the defeated participant of this match, or null if not decided, yet
-    * @return Participant|null
     */
    public function getDefeated(): ?MatchParticipant
    {

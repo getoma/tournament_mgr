@@ -6,17 +6,27 @@ use Tournament\Model\Category\Category;
 use Tournament\Model\MatchCreationHandler\GenericMatchCreationHandler;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\TournamentStructure\MatchNodeFactory;
 
 use PHPUnit\Framework\TestCase;
 
 class GenericMatchCreationHandlerTest extends TestCase
 {
+   private MatchNodeFactory $factory;
+
+   protected function setUp(): void
+   {
+      $category = $this->createStub(Category::class);
+      $category->team_mode = false;
+      $this->factory = new MatchNodeFactory($category);
+   }
+
    /**
     * trivial match generations: 0,1,2 participants
     */
    public function testTrivial()
    {
-      $tst = new GenericMatchCreationHandler($this->createStub(Category::class));
+      $tst = new GenericMatchCreationHandler($this->factory);
 
       /* no Participant */
       $this->assertEmpty($tst->generate(new ParticipantCollection()));
@@ -39,7 +49,7 @@ class GenericMatchCreationHandlerTest extends TestCase
     */
    public function testThreeParticipants()
    {
-      $tst = new GenericMatchCreationHandler($this->createStub(Category::class));
+      $tst = new GenericMatchCreationHandler($this->factory);
 
       $p = array_map(fn($i) => new Participant($i, 1, '', ''), range(1,3));
       $matchList = $tst->generate(new ParticipantCollection($p));
@@ -62,7 +72,7 @@ class GenericMatchCreationHandlerTest extends TestCase
     */
    public function testFourParticipants()
    {
-      $tst = new GenericMatchCreationHandler($this->createStub(Category::class));
+      $tst = new GenericMatchCreationHandler($this->factory);
 
       $p = array_map(fn($i) => new Participant($i, 1, '', ''), range(1, 4));
       $matchList = $tst->generate(new ParticipantCollection($p));
@@ -108,7 +118,7 @@ class GenericMatchCreationHandlerTest extends TestCase
       $numPart = 6;
       $matchCount = $numPart*($numPart-1)/2;
 
-      $tst = new GenericMatchCreationHandler($this->createStub(Category::class));
+      $tst = new GenericMatchCreationHandler($this->factory);
 
       /* generate List of participants */
       $p = array_map(fn($i) => new Participant($i, 1, '', ''), range(1,$numPart));

@@ -12,11 +12,15 @@
   {% set isActive = policy.isActionAllowed('ManageSetup') -%}
   {{ form.input('text', 'name', 'Name', prev.name ?? category.name, errors['name'], {'maxlength':100}, required=true, active=isActive) }}
   {{ form.select('mode', 'Modus', enum_options(category_modes), prev.mode ?? category.mode.value, errors['mode'], required=true, active=isActive) }}
+  {{ form.select('team_mode', 'Einzel/Team', { 0: 'Einzel', 1: 'Team'}, prev.team_mode ?? category.team_mode, errors['team_mode'], required=true, active=isActive)}}
   {% if category.mode.value|lower in ['ko', 'combined'] -%}
   {{ form.input('number', 'num_rounds', 'Anzahl KO-Runden', prev.num_rounds ?? category.config.num_rounds, errors['num_rounds'], {'min':2, 'max': 10}, active=isActive) }}
   {# area clusters not supported for now #}
   {#{ form.input('number', 'area_cluster', 'Kampfflächen-Cluster', prev.area_cluster ?? category.config.area_cluster, errors['area_cluster'], {'min': 1}, active=isActive)}#}
   {%- endif %}
+  {% if category.team_mode -%}
+  {{ form.input('number', 'team_size', 'Teamgröße', prev.team_size ?? category.config.team_size, errors['team_size'], {'max': 9, 'min': 2, 'placeholder': 5}, active=isActive) }}
+  {% endif %}
   {% if category.mode.value|lower in ['pool', 'combined'] -%}
   {{ form.input('number', 'pool_winners', 'Anzahl Pool-Sieger', prev.pool_winners ?? category.config.pool_winners, errors['pool_winners'], {'max': 3, 'min': 1, 'placeholder': 2}, active=isActive) }}
   {{ form.input('number', 'max_pools', 'Maximale Anzahl Pools', prev.max_pools ?? category.config.max_pools ?: '', errors['max_pools'], {'min': 0, 'max': 99, 'placeholder': '--'}, active=isActive) }}
