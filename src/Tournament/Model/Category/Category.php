@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\Category;
 
@@ -22,6 +22,7 @@ class Category implements \Tournament\Model\Base\DbItem
       public readonly int $tournament_id,    // Identifier for the tournament this category belongs to
       public string $name,                   // Name of the category (e.g., "Juniors -60kg")
       string|CategoryMode $mode = CategoryMode::KO, // Tournament mode (e.g., "ko", "pool", "combined")
+      public bool $team_mode = false,        // false - single participants, true - teams category
       ?CategoryConfiguration $config = null, // detailled configuration for the category (e.g., seeding strategy, pool sizes)
    )
    {
@@ -35,6 +36,7 @@ class Category implements \Tournament\Model\Base\DbItem
       return [
          'mode' => v::in(array_column(CategoryMode::cases(), 'value')),
          'name' => v::stringType()->notEmpty()->length(1, max: 100),
+         'team_mode' => v::BoolVal(),
       ]
       + CategoryConfiguration::validationRules();
    }
@@ -44,6 +46,7 @@ class Category implements \Tournament\Model\Base\DbItem
       // Updates the category's properties from an associative array.
       if (isset($data['name'])) $this->name = $data['name'];
       if (isset($data['mode'])) $this->mode = CategoryMode::from($data['mode']);
+      if (isset($data['team_mode'])) $this->team_mode = (bool)$data['team_mode'];
       $this->config->updateFromArray($data);
    }
 

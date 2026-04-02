@@ -37,8 +37,8 @@ class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\To
       if (isset($data['lastname'])) $this->lastname = $data['lastname'];
       if (isset($data['firstname'])) $this->firstname = $data['firstname'];
       if (array_key_exists('club', $data)) $this->club = $data['club']; // null is allowed here
-      if (isset($data['withdrawn'])) $this->withdrawn = (bool)$data['withdrawn'];
-      $this->updateCategories($data['categories']);
+      if (isset($data['withdrawn']))  $this->withdrawn = (bool)$data['withdrawn'];
+      if (isset($data['categories'])) $this->categories->updateFromArray($data['categories']);
    }
 
    static public function createFromArray(int $tournament_id, array $data): static
@@ -51,19 +51,8 @@ class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\To
          club: $data['club'] ?? null,
          withdrawn: $data['withdrawn'] ?? false,
       );
-      $result->updateCategories($data['categories'] ?? []);
+      $result->categories->updateFromArray($data['categories'] ?? []);
       return $result;
-   }
-
-   private function updateCategories(array $category_id_list): void
-   {
-      // categories: drop any no longer provided
-      $this->categories = $this->categories->filter(fn($ca) => in_array($ca->categoryId, $category_id_list));
-      // add any new category assignment
-      foreach ($category_id_list as $catId)
-      {
-         if (!$this->categories->keyExists($catId)) $this->categories[] = $catId;
-      }
    }
 
    /**

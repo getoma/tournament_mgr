@@ -33,7 +33,7 @@ class ParticipantHandlerTest extends TestCase
     */
    public function testBYEDistributionKO()
    {
-      $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(3));
+      $category = new Category(1, 1, "test", CategoryMode::KO, false, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $structure->populate($this->participantList(4));
@@ -55,7 +55,7 @@ class ParticipantHandlerTest extends TestCase
    public function testCombinedParticipantDistribution()
    {
       $participants = $this->participantList(18);
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3, pool_winners: 2));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, false, new CategoryConfiguration(3, pool_winners: 2));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $assignment = $structure->populate($participants);
@@ -78,7 +78,7 @@ class ParticipantHandlerTest extends TestCase
     */
    public function testKoParticipantsAdding()
    {
-      $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(4));
+      $category = new Category(1, 1, "test", CategoryMode::KO, false, new CategoryConfiguration(4));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $hdl   = $structure;
@@ -115,7 +115,7 @@ class ParticipantHandlerTest extends TestCase
     */
    public function testPoolsParticipantsAdding()
    {
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3, pool_winners: 2));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, false, new CategoryConfiguration(3, pool_winners: 2));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
 
@@ -154,7 +154,7 @@ class ParticipantHandlerTest extends TestCase
     */
    public function testKOReproducability()
    {
-      $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(3));
+      $category = new Category(1, 1, "test", CategoryMode::KO, false, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $participants = $structure->populate($this->participantList(14)); // set more participants than starting slots on purpose
@@ -172,7 +172,7 @@ class ParticipantHandlerTest extends TestCase
     */
    public function testCombinedReproducability()
    {
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, false, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $participants = $structure->populate($this->participantList(20));
@@ -190,7 +190,7 @@ class ParticipantHandlerTest extends TestCase
    public function testClubSpreadPools()
    {
       $pool_count = 4;
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(intval(ceil(log($pool_count*2, 2)))));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, false, new CategoryConfiguration(intval(ceil(log($pool_count*2, 2)))));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $this->assertCount($pool_count, $structure->pools);
@@ -255,7 +255,7 @@ class ParticipantHandlerTest extends TestCase
    public function testClubSpreadKo()
    {
       $max_participant_count = 8;
-      $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(intval(ceil(log($max_participant_count, 2)))));
+      $category = new Category(1, 1, "test", CategoryMode::KO, false, new CategoryConfiguration(intval(ceil(log($max_participant_count, 2)))));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
 

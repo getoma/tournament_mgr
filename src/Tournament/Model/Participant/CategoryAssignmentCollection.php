@@ -32,4 +32,15 @@ class CategoryAssignmentCollection extends \Base\Model\IdObjectCollection
       $found = $this->elements[$id = $value_id] ?? $this->elements[$id = spl_object_hash($value)] ?? null;
       return $value == $found->category ? $id : false;
    }
+
+   public function updateFromArray(array $category_id_list)
+   {
+      // categories: drop any no longer provided
+      $this->elements = array_filter( $this->elements, fn($ca) => in_array($ca->categoryId, $category_id_list));
+      // add any new category assignment
+      foreach ($category_id_list as $catId)
+      {
+         $this->elements[$catId] ??= new CategoryAssignment($catId);
+      }
+   }
 }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Repository;
 
@@ -8,13 +8,13 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\Area\AreaCollection;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryCollection;
-
-use PDO;
 use Tournament\Model\Category\CategoryConfiguration;
 use Tournament\Model\TournamentStructure\AreaMapping;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 use Tournament\Model\User\UserCollection;
+
+use PDO;
 
 class TournamentRepository
 {
@@ -94,7 +94,7 @@ class TournamentRepository
          $result = $stmt->execute($t->asArray(['name', 'date', 'status', 'notes']));
          if( $result )
          {
-            $t->id = $this->pdo->lastInsertId();
+            $t->id = (int)$this->pdo->lastInsertId();
             $this->tournaments[$t->id] = $t;
          }
       }
@@ -199,7 +199,7 @@ class TournamentRepository
          $result = $stmt->execute($area->asArray(['name', 'tournament_id']));
          if ($result)
          {
-            $area->id = $this->pdo->lastInsertId();
+            $area->id = (int)$this->pdo->lastInsertId();
             $this->areas[$area->id] = $area;
             $this->areas_by_tournament[$area->tournament_id][] = $area;
          }
@@ -217,7 +217,7 @@ class TournamentRepository
    {
       if (!isset($this->categories_by_tournament[$tournamentId]))
       {
-         $stmt = $this->pdo->prepare("SELECT id, name, mode, config_json FROM categories WHERE tournament_id = :tournament_id order by id");
+         $stmt = $this->pdo->prepare("SELECT id, name, mode, team_mode, config_json FROM categories WHERE tournament_id = :tournament_id order by id");
          $stmt->execute(['tournament_id' => $tournamentId]);
          $this->categories_by_tournament[$tournamentId] = [];
          foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
@@ -228,6 +228,7 @@ class TournamentRepository
                   tournament_id: $tournamentId,
                   name: $row['name'],
                   mode: $row['mode'],
+                  team_mode: (bool)$row['team_mode'],
                   config: CategoryConfiguration::load($row['config_json'])
                );
             $this->categories_by_tournament[$tournamentId][] = $category;
@@ -241,7 +242,7 @@ class TournamentRepository
    {
       if( !isset($this->categories[$id]) )
       {
-         $stmt = $this->pdo->prepare("SELECT id, tournament_id, name, mode, config_json FROM categories WHERE id = :id");
+         $stmt = $this->pdo->prepare("SELECT id, tournament_id, name, mode, team_mode, config_json FROM categories WHERE id = :id");
          $stmt->execute(['id' => $id]);
          $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
          if (!$row) return null;
@@ -251,6 +252,7 @@ class TournamentRepository
             tournament_id: (int) $row['tournament_id'],
             name: $row['name'],
             mode: $row['mode'],
+            team_mode: $row['team_mode'],
             config: CategoryConfiguration::load($row['config_json'])
          );
          $this->categories[$category->id] = $category;
@@ -264,16 +266,18 @@ class TournamentRepository
       $result = false;
       if ($category->id)
       {
-         $stmt = $this->pdo->prepare("UPDATE categories SET name = :name, mode = :mode, config_json = :config WHERE id = :id");
-         $result = $stmt->execute($category->asArray(['id', 'name', 'mode', 'config']));
+         $stmt = $this->pdo->prepare("UPDATE categories SET name = :name, mode = :mode, team_mode=:team_mode, config_json = :config WHERE id = :id");
+         $result = $stmt->execute($category->asArray(['id', 'name', 'mode', 'team_mode', 'config']));
       }
       else
       {
-         $stmt = $this->pdo->prepare("INSERT INTO categories (tournament_id, name, mode, config_json) VALUES (:tournament_id, :name, :mode, :config)");
-         $result = $stmt->execute($category->asArray(['tournament_id', 'name', 'mode', 'config']));
+         $stmt = $this->pdo->prepare(<<<QUERY
+            INSERT INTO categories (tournament_id, name, mode, team_mode, config_json) VALUES (:tournament_id, :name, :mode, :team_mode, :config)");
+         QUERY);
+         $result = $stmt->execute($category->asArray(['tournament_id', 'name', 'mode', 'team_mode', 'config']));
          if ($result)
          {
-            $category->id = $this->pdo->lastInsertId();
+            $category->id = (int)$this->pdo->lastInsertId();
             $this->categories[$category->id] = $category;
             $this->categories_by_tournament[$category->tournament_id][] = $category;
          }

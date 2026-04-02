@@ -29,7 +29,7 @@ class TournamentStructureTest extends TestCase
     */
    public function testBuildKnockOutTree()
    {
-      $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(3));
+      $category = new Category(1, 1, "test", CategoryMode::KO, false, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $this->assertNotNull($structure->ko);
@@ -51,7 +51,7 @@ class TournamentStructureTest extends TestCase
       /**
        * test with 3 rounds, and default winners per pool --> 4 pools
        */
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, false, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $this->assertNotNull($structure->ko?->root);
@@ -69,7 +69,7 @@ class TournamentStructureTest extends TestCase
       /**
        * test with 4 rounds, and 3 winners per pool --> 4 pools
        */
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(4, pool_winners: 3));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, false, new CategoryConfiguration(4, pool_winners: 3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $this->assertNotNull($structure->ko);
@@ -103,7 +103,7 @@ class TournamentStructureTest extends TestCase
     */
    public function testCombinedPoolLimit(int $rounds = 4, int $pool_limit = 6, int $pool_winners = 2)
    {
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration($rounds, pool_winners: $pool_winners, max_pools: $pool_limit));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, false, new CategoryConfiguration($rounds, pool_winners: $pool_winners, max_pools: $pool_limit));
       $structure = new TournamentStructure($category, AreaCollection::new());
       /* expected pool count is number of KO start slots, divided by winners by pool, OR the configured limit if lower */
       $expected_pool_count = floor(pow(2, $rounds) / $pool_winners);
@@ -183,7 +183,7 @@ class TournamentStructureTest extends TestCase
    public function testAreaAssignment(int $numAreas=4, int $numRounds = 8)
    {
       $areas = $this->areaList($numAreas);
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration($numRounds));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, false, new CategoryConfiguration($numRounds));
       $structure = new TournamentStructure($category, $areas);
       $structure->generateStructure();
 
@@ -248,7 +248,7 @@ class TournamentStructureTest extends TestCase
     */
    public function testKOReproducability()
    {
-      $category = new Category(1, 1, "test", CategoryMode::KO, new CategoryConfiguration(3));
+      $category = new Category(1, 1, "test", CategoryMode::KO, false, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, $this->areaList(2));
       $structure->generateStructure();
 
@@ -265,7 +265,7 @@ class TournamentStructureTest extends TestCase
     */
    public function testCombinedReproducability(int $rounds = 4, int $pool_limit = 6, int $pool_winners = 2)
    {
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration($rounds, pool_winners: $pool_winners, max_pools: $pool_limit));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, false, new CategoryConfiguration($rounds, pool_winners: $pool_winners, max_pools: $pool_limit));
       $structure = new TournamentStructure($category, $this->areaList(2));
       $structure->generateStructure();
 
