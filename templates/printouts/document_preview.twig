@@ -1,0 +1,12 @@
+<section class="print_preview">
+  <h2>Vorschau</h2>
+  <div class="print-container">
+{% for page in pages %}
+<div class="page {{page.setup.paperSize|default('a4')}}-{{page.setup.orientation|default('portrait')}}">
+  {% include 'printouts/pages/'~page.template with page.data %}
+
+</div>
+{%- endfor %}
+
+</div>
+</section>

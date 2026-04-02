@@ -258,6 +258,12 @@ class ObjectCollection implements \IteratorAggregate, \Countable, \ArrayAccess
       return static::new(array_merge($this->elements, $other), $this->element_type);
    }
 
+   public function chunk(int $length, bool $preserve_keys = false): array
+   {
+      $chunks = array_chunk($this->elements, $length, $preserve_keys);
+      return array_map(fn($e) => $this->clone_with($e), $chunks);
+   }
+
    public function ksort(int $flags = SORT_REGULAR): static
    {
       $result = clone $this;
