@@ -4,7 +4,6 @@ namespace Tournament\Model\TournamentStructure;
 
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
-use Tournament\Model\Participant\CategoryAssignment;
 use Tournament\Model\PlacementCostCalculator\SlotPlacement;
 use Tournament\Model\PlacementCostCalculator\SlotPlacmentCollection;
 use Tournament\Model\TournamentStructure\MatchNode\KoNode;
@@ -337,7 +336,7 @@ final class ParticipantHandler
     */
    private function updateSlotAssignments(SlotPlacmentCollection $assigned, ParticipantCollection $unassigned): ParticipantCollection
    {
-      $catId    = $this->struc->category->id;
+      $category = $this->struc->category;
       $result   = ParticipantCollection::new();
 
       /* store the assigned slot name in each participant, and add them to the result */
@@ -345,12 +344,12 @@ final class ParticipantHandler
       foreach ($assigned as $a)
       {
          /** @var SlotPlacement $a */
-         $a->participant->categories[$catId] ??= new CategoryAssignment($catId);
+         $assignment = $a->participant->categories->emplace($category);
          /** @var SlotPlacement $a */
          if ($a->slot instanceof ParticipantSlot)
          {
             /* just take over directly */
-            $a->participant->categories[$catId]->slot_name = $a->slot->getName();
+            $assignment->slot_name = $a->slot->getName();
          }
          else if ($a->slot instanceof PoolWinnerSlot)
          {
@@ -374,9 +373,8 @@ final class ParticipantHandler
       /* also add all unassigned participants to the result */
       foreach ($unassigned as $p)
       {
-         $p->categories[$catId] ??= new CategoryAssignment($catId);
-         $p->categories[$catId]->slot_name = null;
-         $result [] = $p;
+         $p->categories->emplace($category)->slot_name = null;
+         $result[] = $p;
       }
 
       /* done */

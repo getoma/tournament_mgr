@@ -12,7 +12,6 @@ use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchCreationHandler\MatchCreationHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
-use Tournament\Model\Participant\CategoryAssignment;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\PoolRankHandler\PoolRank;
@@ -61,7 +60,7 @@ class PoolTest extends TestCase
       for( $i = 1; $i <= $num; ++$i )
       {
          $p = new Participant($i, 1, 'Not', 'a Dummy');
-         $p->categories[] = new CategoryAssignment( $this->category->id );
+         $p->categories->emplace($this->category);
          $res[] = $p;
       }
       return $res;

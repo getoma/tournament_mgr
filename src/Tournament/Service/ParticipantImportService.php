@@ -90,7 +90,7 @@ class ParticipantImportService
          // and attach the categories:
          if( $category ) // global category set, use this one and ignore any columns
          {
-            $p->categories[] = $category;
+            $p->categories->emplace($category);
          }
          else // check the columns for any category mappings
          {
@@ -105,7 +105,7 @@ class ParticipantImportService
                if( isset($column_category) )
                {
                   // this column has content and is mapped to a single category, set it.
-                  $p->categories[] = new CategoryAssignment($column_category);
+                  $p->categories->emplace($column_category);
                }
             }
          }
@@ -127,7 +127,7 @@ class ParticipantImportService
       $report = $this->parseText($text, $tournamentId, $club);
       if (isset($report['errors'])) return $report;
       /* step 2: attach categories to participants */
-      $assignments = $categories->map(fn($c) => new CategoryAssignment($c->id));
+      $assignments = $categories->map(fn($c) => new CategoryAssignment($c));
       $report['participants']->walk(fn($p) => $p->categories = new CategoryAssignmentCollection($assignments));
       /* step 3: duplicate detection: search for already existing participants with same name and replace/update them */
       $report['duplicates'] = $this->findDuplicates($report['participants'], $tournamentId);
