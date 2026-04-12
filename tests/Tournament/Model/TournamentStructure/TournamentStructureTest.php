@@ -49,9 +49,9 @@ class TournamentStructureTest extends TestCase
    public function testBuildCombined()
    {
       /**
-       * test with 3 rounds, and default/null(=2) winners per pool --> 4 pools
+       * test with 3 rounds, and default winners per pool --> 4 pools
        */
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3, pool_winners: null));
+      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $this->assertNotNull($structure->ko?->root);
