@@ -6,6 +6,7 @@ use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 
 use PDO;
+use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
 
 class MatchDataRepository
 {
@@ -32,7 +33,7 @@ class MatchDataRepository
             area:     $this->tournament_repo->getAreaById($data['area_id']),
             whiteParticipant: $this->participant_repo->getParticipantById($data['white_id']),
             redParticipant:   $this->participant_repo->getParticipantById($data['red_id']),
-            winner:           isset($data['winner_id'])? $this->participant_repo->getParticipantById($data['winner_id']) : null,
+            winner:           isset($data['winner'])? MatchSide::from($data['winner']) : null,
             tie_break:    $data['tie_break'],
             created_at:   new \DateTime($data['created_at']),
             finalized_at: isset($data['finalized_at'])? new \DateTime($data['finalized_at']) : null,
@@ -125,14 +126,14 @@ class MatchDataRepository
       {
          $stmt = $this->pdo->prepare('
             UPDATE matches SET
-               winner_id = :winner_id,
+               winner = :winner,
                tie_break = :tie_break,
                finalized_at = :finalized_at
             WHERE id = :id
          ');
          $result = $stmt->execute([
             'id'          => $record->id,
-            'winner_id'   => isset($record->winner)? $record->winner->id : null,
+            'winner'      => $record->winner->value,
             'tie_break'   => $record->tie_break? 1 : 0,
             'finalized_at'=> isset($record->finalized_at)? $record->finalized_at->format('Y-m-d H:i:s') : null,
          ]);
@@ -141,9 +142,9 @@ class MatchDataRepository
       {
          $stmt = $this->pdo->prepare('
             INSERT INTO matches
-               (name, category_id, area_id, red_id, white_id, winner_id, tie_break, created_at, finalized_at)
+               (name, category_id, area_id, red_id, white_id, winner, tie_break, created_at, finalized_at)
             VALUES
-               (:name, :category_id, :area_id, :red_id, :white_id, :winner_id, :tie_break, :created_at, :finalized_at)
+               (:name, :category_id, :area_id, :red_id, :white_id, :winner, :tie_break, :created_at, :finalized_at)
          ');
 
          $result = $stmt->execute([
@@ -152,7 +153,7 @@ class MatchDataRepository
             'area_id'     => $record->area->id,
             'red_id'      => $record->redParticipant->id,
             'white_id'    => $record->whiteParticipant->id,
-            'winner_id'   => isset($record->winner)? $record->winner->id : null,
+            'winner'      => $record->winner->value,
             'tie_break'   => $record->tie_break? 1 : 0,
             'created_at'  => $record->created_at->format('Y-m-d H:i:s'),
             'finalized_at'=> isset($record->finalized_at)? $record->finalized_at->format('Y-m-d H:i:s') : null,

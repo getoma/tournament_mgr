@@ -11,6 +11,7 @@ use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchPointHandler\MatchPointHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\Participant\Participant;
+use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 
@@ -195,7 +196,7 @@ class SoloMatchTest extends TestCase
       $this->whiteSet = true;
 
       $record = new MatchRecord(1, "test", $this->category, $this->area,
-                                $this->redParticipant, $this->whiteParticipant, $this->redParticipant, false,
+                                $this->redParticipant, $this->whiteParticipant, MatchSide::RED, false,
                                 finalized_at: new \DateTime() );
 
       $this->node->setMatchRecord($record);

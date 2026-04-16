@@ -15,7 +15,7 @@ class GenericPoolRankHandler implements PoolRankHandler
    {
       /* iterate over all matches to collect wins and points */
       $ranks = [];
-      /** @var \Tournament\Model\TournamentStructure\MatchNode\MatchNode $match */
+      /** @var \Tournament\Model\TournamentStructure\MatchNode\SoloMatchNode $match */
       foreach ($matches as $match)
       {
          /* make sure all participants are part of $ranks */
@@ -32,13 +32,13 @@ class GenericPoolRankHandler implements PoolRankHandler
          if( $match_record->tie_break )
          {
             // a tie break match always has a winner if it is completed
-            $ranks[$match_record->winner->id]->tie_breaks += 1;
+            $ranks[$match_record->getWinner()->id]->tie_breaks += 1;
          }
          else
          {
-            if( $match_record->winner )
+            if( $match_record->getWinner() )
             {
-               $ranks[$match_record->winner->id]->wins += 1;
+               $ranks[$match_record->getWinner()->id]->wins += 1;
             }
             else
             {
