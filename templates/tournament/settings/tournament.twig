@@ -137,6 +137,7 @@
   <thead>
     <tr>
       <th>Name</th>
+      <th>Einzel/Team</th>
       <th>Modus</th>
       {% if policy.isActionAllowed('ManageSetup') -%}
       <th>Aktionen</th>
@@ -147,6 +148,7 @@
     {% for category in categories %}
     <tr>
       <td>{{category.name}}</td>
+      <td>{{category.team_mode? 'Team' : 'Einzel'}}</td>
       <td>{{category.mode.value}}</td>
       {% if policy.isActionAllowed('ManageSetup') -%}
       <td>
@@ -164,6 +166,10 @@
       <td>
         {{ form.input_plain('text', 'name', prev.categories.new.name??'', errors.categories.new['name'],
                             {'placeholder':'Neue Kategorie', 'maxlength':100, 'form':'category_new'}, required=true) }}
+      </td>
+      <td>
+        {{ form.select_plain('team_mode', { 0: 'Einzel', 1: 'Team'}, prev.categories.new.team_mode, errors.categories.new['team_mode'],
+                            {'form':'category_new'}, required=true) }}
       </td>
       <td>
         {{ form.select_plain('mode', enum_options(category_modes), prev.categories.new.mode, errors.categories.new['mode'],

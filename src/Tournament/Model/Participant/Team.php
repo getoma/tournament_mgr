@@ -13,7 +13,7 @@ class Team implements \Tournament\Model\Base\DbItem, \Tournament\Model\Tournamen
 
    public function __construct(
       public ?int $id,
-      public readonly int $categoryId, // Identifier for the category this team was set up for
+      public readonly int $category_id, // Identifier for the category this team was set up for
       public string $name,
       public bool $withdrawn = false,
       public ParticipantCollection $members  = new ParticipantCollection(),
@@ -38,11 +38,11 @@ class Team implements \Tournament\Model\Base\DbItem, \Tournament\Model\Tournamen
       if (isset($data['withdrawn'])) $this->withdrawn = (bool)$data['withdrawn'];
    }
 
-   static public function createFromArray(int $categoryId, array $data): static
+   static public function createFromArray(int $category_id, array $data): static
    {
       $result = new static(
          id: (int)$data['id'] ?? null,
-         categoryId: $categoryId,
+         category_id: $category_id,
          name: (string)$data['name'] ?? throw new \DomainException('no team name provided'),
          withdrawn: (bool)$data['withdrawn'] ?? false,
          slot_name: $data['slot_name'] ?? null,
@@ -80,24 +80,24 @@ class Team implements \Tournament\Model\Base\DbItem, \Tournament\Model\Tournamen
 
    public function setStartSlot(Category $c, ?string $slotName): void
    {
-      if( $this->categoryId !== $c->id ) throw new \UnexpectedValueException("wrong category for this team");
+      if( $this->category_id !== $c->id ) throw new \UnexpectedValueException("wrong category for this team");
       $this->slot_name = $slotName;
    }
 
    public function getStartSlot(Category $c): ?string
    {
-      return $this->categoryId === $c->id? $this->slot_name : null;
+      return $this->category_id === $c->id? $this->slot_name : null;
    }
 
    public function setPreAssignedSlot(Category $c, ?string $slotName): void
    {
-      if ($this->categoryId !== $c->id) throw new \UnexpectedValueException("wrong category for this team");
+      if ($this->category_id !== $c->id) throw new \UnexpectedValueException("wrong category for this team");
       $this->pre_assign = $slotName;
    }
 
    public function getPreAssignedSlot(Category $c): ?string
    {
-      return $this->categoryId === $c->id ? $this->pre_assign : null;
+      return $this->category_id === $c->id ? $this->pre_assign : null;
    }
 
    public function getClub(): ?string

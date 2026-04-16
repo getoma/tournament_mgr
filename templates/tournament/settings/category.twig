@@ -11,8 +11,8 @@
   <input type="hidden" name="_METHOD" value="PATCH">
   {% set isActive = policy.isActionAllowed('ManageSetup') -%}
   {{ form.input('text', 'name', 'Name', prev.name ?? category.name, errors['name'], {'maxlength':100}, required=true, active=isActive) }}
-  {{ form.select('mode', 'Modus', enum_options(category_modes), prev.mode ?? category.mode.value, errors['mode'], required=true, active=isActive) }}
   {{ form.select('team_mode', 'Einzel/Team', { 0: 'Einzel', 1: 'Team'}, prev.team_mode ?? category.team_mode, errors['team_mode'], required=true, active=isActive)}}
+  {{ form.select('mode', 'Modus', enum_options(category_modes), prev.mode ?? category.mode.value, errors['mode'], required=true, active=isActive) }}
   {% if category.mode.value|lower in ['ko', 'combined'] -%}
   {{ form.input('number', 'num_rounds', 'Anzahl KO-Runden', prev.num_rounds ?? category.config.num_rounds, errors['num_rounds'], {'min':2, 'max': 10}, active=isActive) }}
   {# area clusters not supported for now #}

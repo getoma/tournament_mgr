@@ -29,14 +29,19 @@
       <tbody>
         {% for category in categories -%}
         <tr>
-          <td>{{category.name}}
+          <td>{{ category.name -}}
             <input type="hidden" name="category_list[]" value="{{category.id}}">
           </td>
           <td><input type="checkbox" name="categories[]" value="{{category.id}}" title="{{category.name}}"
               {%- if prev.categories is not null?(category.id in prev.categories):(participant.categories[category.id]??false) %} checked{% endif %}>
           </td>
           <td>
+            {%- if category.team_mode -%}
+            {{ teams[participant.categories[category.id].team_id].getDisplayName() -}}
+            <input type="hidden" name="pre_assign[]" value="">
+            {%- else -%}
             {{ form.select_plain('pre_assign[]', starting_slots[category.id], prev.pre_assign??participant.categories[category.id].pre_assign ) }}
+            {%- endif -%}
           </td>
         </tr>
         {% endfor %}
