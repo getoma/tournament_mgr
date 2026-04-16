@@ -15,6 +15,7 @@ use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\MatchPointHandler\MatchPointHandler;
 use Tournament\Model\TournamentStructure\KoTree;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
 use Tournament\Model\TournamentStructure\MatchNode\SoloKoMatch;
 
 /**
@@ -194,7 +195,7 @@ class KoTreeTest extends TestCase
          /* create the match record */
          $records[] = new MatchRecord(
             1, $node->getName(), $this->category, $area,
-            $redParticipant, $whiteParticipant, $winner,
+            $redParticipant, $whiteParticipant, $red_winner? MatchSide::RED : MatchSide::WHITE,
             tie_break: false, finalized_at: new \DateTime() );
 
          /* alternate the winner */

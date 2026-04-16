@@ -5,6 +5,7 @@ namespace Tournament\Model\MatchRecord;
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\Participant;
+use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
 
 class MatchRecord implements \Tournament\Model\Base\DbItem
 {
@@ -17,25 +18,47 @@ class MatchRecord implements \Tournament\Model\Base\DbItem
       public readonly Area $area,
       public readonly Participant $redParticipant,
       public readonly Participant $whiteParticipant,
-      public ?Participant $winner = null,
+      public ?MatchSide $winner = null,
       public bool $tie_break = false,
       public readonly \DateTime $created_at = new \DateTime(),
       public ?\DateTime $finalized_at = null,
       public readonly MatchPointCollection $points = new MatchPointCollection()
    )
    {
-      if(  isset($this->winner)
-        && $this->winner !== $this->whiteParticipant
-        && $this->winner !== $this->redParticipant
-        )
-      {
-         throw new \UnexpectedValueException("invalid winner: must be identical to either white or red");
-      }
-
       if( $this->whiteParticipant->id == $this->redParticipant->id )
       {
          throw new \UnexpectedValueException("invalid match: white and red participant must be different");
       }
+   }
+
+   public function setWinner(?Participant $p): void
+   {
+      if ($p === null) $this->winner = null;
+      else if ($p === $this->redParticipant) $this->winner = MatchSide::RED;
+      else if ($p === $this->whiteParticipant) $this->winner = MatchSide::WHITE;
+      else throw new \UnexpectedValueException("given participant is not part of this record.");
+   }
+
+   public function getWinner(): ?Participant
+   {
+      return match ($this->winner)
+      {
+         null => null,
+         MatchSide::RED   => $this->redParticipant,
+         MatchSide::WHITE => $this->whiteParticipant,
+         default => throw new \DomainException('invalid winner value set')
+      };
+   }
+
+   public function getDefeated(): ?Participant
+   {
+      return match ($this->winner)
+      {
+         null => null,
+         MatchSide::RED   => $this->whiteParticipant,
+         MatchSide::WHITE => $this->redParticipant,
+         default => throw new \DomainException('invalid winner value set')
+      };
    }
 
    public static function validationRules(): array

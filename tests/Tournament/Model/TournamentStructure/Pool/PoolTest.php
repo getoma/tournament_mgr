@@ -110,7 +110,7 @@ class PoolTest extends TestCase
          $record = new MatchRecord($m_id++, $m->getName(), $category, $area, $m->getRedParticipant(), $m->getWhiteParticipant());
          if (!$lastOngoing || ($m_id < $matches->count()) )
          {
-            $record->winner = $m->getRedParticipant();
+            $record->setWinner($m->getRedParticipant());
             $record->finalized_at = new \DateTime();
          }
          $records[] = $record;

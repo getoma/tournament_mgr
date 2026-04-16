@@ -66,7 +66,7 @@ class MatchHandlingService
                }
                else
                {
-                  $record->winner = null;
+                  $record->setWinner(null);
                   $record->finalized_at = new \DateTime();
                   $saveRecord = true;
                }
@@ -79,7 +79,7 @@ class MatchHandlingService
                {
                   if ($node->isModifiable())
                   {
-                     $record->winner = $participant;
+                     $record->setWinner($participant);
                      $record->finalized_at = new \DateTime();
                      $saveRecord = true;
                   }

@@ -132,7 +132,7 @@ class SoloMatch extends MatchNodeBase
    /* whether match ended with a tie */
    public function isTied(): bool
    {
-      return $this->isCompleted() && !isset($this->matchRecord->winner);
+      return $this->isCompleted() && !$this->matchRecord->getWinner();
    }
 
    /* return participant per parameter - take from match record if available */
@@ -153,7 +153,7 @@ class SoloMatch extends MatchNodeBase
     */
    public function getWinner(): ?MatchParticipant
    {
-      if ($this->matchRecord)        return $this->matchRecord->winner;
+      if ($this->matchRecord)  return $this->matchRecord->getWinner();
       list($redSlot, $whiteSlot) = [$this->getRedSlot(), $this->getWhiteSlot()];
       if ($redSlot->isBye())   return $this->getWhiteSlot()->getParticipant();
       if ($whiteSlot->isBye()) return $this->getRedSlot()->getParticipant();
@@ -166,7 +166,7 @@ class SoloMatch extends MatchNodeBase
     */
    public function getDefeated(): ?MatchParticipant
    {
-      return $this->matchRecord?->winner ? $this->matchRecord->getOpponent($this->matchRecord->winner) : null;
+      return $this->matchRecord?->getDefeated();
    }
 
    /**
