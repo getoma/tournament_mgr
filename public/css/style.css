@@ -524,22 +524,32 @@ td.td-link:has(> :first-child:last-child) {
    min-width: 30em;
 }
 
-/* error/ok message blocks */
-p.error, span.error {
+/* error/ok/etc message blocks */
+.error, .ok, .warning, .info {
    display: block;
-   background-color: #f8d7da;
-   border-left: 4px solid #dc3545;
    padding: 0.75rem;
    border-radius: 4px;
    margin-bottom: 1rem;
 }
 
-p.ok, span.ok {
+.error {
+   background-color: #f8d7da;
+   border-left: 4px solid #dc3545;
+}
+
+.ok {
    background-color: #d1e7dd;
    border-left: 4px solid #198754;
-   padding: 0.75rem 1rem;
-   border-radius: 4px;
-   margin-bottom: 1rem;
+}
+
+.warning {
+   background-color: #fff3cd;
+   border-left: 4px solid #ffc107;
+}
+
+.info {
+   background-color: #cff4fc;
+   border-left: 4px solid #0dcaf0;
 }
 
 /* button list with descriptions as dl */
