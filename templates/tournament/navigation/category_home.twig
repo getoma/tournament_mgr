@@ -17,6 +17,11 @@
     <b>KO-Baum</b>
   </a></li>
 {% endif %}
+{% if route_context.category.team_mode %}
+  <li><a href="{{ url_for('tournaments.categories.teams.index', route_context.args) }}">
+    <b>Teams</b>
+  </a></li>
+{% endif %}
   <li><a href="{{ url_for('tournaments.categories.edit', route_context.args) }}">
     <b>Konfiguration</b>
   </a></li>

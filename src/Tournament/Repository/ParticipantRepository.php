@@ -29,6 +29,7 @@ class ParticipantRepository
    public function __construct(private PDO $pdo)
    {
       $this->participants = ParticipantCollection::new();
+      $this->teams = TeamCollection::new();
    }
 
    public function getLastErrors(): array
@@ -86,7 +87,7 @@ class ParticipantRepository
          /* fetch participants */
          $stmt = $this->pdo->prepare(<<<QUERY
             SELECT p.*
-            FROM team_participants tp LEFT JOIN participants p on tp.participant_id=p.id
+            FROM participants_teams tp LEFT JOIN participants p on tp.participant_id=p.id
             where team_id=?
          QUERY);
          $stmt->execute([$team->id]);
@@ -154,7 +155,7 @@ class ParticipantRepository
    public function getTeamsByCategoryId(int $categoryId): TeamCollection
    {
       $stmt = $this->pdo->prepare(<<<QUERY
-         SELECT t.id, t.name
+         SELECT t.*
          FROM teams t
          WHERE t.category_id=?
          ORDER BY t.id
@@ -219,6 +220,7 @@ class ParticipantRepository
             GROUP_CONCAT(IFNULL(pc.slot_name,'')) as slot_name, GROUP_CONCAT(IFNULL(pc.pre_assign,'')) as pre_assign
             FROM participants p LEFT JOIN participants_categories pc ON p.id = pc.participant_id
             WHERE p.id = :id
+            GROUP BY p.id
          QUERY);
          $stmt->execute(['id' => $id]);
          $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -321,7 +323,7 @@ class ParticipantRepository
       }
 
       /* save team members */
-      $this->pdo->prepare("DELETE FROM team_participants WHERE team_id = ?")
+      $this->pdo->prepare("DELETE FROM participants_teams WHERE team_id = ?")
                 ->execute([$team->id]);
 
       if( !$team->members->empty() )
@@ -331,11 +333,11 @@ class ParticipantRepository
          foreach ($team->members as $p)
          {
             $values[] = "(?, ?, ?)";
-            $params[] = $team->id;
-            $params[] = $team->categoryId;
             $params[] = $p->id;
+            $params[] = $team->category_id;
+            $params[] = $team->id;
          }
-         $sql = "INSERT INTO team_participants (team_id, category_id, participant_id) VALUES " . implode(',', $values);
+         $sql = "INSERT INTO participants_teams (participant_id, category_id, team_id) VALUES " . implode(',', $values);
          $this->pdo->prepare($sql)->execute($params);
       }
 
@@ -358,6 +360,33 @@ class ParticipantRepository
    {
       $this->pdo->prepare("DELETE FROM teams WHERE id=?")
                 ->execute([$id]);
+   }
+
+   /**
+    * get a mapping of participant id -> team for a specific category
+    */
+   public function getParticipantTeamMapping(int $categoryId): array
+   {
+      $stmt = $this->pdo->prepare(<<<QUERY
+         SELECT tp.participant_id, t.*
+         FROM participants_teams tp LEFT JOIN teams t ON tp.team_id = t.id
+         WHERE t.category_id = ?
+      QUERY);
+      $stmt->execute([$categoryId]);
+      return array_map( fn($row) => $this->getTeamInstance($row), $stmt->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC) );
+   }
+
+   /**
+    * remove participants from their current team
+    */
+   public function dropTeamMembers(int $categoryId, array $participantIds)
+   {
+      if( $participantIds )
+      {
+         $param_template = implode(',', array_fill(0, count($participantIds), '?'));
+         $this->pdo->prepare("DELETE FROM participants_teams WHERE category_id = ? AND participant_id IN ($param_template)")
+                   ->execute(array_merge([$categoryId], $participantIds));
+      }
    }
 
    /**

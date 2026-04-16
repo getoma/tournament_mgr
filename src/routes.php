@@ -204,6 +204,21 @@ return function (\Slim\App $app)
             $cgrp->post('/addNewParticipants', [TournamentTreeController::class, 'addUnslottedParticipants'])->setName('tournaments.categories.assignParticipants')
                ->add($policyGuard->for(TournamentAction::ModifyParticipants));
 
+            /* Team management */
+            $cgrp->get('/teams[/]', [ParticipantsDataController::class, 'listTeams'])->setName('tournaments.categories.teams.index');
+            $cgrp->get('/teams/create', [ParticipantsDataController::class, 'showTeam'])->setName('tournaments.categories.teams.create')
+               ->add($policyGuard->for(TournamentAction::ModifyParticipants));
+            $cgrp->post('/teams/create', [ParticipantsDataController::class, 'saveTeam'])->setName('tournaments.categories.teams.store')
+               ->add($policyGuard->for(TournamentAction::ModifyParticipants));
+            $cgrp->group('/teams/{teamId:\d+}', function (RouteCollectorProxy $teamgrp) use ($policyGuard)
+            {
+               $teamgrp->get('[/]', [ParticipantsDataController::class, 'showTeam'])->setName('tournaments.categories.teams.show');
+               $teamgrp->patch('[/]', [ParticipantsDataController::class, 'saveTeam'])->setName('tournaments.categories.teams.update')
+                  ->add($policyGuard->for(TournamentAction::ModifyParticipants));
+               $teamgrp->delete('[/]', [ParticipantsDataController::class, 'deleteTeam'])->setName('tournaments.categories.teams.delete')
+                  ->add($policyGuard->for(TournamentAction::ModifyParticipants));
+            });
+
             /* Tournament tree navigation */
             $cgrp->get('/category', [TournamentTreeController::class, 'showCategoryHome'])->setName('tournaments.categories.show');
             $cgrp->get('/pool', [TournamentTreeController::class, 'showCategoryPools'])->setName('tournaments.categories.pools.index');

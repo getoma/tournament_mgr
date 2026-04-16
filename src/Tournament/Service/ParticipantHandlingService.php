@@ -2,8 +2,12 @@
 
 namespace Tournament\Service;
 
+use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryCollection;
 use Tournament\Model\Participant\Participant;
+use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\Participant\Team;
+
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 
@@ -85,7 +89,7 @@ class ParticipantHandlingService
    /**
     * validate input data for updating or creating a participant
     */
-   public function validateParticipantData(array $data, int $tournamentId, ?Participant $participant = null): array
+   public function validateParticipantData(array &$data, int $tournamentId, ?Participant $participant = null): array
    {
       /* set some default values */
       $data['categories'] ??= [];
@@ -128,7 +132,7 @@ class ParticipantHandlingService
    /**
     * update related participant data (like category selection) and save a participant to the DB
     */
-   private function updateAndSaveParticipant(Participant $participant, array $data)
+   private function updateAndSaveParticipant(Participant $participant, array $data): void
    {
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($participant->tournament_id);
       $starting_slots = $this->getStartingSlotSelection($categories, $participant);
@@ -203,6 +207,74 @@ class ParticipantHandlingService
       {
          $this->tournamentService->repopulate($c);
       }
+   }
+
+   /**
+    * validate team data input
+    */
+   public function validateTeamData(array &$data, Category $category, ?Team $team = null): array
+   {
+      /* set default values */
+      $data['withdrawn'] ??= false;
+
+      /* validate and return */
+      $rules = Team::validationRules();
+      return DataValidationService::validate($data, $rules);
+   }
+
+   /**
+    * update an existing team
+    */
+   public function updateTeam(Team $team, array $data): array
+   {
+      $team->updateFromArray($data);
+      $report = $this->updateTeamMembersAndSave($team, $data['member']??[]);
+      return $report;
+   }
+
+   /**
+    * update team members from form input
+    * steps:
+    * 1) check if all participant ids are valid participants in this category
+    * 2) check if any participant is already in another team
+    * 3) if any participant is part of another team: add it to the report
+    * 4) assemble the list of Participant instances according the given list and put it into the team
+    * 5) sync any updates to the repo
+    * @return array update report: [ participantId -> teamId ]:
+    *     [ participantId => null,   // participant doesn't exist (anymore)
+    *       participantId => teamId, // participant is already part of this team and needs to be dropped from there first
+    *     ]
+    */
+   private function updateTeamMembersAndSave(Team $team, array $participantIdList): array
+   {
+      $team_mapping = $this->repo->getParticipantTeamMapping($team->category_id);
+      $participants = $this->repo->getParticipantsByCategoryId($team->category_id);
+      $new_participants = new ParticipantCollection();
+      $report = [];
+      foreach ($participantIdList as $pid)
+      {
+         if (!$participants->keyExists($pid))
+         {
+            $report[$pid] = null;
+         }
+         else
+         {
+            $prev_team = $team_mapping[$pid] ?? null;
+            if ($prev_team !== null && $prev_team !== $team)
+            {
+               $report[$pid] = $prev_team;
+            }
+            $new_participants[] = $participants[$pid];
+         }
+      }
+      $team->members = $new_participants;
+      /* report keys are all participant ids of 1) non-existing participants, 2) participants currently assigned to a different team
+       * drop those members from their current team so we can assign them now here to this team
+       * no need to filter out the non-existing ones for dropTeamMembers(), they will just be ignored anyway
+       */
+      $this->repo->dropTeamMembers($team->category_id, array_keys($report));
+      $this->repo->saveTeam($team);
+      return $report;
    }
 
 }

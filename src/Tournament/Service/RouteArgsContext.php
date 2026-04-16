@@ -1,10 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Service;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\Participant;
+use Tournament\Model\Participant\Team;
 use Tournament\Model\Tournament\Tournament;
 
 class RouteArgsContext
@@ -15,6 +16,7 @@ class RouteArgsContext
       public ?Category    $category    = null,
       public ?Area        $area        = null,
       public ?Participant $participant = null,
+      public ?Team        $team        = null,
       public ?string      $pool_name   = null,
       public ?string      $match_name  = null,
    )

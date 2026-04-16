@@ -6,6 +6,8 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 use Tournament\Model\Category\CategoryCollection;
+use Tournament\Model\Participant\Team;
+use Tournament\Model\Participant\Participant;
 
 use Tournament\Service\ParticipantHandlingService;
 use Tournament\Service\ParticipantImportService;
@@ -22,7 +24,6 @@ use Respect\Validation\Validator as v;
 
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
-
 
 class ParticipantsDataController
 {
@@ -398,4 +399,99 @@ class ParticipantsDataController
          );
       }
    }
+
+   /*********************************
+    * TEAM MANAGEMENT
+    */
+
+   /**
+    * team index page - show a list of all teams and their members
+    */
+   public function listTeams(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $teams = $this->repo->getTeamsByCategoryId($ctx->category->id);
+      return $this->view->render($response, 'tournament/teams/index.twig', [
+         'teams' => $teams
+      ]);
+   }
+
+   /**
+    * show the configuration page of a specific team
+    */
+   public function showTeam(Request $request, Response $response, array $args, array $errors = [], array $prev = []): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $category_participants = $this->repo->getParticipantsByCategoryId($ctx->category->id);
+      $all_teams = $this->repo->getTeamsByCategoryId($ctx->category->id);
+      $team_mapping = $this->repo->getParticipantTeamMapping($ctx->category->id);
+
+      /* build the option list for team member selection */
+      $member_selection = [ '' => '--' ];
+      foreach( $category_participants as $p )
+      {
+         /** @var Participant $p */
+         $disp = $p->getDisplayName();
+         if( $team = $team_mapping[$p->id] ) // show each members current team as well
+         {
+            $disp .= " (" . $team->getDisplayName() . ")";
+         }
+         $member_selection[$p->id] = $disp;
+      }
+
+      return $this->view->render($response, 'tournament/teams/details.twig', [
+         'team'             => $ctx->team,                   // explicitly forward the selected team for this page
+         'team_members'     => $ctx->team?->members->keys(), // needed to set current values to select-boxes
+         'member_selection' => $member_selection,            // option-list of select-boxes
+         'all_teams'        => $all_teams,                   // needed for prgMessage if members were moved from another team
+         'errors' => $errors,
+         'prev'   => $prev,
+      ]);
+   }
+
+   /**
+    * update a specific team
+    */
+   public function saveTeam(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
+      $data = $request->getParsedBody();
+      $errors = $this->service->validateTeamData($data, $ctx->category, $ctx->team);
+
+      if ($errors)
+      {
+         return $this->showTeam($request, $response, $args, $errors, $data);
+      }
+      else
+      {
+         $team   = $ctx->team ?? Team::createFromArray($ctx->category->id, $data);
+         $report = $this->service->updateTeam($team, $data);
+
+         return $this->prgService->redirect($request, $response, 'tournaments.categories.teams.show',
+            args:       $ctx->args + ['teamId' => $team->id],
+            prgMessage: ['status'  => $ctx->team? 'updated' : 'stored',
+                         'moved'   => array_filter($report),
+                         'unknown' => array_filter($report, fn($e) => !$e)],
+         );
+      }
+   }
+
+   /**
+    * delete a specific team
+    */
+   public function deleteTeam(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $this->repo->deleteTeam($ctx->team->id);
+      return $this->prgService->redirect($request, $response, 'tournaments.categories.teams.index', $args,
+         prgMessage: [ 'status' => 'removed',
+                       'team'   => $ctx->team->getDisplayName() ]
+      );
+   }
 }
+

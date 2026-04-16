@@ -1,0 +1,35 @@
+{% import 'base/form.twig' as form %}
+
+{%- include 'base/header.twig' with {
+  'active_page': 'tournaments.categories.teams.index',
+  'nav_entry_label': (team.id? team.getDisplayName() : 'Team hinzufügen'),
+} %}
+
+<section>
+  <h2>Team {{ team.id? 'bearbeiten' : 'hinzufügen' }}</h2>
+  {% if prg_message -%}
+  <p class="ok">Team wurde {{ prg_message.status == 'updated'? 'aktualisiert' : 'hinzugefügt' }}!</p>
+    {% if prg_message.moved is not empty %}
+    <ul class="warning">
+    {% for pid, old_team in prg_message.moved -%}
+      <li>{{ member_selection[pid] }} aus Team {{ old_team.getDisplayName() }} entfernt.</li>
+    {%- endfor %}
+    </ul>
+    {%- endif %}
+  {%- endif %}
+  {% if errors -%}
+  <p class="error">Daten konnten nicht übernommen werden!</p>
+  {%- endif %}
+  <form method="POST" action="{{ url_for( (team.id? 'tournaments.categories.teams.update' : 'tournaments.categories.teams.store'), route_context.args) }}">
+    <input type="hidden" name="_METHOD" value="{{ team.id? 'PATCH' : 'POST' }}">
+    {{ form.input('text', 'name', 'Team-Name', prev.name ?? team.name, errors.name, {'maxlength':100}, required=true) }}
+    {%- set plist = participants.values() -%}
+    {% for i in range(0, route_context.category.config.team_size-1) %}
+    {{ form.select('member[]', 'Mitglied '~(i+1), member_selection, prev.member[i] ?? team_members[i])}}
+    {%- endfor -%}
+    {{ form.checkbox('withdrawn', 'Team abgemeldet', checked: prev.withdrawn ?? team.withdrawn, errors: errors.withdrawn) }}
+    {{ form.submit('Speichern') }}
+  </form>
+</section>
+
+{% include 'base/footer.twig' %}

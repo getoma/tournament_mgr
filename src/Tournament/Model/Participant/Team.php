@@ -12,10 +12,10 @@ class Team implements \Tournament\Model\Base\DbItem, \Tournament\Model\Tournamen
 
    public function __construct(
       public ?int $id,
-      public readonly int $categoryId, // Identifier for the category this team was set up for
+      public readonly int $category_id, // Identifier for the category this team was set up for
       public string $name,
       public bool $withdrawn = false,
-      public readonly ParticipantCollection $members  = new ParticipantCollection(),
+      public ParticipantCollection $members  = new ParticipantCollection(),
    )
    {
    }
@@ -38,10 +38,10 @@ class Team implements \Tournament\Model\Base\DbItem, \Tournament\Model\Tournamen
    static public function createFromArray(int $categoryId, array $data): static
    {
       $result = new static(
-         id: null,
-         categoryId: $categoryId,
-         name: $data['name'] ?? throw new \DomainException('no team name provided'),
-         withdrawn: $data['withdrawn'] ?? false,
+         id: (int)$data['id'] ?? null,
+         category_id: $categoryId,
+         name: (string)$data['name'] ?? throw new \DomainException('no team name provided'),
+         withdrawn: (bool)$data['withdrawn'] ?? false,
       );
       return $result;
    }
