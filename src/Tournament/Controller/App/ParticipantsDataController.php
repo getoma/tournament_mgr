@@ -23,7 +23,6 @@ use Respect\Validation\Validator as v;
 use Slim\Views\Twig;
 use Slim\Routing\RouteContext;
 
-
 class ParticipantsDataController
 {
    const IMPORT_BUFFER_FILE = 'participant_import.json';
@@ -47,6 +46,7 @@ class ParticipantsDataController
       $tournament = $request->getAttribute('route_context')->tournament;
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
       $participants = $this->repo->getParticipantsByTournamentId($tournament->id);
+      $teams = $this->repo->getTeamsByTournamentId($tournament->id);
 
       /* retrieve any possible PRG message and pre-process it */
       $status = $this->prgService->getStatusMessage() ?? [];
@@ -60,6 +60,7 @@ class ParticipantsDataController
          'categories'     => $categories,
          'starting_slots' => $this->service->getStartingSlotSelection($categories),
          'participants'   => $participants,
+         'teams'          => $teams,
          'prg_message'    => $status,
          'errors' => $errors,
          'prev'   => $prev,
@@ -130,25 +131,13 @@ class ParticipantsDataController
          return $this->showParticipantList($request, $response, $args, $errors, $data);
       }
 
-      $import_ok = $this->repo->importParticipants($import_report['participants']);
+      $this->repo->importParticipants($import_report['participants']);
 
       // Process the uploaded file and import participants
-      if ($import_ok )
-      {
-         return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args,
-            [ 'status'    => 'imported',
-              'duplicates' => $import_report['duplicates']->column('id')
-            ]
-         );
-      }
-      else
-      {
-         // If there are errors, render the participant list with errors
-         $errors = [
-            'sql_error' => $this->repo->getLastErrors(),
-         ];
-         return $this->showParticipantList($request, $response, $args, $errors);
-      }
+      return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args, [
+         'status'     => 'imported',
+         'duplicates' => $import_report['duplicates']->column('id')
+      ]);
    }
 
    /**
@@ -301,25 +290,15 @@ class ParticipantsDataController
 
          /* now actually parse the participant list and save it */
          $import_report = $this->importService->import($import, $tournament->id, $global_category, $category_column_map, $data['club']?:null);
-         $import_ok = $this->repo->importParticipants($import_report['participants']);
+         $this->repo->importParticipants($import_report['participants']);
 
          /* delete the buffered file */
          $this->storage->drop($current_user->id, static::IMPORT_BUFFER_FILE);
 
-         if( $import_ok )
-         {
-            return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args,
-               [ 'status'     => 'imported',
-                 'duplicates' => $import_report['duplicates']->column('id')
-               ]
-            );
-         }
-         else
-         {
-            // If there are errors, render the participant list directly with all info
-            $errors = [ 'sql_error' => $this->repo->getLastErrors() ];
-            return $this->showParticipantList($request, $response, $args, $errors);
-         }
+         return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args, [
+            'status'     => 'imported',
+            'duplicates' => $import_report['duplicates']->column('id')
+         ]);
       }
       else
       {
@@ -353,15 +332,8 @@ class ParticipantsDataController
     */
    public function deleteParticipant(Request $request, Response $response, array $args): Response
    {
-      if ($this->repo->deleteParticipant($request->getAttribute('route_context')->participant->id))
-      {
-         return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args, ['status' => 'deleted']);
-      }
-      else
-      {
-         $response->getBody()->write('Failed to delete participant');
-         return $response->withStatus(400);
-      }
+      $this->repo->deleteParticipant($request->getAttribute('route_context')->participant->id);
+      return $this->prgService->redirect($request, $response, 'tournaments.participants.index', $args, ['status' => 'deleted']);
    }
 
    /**
@@ -375,6 +347,7 @@ class ParticipantsDataController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($ctx->tournament->id);
+      $teams = $this->repo->getTeamsByTournamentId($ctx->tournament->id);
 
       $starting_slots = $this->service->getStartingSlotSelection($categories, $ctx->participant);
 
@@ -383,6 +356,7 @@ class ParticipantsDataController
       return $this->view->render($response, 'tournament/participants/details.twig', [
          'tournament'       => $ctx->tournament,
          'categories'       => $categories,
+         'teams'            => $teams,
          'starting_slots'   => $starting_slots,
          'participant'      => $ctx->participant ?? null, // null to get the form for a new participant
          'withdraw_allowed' => $withdrawal_allowed,
@@ -428,3 +402,4 @@ class ParticipantsDataController
       }
    }
 }
+

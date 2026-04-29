@@ -96,7 +96,7 @@ class MatchHandlingService
                {
                   if ($post_data['action'] === 'undo')
                   {
-                     if ($pointHdl->removePoint($record, $post_data['undo']))
+                     if ($pointHdl->removePoint($record, (int)$post_data['undo']))
                      {
                         $saveRecord = true;
                      }
@@ -122,14 +122,7 @@ class MatchHandlingService
 
             if ($saveRecord)
             {
-               if ($this->m_repo->saveMatchRecord($record))
-               {
-                  $node->setMatchRecord($record);
-               }
-               else
-               {
-                  $error = 'Aktualisierung ist fehlgeschlagen :-(';
-               }
+               $this->m_repo->saveMatchRecord($record);
             }
          }
       }
@@ -153,10 +146,7 @@ class MatchHandlingService
             {
                $record = $node->provideMatchRecord();
                $record->tie_break = $nodes->count() === 1; // if only a single decision match - make it a tie break match.
-               if (!$this->m_repo->saveMatchRecord($record))
-               {
-                  return 'Match-Generierung ist fehlgeschlagen :-(';
-               }
+               $this->m_repo->saveMatchRecord($record);
             }
             else
             {

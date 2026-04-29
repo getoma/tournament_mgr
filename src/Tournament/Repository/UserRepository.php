@@ -79,7 +79,7 @@ class UserRepository extends \Base\Repository\UserRepository
    {
       $users = new UserCollection();
       $stmt = $this->pdo->query("SELECT * FROM users u");
-      foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row)
+      while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
       {
          $users[] = $this->createUserObject($row);
       }

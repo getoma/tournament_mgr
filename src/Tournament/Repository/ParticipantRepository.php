@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Repository;
 
@@ -10,23 +10,27 @@ use PDO;
 
 class ParticipantRepository
 {
-   /** @var ParticipantCollection $participants
+   /**
     * buffer all participant instances, to make sure that each participant is
     * represented by a unique instance
     */
-   private $participants;
+   private ParticipantCollection $participants;
 
-   /* buffer error messages */
-   private $errors = [];
+   /**
+    * buffer results of per-category and per-tournament queries, to not repeat the same
+    * query on consecutive requests
+    */
+   /** @var ParticipantCollection[] */
+   private array $participants_per_category = [];
+   /** @var ParticipantCollection[] */
+   private array $participants_per_tournament = [];
 
+   /**
+    * constructor
+    */
    public function __construct(private PDO $pdo)
    {
       $this->participants = ParticipantCollection::new();
-   }
-
-   public function getLastErrors(): array
-   {
-      return $this->errors;
    }
 
    /**
@@ -51,14 +55,14 @@ class ParticipantRepository
        * depending on the context it was created before
        */
       $category_list = isset($data['category_id'])? array_map(fn($cid) => (int)$cid, explode(',', $data['category_id'])) : [];
-      $pre_assign = explode(',', $data['pre_assign']);
-      $slots      = explode(',', $data['slot_name']);
+      $pre_assign = explode(',', $data['pre_assign']??'');
+      $slots      = explode(',', $data['slot_name']??'');
       foreach($category_list as $i => $cid)
       {
          $participant->categories[$cid] = new CategoryAssignment(
             categoryId: $cid,
             pre_assign: $pre_assign[$i] ?: null,
-            slot_name: $slots[$i] ?: null
+            slot_name: $slots[$i] ?: null,
          );
       }
 
@@ -67,54 +71,76 @@ class ParticipantRepository
    }
 
    /**
-    * Get all participants for a tournament, optionally with category information
+    * Get all participants for a tournament
     */
    public function getParticipantsByTournamentId(int $tournamentId): ParticipantCollection
    {
-      /* fetch all participants for a tournament, with category ids */
-      $stmt = $this->pdo->prepare(<<<QUERY
-         SELECT p.*, GROUP_CONCAT(pc.category_id) AS category_id,
-         GROUP_CONCAT(IFNULL(pc.pre_assign,'')) as pre_assign, GROUP_CONCAT(IFNULL(pc.slot_name,'')) as slot_name
-         FROM participants p LEFT JOIN participants_categories pc ON p.id = pc.participant_id
-         WHERE p.tournament_id = :tournament_id
-         GROUP BY p.id
-         ORDER BY p.lastname, p.firstname
-      QUERY
-      );
-      $stmt->execute(['tournament_id' => $tournamentId]);
-      $result = new ParticipantCollection();
-      foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
+      if( array_key_exists($tournamentId, $this->participants_per_tournament) )
       {
-         $result[$row['id']] = $this->getParticipantInstance($row);
+         return $this->participants_per_tournament[$tournamentId]->copy();
       }
-      return $result;
+      else
+      {
+         /* fetch all participants for a tournament, with category ids */
+         $stmt = $this->pdo->prepare(<<<QUERY
+            SELECT p.*, GROUP_CONCAT(pc.category_id) AS category_id,
+                  GROUP_CONCAT(IFNULL(pc.pre_assign,'')) as pre_assign, GROUP_CONCAT(IFNULL(pc.slot_name,'')) as slot_name,
+            FROM participants p LEFT JOIN participants_categories pc ON p.id = pc.participant_id
+            WHERE p.tournament_id = :tournament_id
+            GROUP BY p.id
+            ORDER BY p.lastname, p.firstname
+         QUERY);
+         $stmt->execute(['tournament_id' => $tournamentId]);
+         $result = ParticipantCollection::new();
+         while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+         {
+            $result[] = $this->getParticipantInstance($row);
+         }
+         $this->participants_per_tournament[$tournamentId] = $result;
+         /* participants-per-category could be filled here as well
+          * But for all use cases, we would either fetch ALL participants, or ONLY
+          * the participants of a single category, so buffering this request shouldn't help anything
+          */
+         return $result->copy();
+      }
    }
 
    /**
-    * get all participants for a specific category - category data will not be set
+    * get all participants for a specific category
     */
    public function getParticipantsByCategoryId(int $categoryId): ParticipantCollection
    {
-      $stmt = $this->pdo->prepare(<<<QUERY
-         SELECT p.*, pc.category_id, pc.slot_name, pc.pre_assign
-         FROM participants_categories pc LEFT JOIN participants p ON p.id = pc.participant_id
-         WHERE pc.category_id = :category_id
-         ORDER BY p.lastname, p.firstname
-      QUERY);
-      $stmt->execute(['category_id' => $categoryId]);
-
-      $result = new ParticipantCollection();
-      foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row )
+      if (array_key_exists($categoryId, $this->participants_per_category))
       {
-         $result[$row['id']] = $this->getParticipantInstance($row);
+         return $this->participants_per_category[$categoryId]->copy();
       }
-      return $result;
+      else
+      {
+         $stmt = $this->pdo->prepare(<<<QUERY
+            SELECT p.*, CONCAT(pc.category_id) as category_id, pc.slot_name, pc.pre_assign
+            FROM participants_categories pc LEFT JOIN participants p ON p.id = pc.participant_id
+            WHERE pc.category_id = ?
+            ORDER BY p.lastname, p.firstname
+         QUERY);
+         /* category_id is encased in "CONCAT" to make it a string for getParticipantInstance() compatibility,
+          * this function expects a comma-separated list for this field
+          */
+         $stmt->execute([$categoryId]);
+
+         $result = new ParticipantCollection();
+         while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+         {
+            $result[$row['id']] = $this->getParticipantInstance($row);
+         }
+         $this->participants_per_category[$categoryId] = $result;
+         return $result->copy();
+      }
    }
 
    /**
     * update the slots for each participant
     */
-   public function updateAllParticipantSlots(int $categoryId, ParticipantCollection $participants): bool
+   public function updateAllParticipantSlots(int $categoryId, ParticipantCollection $participants): void
    {
       $this->pdo->beginTransaction();
       $clear_stmt = $this->pdo->prepare(
@@ -135,18 +161,17 @@ class ParticipantRepository
          ]);
       }
       $this->pdo->commit();
-      return true;
    }
 
    /**
     * free participant slots for a single participant
     */
-   public function freeParticipantSlots(int $participantId): bool
+   public function freeParticipantSlots(int $participantId): void
    {
       $stmt = $this->pdo->prepare(
          "UPDATE participants_categories SET slot_name=null WHERE participant_id=:participant_id"
       );
-      return $stmt->execute(['participant_id' => $participantId]);
+      $stmt->execute(['participant_id' => $participantId]);
    }
 
    /**
@@ -162,6 +187,7 @@ class ParticipantRepository
             GROUP_CONCAT(IFNULL(pc.slot_name,'')) as slot_name, GROUP_CONCAT(IFNULL(pc.pre_assign,'')) as pre_assign
             FROM participants p LEFT JOIN participants_categories pc ON p.id = pc.participant_id
             WHERE p.id = :id
+            GROUP BY p.id
          QUERY);
          $stmt->execute(['id' => $id]);
          $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -170,127 +196,78 @@ class ParticipantRepository
       return $participant;
    }
 
-   public function saveParticipant(Participant $p): bool
+   /**
+    * save a single participant into the database
+    */
+   public function saveParticipant(Participant $p): void
    {
-      $result = false;
       $this->pdo->beginTransaction();
 
       if ($p->id)
       {
-         $stmt = $this->pdo->prepare("UPDATE participants SET lastname=:lastname, firstname=:firstname, club=:club, withdrawn=:withdrawn WHERE id = :id");
-         $result = $stmt->execute($p->asArray(['id', 'lastname', 'firstname', 'club', 'withdrawn']));
+         $this->pdo->prepare("UPDATE participants SET lastname=:lastname, firstname=:firstname, club=:club, withdrawn=:withdrawn WHERE id = :id")
+                   ->execute($p->asArray(['id', 'lastname', 'firstname', 'club', 'withdrawn']));
       }
       else
       {
-         $stmt = $this->pdo->prepare( "INSERT INTO participants (tournament_id, lastname, firstname, club, withdrawn) "
-                                    . "VALUES (:tournament_id, :lastname, :firstname, :club, :withdrawn)");
-         $result = $stmt->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club', 'withdrawn']));
-         if ($result)
-         {
-            $p->id = $this->pdo->lastInsertId();
-            $this->participants[$p->id] = $p;
-         }
+         $this->pdo->prepare(<<<QUERY
+            INSERT INTO participants (tournament_id, lastname, firstname, club, withdrawn)
+            VALUES (:tournament_id, :lastname, :firstname, :club, :withdrawn)
+         QUERY)->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club', 'withdrawn']));
+         $p->id = (int)$this->pdo->lastInsertId();
+         $this->participants[$p->id] = $p;
       }
 
-      if( $result ) // also update participant categories
+      if ($p->categories->empty())
       {
-         if ($p->categories->empty())
-         {
-            // If no categories set (anymore), just delete all assigments
-            $stmt = $this->pdo->prepare("DELETE FROM participants_categories WHERE participant_id = ?");
-            $result = $stmt->execute([$p->id]);
-         }
-         else
-         {
-            // otherwise, delete any category assignments that are not set (anymore)
-            // DO NOT just delete everything and re-add, because that would also drop any
-            // related data (e.g. start slot assignments)
-            $placeholders = implode(',', array_fill(0, $p->categories->count(), '?'));
-            $sql = "DELETE FROM participants_categories WHERE participant_id = ? AND category_id NOT IN ($placeholders)";
-            $params = array_merge([$p->id], $p->categories->map(fn($ca) => $ca->categoryId));
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute($params);
-
-            // then add all linked category ids, respectively update the pre_assign values
-            $stmt = $this->pdo->prepare(<<<'QUERY'
-               INSERT INTO participants_categories (participant_id, category_id, pre_assign) VALUES (:pid, :cid, :set_assign)
-               ON DUPLICATE KEY UPDATE pre_assign=:update_assign
-            QUERY);
-            /** @var CategoryAssignment $ca */
-            foreach ($p->categories as $ca)
-            {
-               $result = $stmt->execute([
-                  ':pid' => $p->id,
-                  ':cid' => $ca->categoryId,
-                  ':set_assign'    => $ca->pre_assign,
-                  ':update_assign' => $ca->pre_assign
-               ]);
-
-               if( !$result ) break;
-            }
-         }
-      }
-
-      if ($result)
-      {
-         $this->pdo->commit();
+         // If no categories set (anymore), just delete all assigments
+         $this->pdo->prepare("DELETE FROM participants_categories WHERE participant_id = ?")
+                   ->execute([$p->id]);
       }
       else
       {
-         $this->pdo->rollBack();
+         // otherwise, delete any category assignments that are not set (anymore)
+         // DO NOT just delete everything and re-add, because that would also drop any
+         // related data (e.g. start slot assignments)
+         $placeholders = implode(',', array_fill(0, $p->categories->count(), '?'));
+         $sql = "DELETE FROM participants_categories WHERE participant_id = ? AND category_id NOT IN ($placeholders)";
+         $params = array_merge([$p->id], $p->categories->map(fn($ca) => $ca->categoryId));
+         $this->pdo->prepare($sql)->execute($params);
+
+         // then add all linked category ids, respectively update the pre_assign values
+         $stmt = $this->pdo->prepare(<<<'QUERY'
+            INSERT INTO participants_categories (participant_id, category_id, pre_assign) VALUES (:pid, :cid, :set_assign)
+            ON DUPLICATE KEY UPDATE pre_assign=:update_assign
+         QUERY);
+         /** @var CategoryAssignment $ca */
+         foreach ($p->categories as $ca)
+         {
+            $stmt->execute([
+               ':pid' => $p->id,
+               ':cid' => $ca->categoryId,
+               ':set_assign'    => $ca->pre_assign,
+               ':update_assign' => $ca->pre_assign
+            ]);
+         }
       }
 
-      return $result;
+      $this->pdo->commit();
    }
 
-   public function deleteParticipant(int $id): bool
+   /**
+    * delete a single participant from the database
+    */
+   public function deleteParticipant(int $id): void
    {
-      $stmt = $this->pdo->prepare("DELETE FROM participants WHERE id = :id");
-      return $stmt->execute(['id' => $id]);
-   }
-
-   public function setCategoryParticipants(int $categoryId, array $participantIds): bool
-   {
-      // Remove old entries that are not in the new list
-      if (count($participantIds))
-      {
-         $placeholders = implode(',', array_fill(0, count($participantIds), '?'));
-         $sql = "DELETE FROM participants_categories WHERE category_id = ? AND participant_id NOT IN ($placeholders)";
-         $params = array_merge([$categoryId], $participantIds);
-      }
-      else
-      {
-         $sql = "DELETE FROM participants_categories WHERE category_id = ?";
-         $params = [$categoryId];
-      }
-      $stmt = $this->pdo->prepare($sql);
-      $stmt->execute($params);
-
-      // Then add any new participants
-      if (count($participantIds))
-      {
-         $values = [];
-         $params = [];
-         foreach ($participantIds as $participantId)
-         {
-            $values[] = "(?, ?)";
-            $params[] = $participantId;
-            $params[] = $categoryId;
-         }
-         $sql = "INSERT IGNORE INTO participants_categories (participant_id, category_id) VALUES " . implode(',', $values);
-         $stmt = $this->pdo->prepare($sql);
-         return $stmt->execute($params);
-      }
-
-      return true;
+      $this->pdo->prepare("DELETE FROM participants WHERE id=?")
+                ->execute([$id]);
    }
 
    /**
     * import list of participants, ignore any duplicate additions
     */
-   public function importParticipants(ParticipantCollection $participants): bool
+   public function importParticipants(ParticipantCollection $participants): void
    {
-      $this->errors = [];
       $this->pdo->beginTransaction();
       $stmt_p = $this->pdo->prepare( "INSERT INTO participants (tournament_id, lastname, firstname, club) "
                                    . "VALUES (:tournament_id, :lastname, :firstname, :club)");
@@ -302,17 +279,16 @@ class ParticipantRepository
          if( !isset($p->id) ) // a really new participant, import the participant data itself
          {
             $stmt_p->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club']));
-            $p->id = $this->pdo->lastInsertId();
+            $p->id = (int)$this->pdo->lastInsertId();
          }
 
          /* also take over any category updates */
          foreach( $p->categories as $c )
          {
-            $stmt_c->execute([$p->id, $c->categoryId]); // cannot fail
+            $stmt_c->execute([$p->id, $c->categoryId]);
          }
       }
       $this->pdo->commit();
-      return true;
    }
 
    /**
@@ -324,17 +300,17 @@ class ParticipantRepository
     */
    public function getPreAssignmentsByTournamentId(int $tournamentId): array
    {
-      $stmt = $this->pdo->prepare(
-         "SELECT pc.category_id, pc.pre_assign "
-            . "FROM participants_categories pc "
-            . "LEFT JOIN participants p ON p.id = pc.participant_id "
-            . "WHERE p.tournament_id = :tournament_id "
-            . "AND pc.pre_assign IS NOT NULL AND pc.pre_assign <> '' "
-      );
-      $stmt->execute(['tournament_id' => $tournamentId]);
+      $stmt = $this->pdo->prepare(<<<QUERY
+         SELECT pc.category_id, pc.pre_assign
+         FROM participants_categories pc
+         LEFT JOIN participants p ON p.id = pc.participant_id
+         WHERE p.tournament_id = ?
+         AND pc.pre_assign IS NOT NULL AND pc.pre_assign <> ''
+      QUERY);
+      $stmt->execute([$tournamentId]);
 
       $result = [];
-      foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row )
+      while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
       {
          $categoryId = (int)$row['category_id'];
          $result[$categoryId][] = $row['pre_assign'];
