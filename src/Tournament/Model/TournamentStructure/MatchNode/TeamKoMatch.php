@@ -4,7 +4,6 @@ namespace Tournament\Model\TournamentStructure\MatchNode;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
-use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 
 class TeamKoMatch extends TeamMatch implements KoNode
@@ -17,12 +16,10 @@ class TeamKoMatch extends TeamMatch implements KoNode
       MatchSlot $slotWhite,
       ?Area $area = null,
       bool $frozen = false,
-      ?MatchRecord $matchRecord = null
    )
    {
       // for a KoNode, ties are never allowed - hard code this parameter of MatchNodeBase
       parent::__construct($name, $category, $slotRed, $slotWhite, $area,
-                          matchRecord: $matchRecord,
                           frozen: $frozen, tiesAllowed: false);
    }
 }

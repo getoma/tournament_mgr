@@ -15,17 +15,17 @@ use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\MatchRankHandler\MatchRank;
 use Tournament\Model\MatchRankHandler\MatchRankCollection;
 use Tournament\Model\MatchRankHandler\MatchRankHandler;
-use Tournament\Model\Participant\Participant;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
-use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
-use Tournament\Model\TournamentStructure\MatchParticipant\DummyMatchParticipant;
-use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 use Tournament\Model\TournamentStructure\Pool\Pool;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
+use Tournament\Model\TournamentStructure\MatchParticipant\DummyMatchParticipant;
 
 use Tests\CallSpy;
 use Tests\IsSameParticipantList;
+use Tests\Tournament\Model\TestStubs\TestMatchNode;
+use Tests\Tournament\Model\TestStubs\TestMatchParticipant;
 
 class PoolTest extends TestCase
 {
@@ -56,16 +56,9 @@ class PoolTest extends TestCase
       $this->category = $category;
    }
 
-   private function createParticipantList($num = 3): MatchParticipantCollection
+   private function createParticipantList(int $num = 3): MatchParticipantCollection
    {
-      $res = new MatchParticipantCollection();
-      for( $i = 1; $i <= $num; ++$i )
-      {
-         $p = new Participant($i, 1, 'Not', 'a Dummy');
-         $p->categories->emplace($this->category);
-         $res[] = $p;
-      }
-      return $res;
+      return new MatchParticipantCollection(array_map( fn($i) => new TestMatchParticipant($i, 'Not a Dummy'), range(1, $num) ) );
    }
 
    private function generateMatches(MatchParticipantCollection $plist): MatchNodeCollection
@@ -80,14 +73,14 @@ class PoolTest extends TestCase
          {
             $red   = new ParticipantSlot($parr[$i]);
             $white = new ParticipantSlot($parr[$j]);
-            $res[] = new SoloMatch(strval($matchid++), $this->category, $red, $white);
+            $res[] = new TestMatchNode(strval($matchid++), $red, $white);
          }
       }
 
       return $res;
    }
 
-   private function setMatchHdlExpectation(MatchParticipantCollection $plist, $count = 1): MatchNodeCollection
+   private function setMatchHdlExpectation(MatchParticipantCollection $plist, int $count = 1): MatchNodeCollection
    {
       $res = $this->generateMatches($plist);
 
@@ -100,18 +93,20 @@ class PoolTest extends TestCase
 
    private function createMatchRecords(MatchNodeCollection $matches, bool $lastOngoing = false): MatchRecordCollection
    {
-      $category = $this->createStub(Category::class);
-      $area = $this->createStub(Area::class);
       $records = MatchRecordCollection::new();
-      $m_id = 1;
       foreach ($matches as $m)
       {
          /** @var MatchNode $m */
-         $record = new MatchRecord($m_id++, $m->getName(), $category, $area, $m->getRedParticipant(), $m->getWhiteParticipant());
-         if (!$lastOngoing || ($m_id < $matches->count()) )
+         $record = $this->createStub(MatchRecord::class);
+         $record->method('getMatchName')->willReturn($m->getName());
+         /*$record->method('getParticipant')->willReturnMap([
+            MatchSide::RED, $m->getRedParticipant(),
+            MatchSide::WHITE, $m->getWhiteParticipant()
+         ]);*/
+         if (!$lastOngoing || $m !== $matches->last())
          {
-            $record->setWinner($m->getRedParticipant());
-            $record->finalized_at = new \DateTime();
+            $record->method('getWinner')->willReturn($m->getRedParticipant());
+            $record->method('isFinalized')->willReturn(true);
          }
          $records[] = $record;
       }
@@ -205,7 +200,7 @@ class PoolTest extends TestCase
     * only first match started
     */
    #[DataProvider('numParticipantsProvider')]
-   public function testStartedPool(int $numParticipants)
+   public function testStartedPool(int $numParticipants = 2)
    {
       $dut = new Pool(self::POOL_NAME, $this->category);
       $plist = $this->createParticipantList($numParticipants);
@@ -216,8 +211,10 @@ class PoolTest extends TestCase
        * create a match record for the first match
        */
       $records = MatchRecordCollection::new();
-      $records[] = new MatchRecord(1, $matches[0]->getName(), $this->createStub(Category::class), $this->createStub(Area::class),
-                     $plist[1], $plist[2]);
+      $records[] = $this->createConfiguredStub(MatchRecord::class, [
+         'getMatchName' => $matches->first()->getName(),
+         'isFinalized'  => false,
+      ]);
       $dut->setMatchRecords($records);
       $this->assertNotNull($matches[0]->getMatchRecord());
 

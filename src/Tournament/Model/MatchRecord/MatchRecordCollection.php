@@ -11,6 +11,6 @@ class MatchRecordCollection extends \Base\Model\IdObjectCollection
 
    static protected function get_id($value): mixed
    {
-      return $value->name;
+      return $value->getMatchName();
    }
 }

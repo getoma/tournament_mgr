@@ -8,7 +8,6 @@ use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
-use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 
@@ -214,17 +213,9 @@ class KoTree
    {
       foreach ($this->getMatchList() as $match)
       {
-         if ($match instanceof SoloMatch)
+         if( $matchRecords->keyExists($match->getName()) )
          {
-            if( $matchRecords->keyExists($match->getName()) )
-            {
-               $match->setMatchRecord($matchRecords[$match->getName()]);
-            }
-         }
-         else
-         {
-            throw new \LogicException("invalid match for record assignment");
-
+            $match->setMatchRecord($matchRecords[$match->getName()]);
          }
       }
    }
