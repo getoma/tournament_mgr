@@ -2,8 +2,6 @@
 
 namespace Tournament\Model\TournamentStructure\MatchNode;
 
-use OutOfBoundsException;
-
 class MatchNodeCollection extends \Base\Model\ObjectCollection
 {
    protected const DEFAULT_ELEMENTS_TYPE = MatchNode::class;
@@ -26,7 +24,7 @@ class MatchNodeCollection extends \Base\Model\ObjectCollection
       {
          return $this->getNodeIteratorAt($name)->current();
       }
-      catch( OutOfBoundsException )
+      catch(\OutOfBoundsException)
       {
          return null;
       }

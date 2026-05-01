@@ -90,8 +90,7 @@ class MatchRoundIterator implements \SeekableIterator, \Base\Model\ChainableIter
 
    public function rewind(): void
    {
-      $this->round = 0;
-      $this->pos = 0;
+      $this->seek(0);
    }
 
    public function valid(): bool
@@ -111,7 +110,7 @@ class MatchRoundIterator implements \SeekableIterator, \Base\Model\ChainableIter
             $r += 1;
             $position -= $round->count();
          }
-         else if ($position > 0)
+         else
          {
             $p = $position;
             $position = 0;

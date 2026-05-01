@@ -50,7 +50,7 @@ class MatchNodeIterator implements \SeekableIterator, \Base\Model\ChainableItera
    {
       if ($position < 0 || $position > $this->matches->count())
       {
-         throw new \OutOfRangeException("Invalid position $position");
+         throw new \OutOfBoundsException("Invalid position $position");
       }
       $this->position = $position;
    }
@@ -63,7 +63,7 @@ class MatchNodeIterator implements \SeekableIterator, \Base\Model\ChainableItera
          if ($cur->getName() === $name) return; // check if it is the one we are looking for
          $this->next(); // if not, continue to next
       }
-      throw new \OutOfRangeException("Invalid match '$name'"); // node not found
+      throw new \OutOfBoundsException("Invalid match '$name'"); // node not found
    }
 
    public function findNode(string $name): self
