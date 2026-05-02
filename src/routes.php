@@ -242,9 +242,15 @@ return function (\Slim\App $app)
             $cgrp->group('', function (RouteCollectorProxy $mgrp) use ($policyGuard)
             {
                $mgrp->patch('/ko/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('tournaments.categories.ko.matches.update');
+               $mgrp->post('/ko/{matchName}/tieBreak', [TournamentTreeController::class, 'addTeamMatchTieBreak'])->setName('tournaments.categories.ko.matches.decision.add');
+               $mgrp->delete('/ko/{matchName}/tieBreak', [TournamentTreeController::class, 'deleteTeamMatchTieBreak'])->setName('tournaments.categories.ko.matches.decision.delete');
+               $mgrp->patch('/ko/{matchName}/teamOrder', [TournamentTreeController::class, 'updateTeamOrder'])->setName('tournaments.categories.ko.matches.teamOrder.update');
                $mgrp->patch('/pool/{pool}/show/{matchName}', [TournamentTreeController::class, 'updateMatch'])->setName('tournaments.categories.pools.matches.update');
                $mgrp->post('/pool/{pool}/addTieBreak', [TournamentTreeController::class, 'addPoolTieBreak'])->setName('tournaments.categories.pools.decision.add');
                $mgrp->delete('/pool/{pool}/delete/{decision_round:\d+}', [TournamentTreeController::class, 'deletePoolDecisionRound'])->setName('tournaments.categories.pools.decision.delete');
+               $mgrp->post('/pool/{pool}/show/{matchName}/tieBreak', [TournamentTreeController::class, 'addTeamMatchTieBreak'])->setName('tournaments.categories.pools.matches.decision.add');
+               $mgrp->delete('/pool/{pool}/show/{matchName}/tieBreak', [TournamentTreeController::class, 'deleteTeamMatchTieBreak'])->setName('tournaments.categories.pools.matches.decision.delete');
+               $mgrp->patch('/pool/{pool}/show/{matchName}/teamOrder', [TournamentTreeController::class, 'updateTeamOrder'])->setName('tournaments.categories.pools.matches.teamOrder.update');
                $mgrp->post('resetResults', [TournamentTreeController::class, 'resetMatchRecords'])->setName('tournaments.categories.resetMatchRecords');
             })
             ->add($policyGuard->for(TournamentAction::RecordResults));
@@ -313,7 +319,13 @@ return function (\Slim\App $app)
          $cgrp->group('', function (RouteCollectorProxy $mgrp) use ($policyGuard)
          {
             $mgrp->patch('/ko/{matchName}', [AreaDeviceViewController::class, 'updateMatch'])->setName('device.categories.ko.matches.update');
+            $mgrp->post('/ko/{matchName}/tieBreak', [AreaDeviceViewController::class, 'addTeamMatchTieBreak'])->setName('device.categories.ko.matches.decision.add');
+            $mgrp->delete('/ko/{matchName}/tieBreak', [AreaDeviceViewController::class, 'deleteTeamMatchTieBreak'])->setName('device.categories.ko.matches.decision.delete');
+            $mgrp->patch('/ko/{matchName}/teamOrder', [AreaDeviceViewController::class, 'updateTeamOrder'])->setName('device.categories.ko.matches.teamOrder.update');
             $mgrp->patch('/pool/{pool}/show/{matchName}', [AreaDeviceViewController::class, 'updateMatch'])->setName('device.categories.pools.matches.update');
+            $mgrp->post('/pool/{pool}/show/{matchName}/tieBreak', [AreaDeviceViewController::class, 'addTeamMatchTieBreak'])->setName('device.categories.pools.matches.decision.add');
+            $mgrp->delete('/pool/{pool}/show/{matchName}/tieBreak', [AreaDeviceViewController::class, 'deleteTeamMatchTieBreak'])->setName('device.categories.pools.matches.decision.delete');
+            $mgrp->patch('/pool/{pool}/show/{matchName}/teamOrder', [AreaDeviceViewController::class, 'updateTeamOrder'])->setName('device.categories.pools.matches.teamOrder.update');
             $mgrp->post('/pool/{pool}/addTieBreak', [AreaDeviceViewController::class, 'addPoolTieBreak'])->setName('device.categories.pools.decision.add');
             $mgrp->delete('/pool/{pool}/delete/{decision_round}', [AreaDeviceViewController::class, 'deletePoolDecisionRound'])->setName('device.categories.pools.decision.delete');
          })

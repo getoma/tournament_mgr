@@ -211,6 +211,14 @@ class TeamMatch extends MatchNodeBase
    }
 
    /**
+    * Whether decision match is needed
+    */
+   public function tieBreakNeeded(): bool
+   {
+      return !$this->tiesAllowed() && !$this->hasTieBreak() && $this->isTied();
+   }
+
+   /**
     * return match ranking data
     */
    public function getRanking(): ?MatchRankCollection
@@ -245,6 +253,14 @@ class TeamMatch extends MatchNodeBase
    }
 
    /**
+    * check whether there is a tie break match
+    */
+   public function hasTieBreak(): bool
+   {
+      return $this->getTieBreakMatch() !== null;
+   }
+
+   /**
     * provide tie break match if existing
     */
    public function getTieBreakMatch(): ?TeamSoloMatch
@@ -267,7 +283,7 @@ class TeamMatch extends MatchNodeBase
          /** @var Team $redTeam   */
          /** @var Team $whiteTeam */
          $tieBreak = new TeamSoloMatch(
-            node_name: $this->nameFor($this->soloNodes->count()+1),
+            node_name: $this->nameFor($this->soloNodes->count()),
             parent:    $this,
             slotRed:   new ParticipantSlot($redTeam->members->last()),
             slotWhite: new ParticipantSlot($whiteTeam->members->last()),

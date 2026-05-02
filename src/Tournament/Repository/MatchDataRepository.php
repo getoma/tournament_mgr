@@ -193,12 +193,15 @@ class MatchDataRepository
       {
          $stmt = $this->pdo->prepare('
             UPDATE matches SET
+               area_id = :area,
+               red_id = :redParticipant,
+               white_id = :whiteParticipant,
                winner = :winner,
                tie_break = :tie_break,
                finalized_at = :finalized_at
             WHERE id = :id
          ');
-         $stmt->execute($record->asArray('id', 'winner', 'tie_break', 'finalized_at'));
+         $stmt->execute($record->asArray('id', 'area', 'redParticipant', 'whiteParticipant', 'winner', 'tie_break', 'finalized_at'));
       }
       else
       {

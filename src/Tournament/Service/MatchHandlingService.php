@@ -3,6 +3,9 @@
 namespace Tournament\Service;
 
 use Tournament\Model\MatchRecord\MatchPoint;
+use Tournament\Model\MatchRecord\SoloMatchRecord;
+use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
 use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
@@ -12,8 +15,10 @@ use Tournament\Model\TournamentStructure\MatchNode\TeamSoloMatch;
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
 
-use Respect\Validation\Validator as v;
 use Base\Service\DataValidationService;
+
+use Respect\Validation\Validator as v;
+use Respect\Validation\Exceptions\ValidationException;
 
 /***
  * a collection of input processing methods needed both in normal application context and in device context
@@ -141,7 +146,7 @@ class MatchHandlingService
             if ($saveRecord)
             {
                /* also update the parent record if needed */
-               if( ($node instanceof TeamSoloMatch) && ($node->parent->isConducted()) )
+               if( ($node instanceof TeamSoloMatch) && $node->parent->isConducted() && !$node->parent->tieBreakNeeded() )
                {
                   $winner_team = $node->parent->getWinner();
                   if( !$record->team_match->isFinalized() || $winner_team !== $record->team_match->getWinner() )
@@ -247,5 +252,73 @@ class MatchHandlingService
       if( !$tieBreak->getMatchRecord()->points->empty() ) return 'Es wurden bereits Punkte erfasst';
       $this->m_repo->deleteMatchRecord($tieBreak->getMatchRecord());
       return null;
+   }
+
+   /**
+    * update team match participant order
+    * @param TeamMatch $match         - the team match to modify
+    * @param string[]|int[] $redIds   - the participant id order for the red team
+    * @param string[]|int[] $whiteIds - the participant id order for the white team
+    * @return string|null             - error message on any issue, or null on success
+    */
+   public function updateTeamMatchParticipantOrder(TeamMatch $match, array $redIds, array $whiteIds): ?string
+   {
+      if( count($redIds) !== count($whiteIds) || count($redIds) !== $match->getSubMatches()->count() )
+      {
+         throw new \OutOfRangeException("id count does not match");
+      }
+
+      if ($match->isFrozen()) return 'Kampfergebnisse bereits eingefroren';
+
+      $ids = [ MatchSide::RED->value => $redIds, MatchSide::WHITE->value => $whiteIds ];
+      $matches = $match->getSubMatches();
+      $matchCount = $matches->count();
+      $updated = false;
+      foreach( MatchSide::cases() as $side )
+      {
+         $team = $match->getParticipant($side)->members; // IdObjectCollection team
+         $team_arr = $team->column('id');                // 0-based indexed team participant ids
+         /** @var ParticipantCollection $team */
+         /** @var int[] $team_arr     */
+
+         /* fully validate id list */
+         try
+         {
+            v::each(v::anyOf(v::equals(''), v::intVal()->in($team_arr)))->check($ids[$side->value]);
+         }
+         catch( ValidationException $e )
+         {
+            return $side->value . ": " . $e->getMessage();
+         }
+
+         /* update each team member on this side */
+         for( $i = 0; $i < $matchCount; ++$i )
+         {
+            $selected_pid = (int)$ids[$side->value][$i];
+
+            // continue with next entry if no change
+            if( $matches[$i]->getParticipant($side)->getId() === $selected_pid ) continue;
+
+            // check if valid id
+            if( !$team->keyExists($selected_pid) ) return 'participant id not part of team: ' . $selected_pid;
+
+            // update the match record to contain the selected team member instead
+            /** @var SoloMatchRecord $record */
+            $record = $matches[$i]->provideMatchRecord();
+            $record->setParticipant($side, $team[$selected_pid]);
+            $updated = true;
+         }
+      }
+
+      if( $updated )
+      {
+         /* bulk update the whole team match record
+          * could be optimized to only specifically update the changed solo records in the future,
+          * but data amount is low enough to not bother for now.
+          */
+         $this->m_repo->saveMatchRecord($match->getMatchRecord());
+      }
+
+      return null; // no issue, done
    }
 }

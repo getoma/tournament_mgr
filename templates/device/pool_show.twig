@@ -9,7 +9,7 @@
 <section class="pool_match_list">
   <h2>Kämpfe - Pool {{pool.getName()}}</h2>
 
-  {{ part.printMatchTable(pool.getMatchList(), selected, 'device.categories.pools.matches.update', route_context.args) }}
+  {{ part.printMatchTable(pool.getMatchList(), selected, 'device.categories.pools.', route_context.args) }}
 
   {% if error -%}
   <p class="error">{{ error }}</p>
@@ -33,30 +33,9 @@
 
 </section>
 
-<section class="pool_ranking">
+<section class="match_ranking">
   <h2>Platzierung</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Platz</th>
-        <th>Name</th>
-        <th>Siege</th>
-        <th>Unentschieden</th>
-        <th>Punkte</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for entry in pool.getRanking() -%}
-      <tr>
-        <td>{{entry.rank}}</td>
-        <td>{{entry.participant.getDisplayName()}}</td>
-        <td>{{entry.wins}}</td>
-        <td>{{entry.ties}}</td>
-        <td>{{entry.points}}</td>
-      </tr>
-      {% endfor -%}
-    </tbody>
-  </table>
+  {{ part.printMatchRanking(pool.getRanking()) }}
 </section>
 
 <section>

@@ -10,6 +10,8 @@ use Slim\Views\Twig;
 use Tournament\Model\TournamentStructure\TournamentStructure;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
+use Tournament\Model\TournamentStructure\MatchNode\TeamSoloMatch;
+use Tournament\Model\TournamentStructure\MatchNode\TeamMatch;
 
 use Tournament\Service\RouteArgsContext;
 use Tournament\Service\MatchHandlingService;
@@ -146,6 +148,50 @@ class TournamentTreeController
    }
 
    /**
+    * add a tie break match to a pool if needed, and redirect to the new match
+    */
+   public function addTeamMatchTieBreak(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $structure = $this->structureLoadService->load($ctx->category);
+      $node = $structure->findNode($ctx->match_name, $ctx->pool_name ?? false);
+      if( $node instanceof TeamMatch ) $error = $this->matchService->addTeamMatchTieBreak($node);
+      else throw new \LogicException('not a team match');
+
+      if ($error)
+      {
+         return $this->showMatch($request, $response, $args, $structure, $error);
+      }
+      else
+      {
+         return $this->prgService->redirectBack($request, $response, 'tie_break_added');
+      }
+   }
+
+   /**
+    * remove a pool tie break match again
+    */
+   public function deleteTeamMatchTieBreak(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+      $structure = $this->structureLoadService->load($ctx->category);
+      $node = $structure->findNode($ctx->match_name, $ctx->pool_name ?? false);
+      if ($node instanceof TeamMatch) $error = $this->matchService->deleteTeamMatchTieBreak($node);
+      else throw new \LogicException('not a team match');
+      /* forward to output page */
+      if ($error)
+      {
+         return $this->showMatch($request, $response, $args, $structure, $error);
+      }
+      else
+      {
+         return $this->prgService->redirectBack($request, $response, 'tie_break_deleted');
+      }
+   }
+
+   /**
     * RESET all match records for a specific category - TEMPORARY, FOR TESTING PURPOSES ONLY
     */
    public function resetMatchRecords(Request $request, Response $response, array $args): Response
@@ -187,6 +233,31 @@ class TournamentTreeController
       $structure ??= $this->structureLoadService->load($ctx->category);
       $node = $structure->findNode($ctx->match_name, $ctx->pool_name ?? false) ?? new EntityNotFoundException($request, "unknown Match '{$ctx->match_name}'");
 
+      /* this method might be called with the specific solo match node for team matches
+       * change to the parent node for the resulting template, and set this sub note as selected
+       */
+      if ($node instanceof TeamSoloMatch)
+      {
+         $selected = $node->getName();
+         $node = $node->parent;
+      }
+      /* otherwise, if a team node was requested, still select a sub node for the template view */
+      else if ($node instanceof TeamMatch)
+      {
+         /* select an active match from this node */
+         $matches = $node->getSubMatches();
+         $selected = $request->getQueryParams()['selected'] ?? null;
+         if ($selected === null || !$matches->findNode($selected))
+         {
+            /* default to the first uncompleted match, or the very last match if all completed */
+            $selected = $matches->filter(fn($n) => !$n->isCompleted())->first()?->getName() ?? $matches->last()?->getName();
+         }
+      }
+      else
+      {
+         $selected = $node->getName();
+      }
+
       /* get pointers to the previous and next "real" matches */
       $matchList = match($ctx->pool_name)
       {
@@ -196,15 +267,30 @@ class TournamentTreeController
          null    => $structure->getFinaleRounds()->filterRounds(fn($n) => $n->isReal() && $n->getArea() === $node->getArea()),
       };
       /** @var MatchNodeCollection|MatchRoundCollection $matchList */
-      $current_it = $matchList->getNodeIteratorAt($ctx->match_name);
+      $current_it = $matchList->getNodeIteratorAt($node->getName());
+
+      /* for team matches, we need to allow modifying the participant order */
+      if( $node instanceof TeamMatch )
+      {
+         $redSideSelection   = $node->getRedParticipant()->members->map(fn($p) => $p->getDisplayName());
+         $whiteSideSelection = $node->getWhiteParticipant()->members->map(fn($p) => $p->getDisplayName());
+      }
+      else
+      {
+         $redSideSelection = null;
+         $whiteSideSelection = null;
+      }
 
       return $this->view->render($response, 'tournament/match/match.twig', [
          'type'     => isset($args['pool'])?'pool':'ko',
          'pool'     => $args['pool']??null,
          'node'     => $node,
+         'selected' => $selected,
          'node_it'  => $current_it,
          'area'     => $node->getArea(),  // explicitly mark that we provide the match list for this area, only
          'area_selection' => $structure->areas->column('name', 'id'),
+         'red_side_selection' => $redSideSelection,
+         'white_side_selection' => $whiteSideSelection,
          'error'    => $error,
       ]);
    }
@@ -216,7 +302,7 @@ class TournamentTreeController
 
       /* load the structure and find the current node/match */
       $structure = $this->structureLoadService->load($ctx->category);
-      $node = $structure->findNode($ctx->match_name, $ctx->pool_name ?? false) ?? new EntityNotFoundException($request, "unknown Match '{$ctx->match_name}'");
+      $node = $structure->findNode($ctx->match_name, $ctx->pool_name ?? false) ?? throw new EntityNotFoundException($request, "unknown Match '{$ctx->match_name}'");
 
       /* evaluate the match update data via our match service */
       $error = $this->matchService->updateMatchPoint($node, (array)$request->getParsedBody());
@@ -228,6 +314,36 @@ class TournamentTreeController
       else
       {
          return $this->prgService->redirectBack($request, $response, 'match_updated');
+      }
+   }
+
+   public function updateTeamOrder(Request $request, Response $response, array $args): Response
+   {
+      /** @var RouteArgsContext $ctx */
+      $ctx = $request->getAttribute('route_context');
+
+      /* load the structure and find the current node/match */
+      $structure = $this->structureLoadService->load($ctx->category);
+      $node = $structure->findNode($ctx->match_name, $ctx->pool_name ?? false) ?? throw new EntityNotFoundException($request, "unknown Match '{$ctx->match_name}'");
+
+      /* evaluate the match update data via our match service */
+      $data = (array)$request->getParsedBody();
+      if( is_array($data['redSide']) && is_array($data['whiteSide']) )
+      {
+         $error = $this->matchService->updateTeamMatchParticipantOrder($node, $data['redSide'], $data['whiteSide']);
+      }
+      else
+      {
+         $error = 'invalid input';
+      }
+
+      if ($error)
+      {
+         return $this->showMatch($request, $response, $args, $structure, ['team_order' => $error]);
+      }
+      else
+      {
+         return $this->prgService->redirectBack($request, $response, 'order_updated');
       }
    }
 
