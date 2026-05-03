@@ -12,10 +12,10 @@ use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchCreationHandler\MatchCreationHandler;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
+use Tournament\Model\MatchRankHandler\MatchRank;
+use Tournament\Model\MatchRankHandler\MatchRankCollection;
+use Tournament\Model\MatchRankHandler\MatchRankHandler;
 use Tournament\Model\Participant\Participant;
-use Tournament\Model\PoolRankHandler\PoolRank;
-use Tournament\Model\PoolRankHandler\PoolRankCollection;
-use Tournament\Model\PoolRankHandler\PoolRankHandler;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
@@ -44,14 +44,14 @@ class PoolTest extends TestCase
 
    protected function setUp(): void
    {
-      $this->rankHdl  = $this->createMock(PoolRankHandler::class);
+      $this->rankHdl  = $this->createMock(MatchRankHandler::class);
       $this->matchHdl = $this->createMock(MatchCreationHandler::class);
 
       $category = $this->getStubBuilder(Category::class)
          ->enableOriginalConstructor()
          ->setConstructorArgs([1, 1, 'test', CategoryMode::Combined])
          ->getStub();
-      $category->method('getPoolRankHandler')->willReturn($this->rankHdl);
+      $category->method('getMatchRankHandler')->willReturn($this->rankHdl);
       $category->method('getMatchCreationHandler')->willReturn($this->matchHdl);
       $this->category = $category;
    }
@@ -137,7 +137,7 @@ class PoolTest extends TestCase
       $this->assertNull($dut->getArea());
       $this->assertEmpty($dut->getParticipants());
       $this->assertEmpty($dut->getMatchList());
-      $this->rankHdl->expects($this->once())->method('deriveRanking')->with($this->isEmpty())->willReturn(PoolRankCollection::new());
+      $this->rankHdl->expects($this->once())->method('derivePoolRanking')->with($this->identicalTo($dut))->willReturn(MatchRankCollection::new());
       $this->assertEmpty($dut->getRanking());
       $this->assertNull($dut->getRanked(1));
       $this->assertFalse($dut->isConducted());
@@ -172,7 +172,7 @@ class PoolTest extends TestCase
       $this->assertCount($matches->count(), $dut->getMatchList());
       $this->assertFalse($dut->isConducted());
       $this->assertFalse($dut->isDecided());
-      $this->rankHdl->expects($this->once())->method('deriveRanking')->with($this->equalTo($matches))->willReturn(PoolRankCollection::new());
+      $this->rankHdl->expects($this->once())->method('derivePoolRanking')->with($this->identicalTo($dut))->willReturn(MatchRankCollection::new());
       $this->assertEmpty($dut->getRanking());
       $this->assertNull($dut->getRanked(1));
       $this->assertFalse($dut->needsDecisionRound());
@@ -224,8 +224,8 @@ class PoolTest extends TestCase
       /**
        * create the pool ranking as it would be returned by the pool rank calculator (everyone on first place)
        */
-      $ranks = PoolRankCollection::new( array_map( fn($p) => new PoolRank($p, 1), $plist->values() ) );
-      $this->rankHdl->expects($this->once())->method('deriveRanking')->with($this->equalTo($matches))->willReturn($ranks);
+      $ranks = MatchRankCollection::new( array_map( fn($p) => new MatchRank($p, 1), $plist->values() ) );
+      $this->rankHdl->expects($this->once())->method('derivePoolRanking')->with($this->identicalTo($dut))->willReturn($ranks);
 
       $this->assertFalse($dut->isConducted());
       $this->assertFalse($dut->isDecided());
@@ -252,8 +252,8 @@ class PoolTest extends TestCase
        * create the pool ranking as it would be returned by the pool rank calculator (everyone already on a specific place)
        */
       $place = 1;
-      $ranks = PoolRankCollection::new(array_map(fn($p) => new PoolRank($p, $place++), $plist->values()));
-      $this->rankHdl->expects($this->once())->method('deriveRanking')->with($this->equalTo($matches))->willReturn($ranks);
+      $ranks = MatchRankCollection::new(array_map(fn($p) => new MatchRank($p, $place++), $plist->values()));
+      $this->rankHdl->expects($this->once())->method('derivePoolRanking')->with($this->identicalTo($dut))->willReturn($ranks);
 
       $this->assertFalse($dut->isConducted());
       $this->assertFalse($dut->isDecided());
@@ -279,8 +279,8 @@ class PoolTest extends TestCase
       /**
        * create the pool ranking as it would be returned by the pool rank calculator (everyone already on a specific place)
        */
-      $ranks = PoolRankCollection::new(array_map(fn($p, $place) => new PoolRank($p, $place), $plist->values(), range(1,$plist->count())));
-      $this->rankHdl->expects($this->once())->method('deriveRanking')->with($this->equalTo($matches))->willReturn($ranks);
+      $ranks = MatchRankCollection::new(array_map(fn($p, $place) => new MatchRank($p, $place), $plist->values(), range(1,$plist->count())));
+      $this->rankHdl->expects($this->once())->method('derivePoolRanking')->with($this->identicalTo($dut))->willReturn($ranks);
 
       $this->assertTrue($dut->isConducted());
       $this->assertTrue($dut->isDecided());
@@ -319,10 +319,10 @@ class PoolTest extends TestCase
        * create a pool ranking where the first place is not decided, yet
        */
       $spy->clear();
-      $ranks = PoolRankCollection::new(array_map(fn($p, $place) => new PoolRank($p, $place), $plist->values(),
+      $ranks = MatchRankCollection::new(array_map(fn($p, $place) => new MatchRank($p, $place), $plist->values(),
                                        array_merge([1,1], ($plist->count()>2? range(2,$plist->count()-1) : [])) ));
       $decision_participants = $plist->slice(0,2);
-      $this->rankHdl->expects($this->once())->method('deriveRanking')->with($this->equalTo($matches))->willReturn($ranks);
+      $this->rankHdl->expects($this->once())->method('derivePoolRanking')->with($this->identicalTo($dut))->willReturn($ranks);
 
       $this->assertTrue($dut->isConducted());
       $this->assertFalse($dut->isDecided());
@@ -355,7 +355,7 @@ class PoolTest extends TestCase
    #[DataProvider('numParticipantsProvider')]
    public function testReproducability(int $numParticipants = 3)
    {
-      $this->rankHdl->expects($this->never())->method('deriveRanking');
+      $this->rankHdl->expects($this->never())->method('derivePoolRanking');
       $plist = $this->createParticipantList($numParticipants);
       $this->setMatchHdlExpectation($plist,2); // will check whether match creation is called with the same amount and order of participants both times
 
@@ -372,7 +372,7 @@ class PoolTest extends TestCase
    #[DataProvider('numParticipantsProvider')]
    public function testSlotHandling(int $numParticipants = 3)
    {
-      $this->rankHdl->expects($this->never())->method('deriveRanking');
+      $this->rankHdl->expects($this->never())->method('derivePoolRanking');
       $spy = new CallSpy();
       $this->matchHdl->expects($this->atLeastOnce())->method('generate')->willReturnCallback($spy->callback('generate'));
 

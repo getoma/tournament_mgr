@@ -8,8 +8,8 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
-use Tournament\Model\PoolRankHandler\PoolRank;
-use Tournament\Model\PoolRankHandler\PoolRankCollection;
+use Tournament\Model\MatchRankHandler\MatchRank;
+use Tournament\Model\MatchRankHandler\MatchRankCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\MatchParticipant\DummyMatchParticipant;
@@ -21,7 +21,7 @@ class Pool
    private MatchNodeCollection $matches;
    /** @var MatchParticipant[] */
    private array $slots = [];
-   private PoolRankCollection $ranking;
+   private MatchRankCollection $ranking;
 
    public const DEFAULT_NUM_WINNERS = 2;
 
@@ -177,9 +177,9 @@ class Pool
    /**
     * get the current ranking (via lazy calculation)
     */
-   public function getRanking(): PoolRankCollection
+   public function getRanking(): MatchRankCollection
    {
-      return $this->ranking ??= $this->category->getPoolRankHandler()->deriveRanking($this->matches);
+      return $this->ranking ??= $this->category->getMatchRankHandler()->derivePoolRanking($this);
    }
 
    /**
@@ -240,7 +240,7 @@ class Pool
 
       /** @var MatchParticipantCollection[] $per_rank - all participants sorted by rank into collections */
       $per_rank = [];
-      /** @var PoolRank $rank_entry */
+      /** @var MatchRank $rank_entry */
       foreach( $this->getRanking() as $rank_entry )
       {
          $per_rank[$rank_entry->rank] ??= MatchParticipantCollection::new();
