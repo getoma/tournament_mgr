@@ -177,7 +177,7 @@ class ParticipantImportService
    private function findDuplicates(ParticipantCollection $new, int $tournamentId): ParticipantCollection
    {
       $existing = $this->repo->getParticipantsByTournamentId($tournamentId);
-      $mapper = fn($p) => join("_", $p->asArray(['lastname', 'firstname', 'club']));
+      $mapper = fn($p) => join("_", $p->asArray('lastname', 'firstname', 'club'));
       $current_participants = $existing->map_keys($mapper);
       $duplicates = ParticipantCollection::new();
       foreach ($new as $new_p)

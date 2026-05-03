@@ -206,14 +206,14 @@ class ParticipantRepository
       if ($p->id)
       {
          $this->pdo->prepare("UPDATE participants SET lastname=:lastname, firstname=:firstname, club=:club, withdrawn=:withdrawn WHERE id = :id")
-                   ->execute($p->asArray(['id', 'lastname', 'firstname', 'club', 'withdrawn']));
+                   ->execute($p->asArray('id', 'lastname', 'firstname', 'club', 'withdrawn'));
       }
       else
       {
          $this->pdo->prepare(<<<QUERY
             INSERT INTO participants (tournament_id, lastname, firstname, club, withdrawn)
             VALUES (:tournament_id, :lastname, :firstname, :club, :withdrawn)
-         QUERY)->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club', 'withdrawn']));
+         QUERY)->execute($p->asArray('tournament_id', 'lastname', 'firstname', 'club', 'withdrawn'));
          $p->id = (int)$this->pdo->lastInsertId();
          $this->participants[$p->id] = $p;
       }
@@ -278,7 +278,7 @@ class ParticipantRepository
       {
          if( !isset($p->id) ) // a really new participant, import the participant data itself
          {
-            $stmt_p->execute($p->asArray(['tournament_id', 'lastname', 'firstname', 'club']));
+            $stmt_p->execute($p->asArray('tournament_id', 'lastname', 'firstname', 'club'));
             $p->id = (int)$this->pdo->lastInsertId();
          }
 

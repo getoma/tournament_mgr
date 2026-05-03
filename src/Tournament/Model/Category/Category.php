@@ -47,7 +47,7 @@ class Category implements \Tournament\Model\Base\DbItem
       $this->config->updateFromArray($data);
    }
 
-   protected function convertValue($key, $value): mixed
+   protected function convertValue(string $key, mixed $value): mixed
    {
       if( $value instanceof CategoryConfiguration )
       {
