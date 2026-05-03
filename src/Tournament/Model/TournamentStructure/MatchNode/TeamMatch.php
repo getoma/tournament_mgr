@@ -4,8 +4,11 @@ namespace Tournament\Model\TournamentStructure\MatchNode;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
+use Tournament\Model\MatchRankHandler\MatchRank;
+use Tournament\Model\MatchRankHandler\MatchRankCollection;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
+use Tournament\Model\MatchRecord\SoloMatchRecord;
 use Tournament\Model\MatchRecord\TeamMatchRecord;
 use Tournament\Model\Participant\Team;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
@@ -121,8 +124,16 @@ class TeamMatch extends MatchNodeBase
       /** @var MatchRecord $mr */
       foreach( $matchRecord->matches as $mr )
       {
-         $node = $nodes->findNode($mr->name) ?? throw new \OutOfRangeException("sub match not found: " . $mr->name);
-         /* as team members typically may modify their order in every match, we now explicitly assign the participants
+         /** @var SoloMatchRecord $mr */
+         $node = $nodes->findNode($mr->name);
+         if( !$node && $mr->tie_break )
+         {
+            /* special case: additional record for a tie break match */
+            $node = $this->provideTieBreakMatch();
+            if( $mr->name !== $node->getName() ) $node = null; // fallback to error handling if record does not match
+         }
+         if( !$node ) throw new \OutOfRangeException("sub match not found: " . $mr->name);
+         /* as team members typically may modify their order in ev      ery match, we now explicitly assign the participants
           * to the corresponding match slots based on the recorded info in $mr */
          foreach( MatchSide::cases() as $side )
          {
@@ -180,5 +191,93 @@ class TeamMatch extends MatchNodeBase
    {
       parent::freeze();
       $this->getSubMatches()->walk(fn($m) => $m->freeze());
+   }
+
+   /**
+    * Whether all currently defined sub matches are completed
+    */
+   public function isConducted(): bool
+   {
+      return $this->isDetermined() && $this->getSubMatches()->all(fn($m) => $m->isCompleted());
+   }
+
+   /**
+    * Whether match result is tied
+    */
+   public function isTied(): bool
+   {
+      return parent::isTied()                                  // default check via TeamMatchRecord
+          || ($this->isConducted() && !$this->deriveWinner()); // fallback by deriving from sub node results
+   }
+
+   /**
+    * return match ranking data
+    */
+   public function getRanking(): ?MatchRankCollection
+   {
+      if ($this->matchRecord) return $this->category->getMatchRankHandler()->deriveTeamMatchResults($this->matchRecord);
+      if(!$this->isDetermined()) return null;
+      return MatchRankCollection::new( [new MatchRank($this->getRedParticipant()), new MatchRank($this->getWhiteParticipant())] );
+   }
+
+   /**
+    * get the winner of this match, or null if not decided, yet
+    */
+   public function getWinner(): ?Team
+   {
+      /* first use the default handling - check the TeamMatchRecord */
+      $winner = parent::getWinner();
+      if( $winner ) return $winner;
+      if( $this->matchRecord?->isFinalized() ) return null; // TeamMatchRecord is set to tied result
+      /* if TeamMatchRecord does not provide a winner (yet), try to derive from the solo nodes */
+      if( !$this->isConducted() ) return null;
+      return $this->deriveWinner();
+   }
+
+   /**
+    * derive a winner from the sub nodes (instead of the overall record)
+    */
+   protected function deriveWinner(): ?Team
+   {
+      /* if rank handler derives the same rank for both teams, we have a tied result, otherwise the "first" rank is the winner */
+      list($first, $second) = $this->getRanking()->values();
+      return $first->rank === $second->rank ? null : $first->participant;
+   }
+
+   /**
+    * provide tie break match if existing
+    */
+   public function getTieBreakMatch(): ?TeamSoloMatch
+   {
+      /* tie break match is always the last solo node, and has the corresponding property set */
+      $current_last = $this->getSubMatches()->last();
+      return $current_last->isTieBreak()? $current_last : null;
+   }
+
+   /**
+    * create and provide a tie break match
+    */
+   public function provideTieBreakMatch(): TeamSoloMatch
+   {
+      $tieBreak = $this->getTieBreakMatch();
+      if( !$tieBreak )
+      {
+         /* create a tie break match, default to the last participant of each team */
+         list($redTeam, $whiteTeam) = [$this->getRedParticipant(), $this->getWhiteParticipant()];
+         /** @var Team $redTeam   */
+         /** @var Team $whiteTeam */
+         $tieBreak = new TeamSoloMatch(
+            node_name: $this->nameFor($this->soloNodes->count()+1),
+            parent:    $this,
+            slotRed:   new ParticipantSlot($redTeam->members->last()),
+            slotWhite: new ParticipantSlot($whiteTeam->members->last()),
+            tieBreak:  true,
+         );
+         /* freeze all previous matches */
+         $this->soloNodes->walk(fn($n) => $n->freeze());
+         /* store the tie break match */
+         $this->soloNodes[] = $tieBreak;
+      }
+      return $tieBreak;
    }
 }

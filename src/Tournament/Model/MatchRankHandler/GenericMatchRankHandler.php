@@ -3,6 +3,9 @@
 namespace Tournament\Model\MatchRankHandler;
 
 use Tournament\Model\MatchPointHandler\MatchPointHandler;
+use Tournament\Model\MatchRecord\SoloMatchRecord;
+use Tournament\Model\MatchRecord\TeamMatchRecord;
+use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
 use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
@@ -13,6 +16,10 @@ use Tournament\Model\TournamentStructure\Pool\Pool;
  */
 class GenericMatchRankHandler implements MatchRankHandler
 {
+   /* short-cut MatchSide strings to use them as array keys */
+   private const RED = MatchSide::RED->value;
+   private const WHITE = MatchSide::WHITE->value;
+
    public function __construct(private MatchPointHandler $mpHdl)
    {
    }
@@ -22,7 +29,7 @@ class GenericMatchRankHandler implements MatchRankHandler
     */
    public function derivePoolRanking(Pool $pool): MatchRankCollection
    {
-      $ranks = MatchRankCollection::new();
+      $ranks = [];
 
       /* iterate over all matches to collect wins and points */
       foreach ($pool->getMatchList() as $match)
@@ -33,64 +40,105 @@ class GenericMatchRankHandler implements MatchRankHandler
          $redP = $match->getRedParticipant();
          $whiteP = $match->getWhiteParticipant();
 
-         /* make sure all participants are part of $ranks */
+         /* make sure there is a MatchRank entry for each participant */
          $ranks[$redP->getId()]   ??= new MatchRank($redP);
          $ranks[$whiteP->getId()] ??= new MatchRank($whiteP);
 
-         /* do not evaluate any points if this match isn't done yet */
-         if (!$match->isCompleted()) continue;
-
-         /* increase the KPI counters for the corresponding participant */
-         $match_record = $match->getMatchRecord();
-         if( $match_record->tie_break )
+         /* skip unfinished matches */
+         if ($match->getMatchRecord())
          {
-            // a tie break match always has a winner if it is completed
-            $ranks[$match_record->getWinner()->id]->tie_breaks += 1;
-         }
-         else
-         {
-            if( $match_record->getWinner() )
-            {
-               $ranks[$match_record->getWinner()->id]->wins += 1;
-            }
-            else
-            {
-               $ranks[$redP->getId()]->ties += 1;
-               $ranks[$whiteP->getId()]->ties += 1;
-            }
-
-            /* increase point counters, (only count points from non-tie-break matches) */
-            $points = $this->mpHdl->getPoints($match_record);
-            $ranks[$redP->getId()]->points += $points->for($redP)->count();
-            $ranks[$whiteP->getId()]->points += $points->for($whiteP)->count();
+            $this->collect_score($match->getMatchRecord(), $ranks[$redP->getId()], $ranks[$whiteP->getId()]);
          }
       }
 
-      /* now sort into ranks according the comparision rules */
-      $ranks = $ranks->usort(static::rank_order(...));
+      /* finalize and return */
+      return self::finalize_ranking($ranks);
+   }
 
-      /* iterate the sorted array and finally assign ranks */
+   /**
+    * Evaluate a team match record to derive the winning team
+    */
+   public function deriveTeamMatchResults(TeamMatchRecord $record): MatchRankCollection
+   {
+      $ranks = [
+         self::RED   => new MatchRank($record->redTeam),
+         self::WHITE => new MatchRank($record->whiteTeam),
+      ];
+
+      /** @var SoloMatchRecord $mr */
+      foreach( $record->matches as $mr )
+      {
+         $this->collect_score($mr, $ranks[self::RED], $ranks[self::WHITE]);
+      }
+
+      /* turn into a properly ordered MatchRankCollection, and be done */
+      return self::finalize_ranking($ranks);
+   }
+
+   /**
+    * collect scoring from a SoloMatchRecord into provided red and white MatchRank
+    */
+   private function collect_score(SoloMatchRecord $mr, MatchRank $red, MatchRank $white): void
+   {
+      /* index MatchRanks by color */
+      $ranks = [ self::RED => $red, self::WHITE => $white ];
+
+      if ($mr->tie_break)
+      {
+         /* for tie break matches, only count wins and ignore points */
+         if( $mr->winner ) $ranks[$mr->winner->value]->tie_breaks += 1;
+      }
+      else
+      {
+         if( $mr->isFinalized() )
+         {
+            if ($mr->winner)
+            {
+               $ranks[$mr->winner->value]->wins += 1;
+            }
+            else
+            {
+               $ranks[self::RED]->ties += 1;
+               $ranks[self::WHITE]->ties += 1;
+            }
+         }
+
+         /* increase point counters */
+         $points = $this->mpHdl->getPoints($mr);
+         $ranks[self::RED]->points += $points->for($mr->getParticipant(MatchSide::RED))->count();
+         $ranks[self::WHITE]->points += $points->for($mr->getParticipant(MatchSide::WHITE))->count();
+      }
+   }
+
+   /**
+    * sort and rank-assign a prepared MatchRankCollection (all attributes set)
+    * @param MatchRank[] $in
+    */
+   private static function finalize_ranking(array $in): MatchRankCollection
+   {
+      /* turn into a sorted MatchRankCollection */
+      $ranks = MatchRankCollection::new($in)->usort(static::rank_order(...));
+
+      /* assign rank values based on the derived order */
       $prev = null;
       $rank_nr = 1;
-      foreach( $ranks as $rank_entry )
+      foreach ($ranks as $rank_entry)
       {
-         /* check if we have a ranking difference to the previous entry before incrementing the current rank# */
+         /* check if we have a ranking difference to the previous entry before incrementing the current rank */
          if (isset($prev) && (0 !== static::rank_order($prev, $rank_entry))) $rank_nr++;
          /* then assign the new rank */
          $rank_entry->rank = $rank_nr;
          /* and update prev */
          $prev = $rank_entry;
       }
-
-      /* done, return the result */
       return $ranks;
    }
 
-   /* sorting callback the allows to sort an array of MatchRank entries
+   /* sorting callback that allows to sort an array of MatchRank entries
     * according the applied rules for ranking.
     * sort descending according relevant KPIs, so first rank will be first
     */
-   static protected function rank_order(MatchRank $a, MatchRank $b): int
+   protected static function rank_order(MatchRank $a, MatchRank $b): int
    {
       return  ($b->wins <=> $a->wins)
            ?: ($b->ties <=> $a->ties)

@@ -263,10 +263,11 @@ class MatchDataRepository
    /**
     * delete a specific match record
     */
-   public function deleteMatchRecordById(int $matchId): void
+   public function deleteMatchRecord(MatchRecord $record): void
    {
-      $stmt = $this->pdo->prepare('DELETE FROM matches WHERE id = :matchId');
-      $stmt->execute(['matchId' => $matchId]);
+      $stmt = $record->isComposite()? $this->pdo->prepare('DELETE FROM team_matches WHERE id = :matchId')
+            :                         $this->pdo->prepare('DELETE FROM matches WHERE id = :matchId');
+      $stmt->execute(['matchId' => $record->getId()]);
    }
 
    /**
