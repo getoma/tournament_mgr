@@ -46,7 +46,6 @@ class ParticipantsDataController
       $tournament = $request->getAttribute('route_context')->tournament;
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($tournament->id);
       $participants = $this->repo->getParticipantsByTournamentId($tournament->id);
-      $teams = $this->repo->getTeamsByTournamentId($tournament->id);
 
       /* retrieve any possible PRG message and pre-process it */
       $status = $this->prgService->getStatusMessage() ?? [];
@@ -60,7 +59,6 @@ class ParticipantsDataController
          'categories'     => $categories,
          'starting_slots' => $this->service->getStartingSlotSelection($categories),
          'participants'   => $participants,
-         'teams'          => $teams,
          'prg_message'    => $status,
          'errors' => $errors,
          'prev'   => $prev,
@@ -347,7 +345,6 @@ class ParticipantsDataController
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
       $categories = $this->tournamentRepo->getCategoriesByTournamentId($ctx->tournament->id);
-      $teams = $this->repo->getTeamsByTournamentId($ctx->tournament->id);
 
       $starting_slots = $this->service->getStartingSlotSelection($categories, $ctx->participant);
 
@@ -356,7 +353,6 @@ class ParticipantsDataController
       return $this->view->render($response, 'tournament/participants/details.twig', [
          'tournament'       => $ctx->tournament,
          'categories'       => $categories,
-         'teams'            => $teams,
          'starting_slots'   => $starting_slots,
          'participant'      => $ctx->participant ?? null, // null to get the form for a new participant
          'withdraw_allowed' => $withdrawal_allowed,

@@ -84,7 +84,7 @@ class ParticipantRepository
          /* fetch all participants for a tournament, with category ids */
          $stmt = $this->pdo->prepare(<<<QUERY
             SELECT p.*, GROUP_CONCAT(pc.category_id) AS category_id,
-                  GROUP_CONCAT(IFNULL(pc.pre_assign,'')) as pre_assign, GROUP_CONCAT(IFNULL(pc.slot_name,'')) as slot_name,
+                  GROUP_CONCAT(IFNULL(pc.pre_assign,'')) as pre_assign, GROUP_CONCAT(IFNULL(pc.slot_name,'')) as slot_name
             FROM participants p LEFT JOIN participants_categories pc ON p.id = pc.participant_id
             WHERE p.tournament_id = :tournament_id
             GROUP BY p.id
