@@ -7,7 +7,7 @@ use Tournament\Model\Category\Category;
 interface MatchParticipant
 {
    function getDisplayName(): string;
-   function getId(): int;
+   function getId(): ?int;
 
    function isComposite(): bool;
 

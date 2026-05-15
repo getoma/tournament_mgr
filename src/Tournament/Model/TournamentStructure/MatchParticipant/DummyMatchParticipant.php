@@ -26,9 +26,9 @@ class DummyMatchParticipant implements MatchParticipant
       return $this->club;
    }
 
-   public function getId(): int
+   public function getId(): ?int
    {
-      return -1;
+      return null;
    }
 
    public function isComposite(): bool

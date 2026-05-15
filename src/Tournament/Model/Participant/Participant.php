@@ -63,14 +63,14 @@ class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\To
       // add any new category assignment
       foreach ($category_id_list as $catId)
       {
-         if (!$this->categories->keyExists($catId)) $this->categories[] = $catId;
+         $this->categories->emplace((int)$catId);
       }
    }
 
    /**
     * MatchParticipant interface
     */
-   public function getId(): int
+   public function getId(): ?int
    {
       return $this->id;
    }

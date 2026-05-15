@@ -4,7 +4,7 @@ namespace Tournament\Service;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
-use Tournament\Model\Participant\Participant;
+use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 use Tournament\Model\TournamentStructure\Pool\Pool;
@@ -48,8 +48,9 @@ class TournamentStructureService
    {
       $struc = $this->initialize($category);
       $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
-      $slot_assignment = $struc->populate($participants->filter(fn($p) => !$p->withdrawn));
-      $this->participantRepo->updateAllParticipantSlots($category->id, $slot_assignment);
+      $mp = $struc->populate($participants->filter(fn($p) => !$p->withdrawn));
+      $assigned = ParticipantCollection::new($mp->values());
+      $this->participantRepo->updateAllParticipantSlots($category->id, $assigned);
       return $struc;
    }
 
@@ -65,8 +66,9 @@ class TournamentStructureService
          $struc = $this->load($struc);
       }
       $participants  ??= $struc->unmapped_participants->copy();
-      $slot_assignment = $struc->populate($participants);
-      $this->participantRepo->updateAllParticipantSlots($struc->category->id, $slot_assignment);
+      $mp = $struc->populate($participants);
+      $assigned = ParticipantCollection::new($mp->values());
+      $this->participantRepo->updateAllParticipantSlots($struc->category->id, $assigned);
       return $struc;
    }
 
