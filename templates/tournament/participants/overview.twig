@@ -49,7 +49,7 @@
             {%- set preset, assigned =
                     participant.categories[category.id].pre_assign? starting_slots[category.id][participant.categories[category.id].pre_assign] : '',
                     participant.categories[category.id].slot_name|humanizeSlotName %}
-            {%- set slot = assigned|default(preset)|default('') %}
+            {%- set slot = assigned|default('') %}
             {%- set slot_issue = preset is not empty and slot != preset %}
             {%- if slot is not empty %}
             <span class="participant-assigned-slot{% if preset is not empty %} participant-preassigned-slot{% endif %}"
