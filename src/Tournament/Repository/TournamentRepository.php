@@ -246,7 +246,7 @@ class TournamentRepository
       else
       {
          $stmt = $this->pdo->prepare(<<<QUERY
-            INSERT INTO categories (tournament_id, name, mode, config_json) VALUES (:tournament_id, :name, :mode, :config)");
+            INSERT INTO categories (tournament_id, name, mode, config_json) VALUES (:tournament_id, :name, :mode, :config)
          QUERY);
          $stmt->execute($category->asArray('tournament_id', 'name', 'mode', 'config'));
          $category->id = (int)$this->pdo->lastInsertId();
