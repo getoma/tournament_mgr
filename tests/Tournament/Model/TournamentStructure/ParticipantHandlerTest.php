@@ -35,6 +35,10 @@ class ParticipantHandlerTest extends TestCase
    public function testBYEDistributionKO()
    {
       $category = new Category(1, 1, "test", CategoryMode::KO, false, new CategoryConfiguration(3));
+
+      /**
+       * first test: 4 matches, 4 BYEs -> all white slots are BYE
+       */
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $structure->populate($this->participantList(4));
@@ -46,6 +50,22 @@ class ParticipantHandlerTest extends TestCase
       {
          $this->assertFalse($match->getRedSlot()->isBye());
          $this->assertTrue($match->getWhiteSlot()->isBye());
+      }
+
+      /**
+       * second test: only one BYE -> should be in the first white slot
+       */
+      $structure = new TournamentStructure($category, AreaCollection::new());
+      $structure->generateStructure();
+      $structure->populate($this->participantList(7));
+      $rounds = $structure->ko->getRounds();
+      $this->assertCount(4, $rounds[0]); // 4 matches in the first round
+
+      // All BYEs should have ended up in the white slots
+      foreach ($rounds[0] as $nr => $match)
+      {
+         $this->assertFalse($match->getRedSlot()->isBye());
+         $this->assertEquals($nr === 0, $match->getWhiteSlot()->isBye());
       }
    }
 
