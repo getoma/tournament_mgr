@@ -24,9 +24,9 @@ abstract class MatchNodeBase implements MatchNode
       MatchSlot $slotRed,                   // slot contents may be modified, but the slot itself is fixed
       MatchSlot $slotWhite,                 // slot contents may be modified, but the slot itself is fixed
       private ?Area $area = null,
-      private bool $_frozen = false,         // whether match record data is frozen for this node or not
-      private bool $_tieBreak = false,       // whether this match is a tie break
-      private bool $_tiesAllowed = true,     // whether a tied result is allowed
+      private bool $frozen = false,         // whether match record data is frozen for this node or not
+      private bool $tieBreak = false,       // whether this match is a tie break
+      private bool $tiesAllowed = true,     // whether a tied result is allowed
    )
    {
       if ($slotRed === $slotWhite)
@@ -130,7 +130,7 @@ abstract class MatchNodeBase implements MatchNode
    /* whether a tie result is allowed */
    public function tiesAllowed(): bool
    {
-      return $this->_tiesAllowed && !$this->isTieBreak();
+      return $this->tiesAllowed && !$this->isTieBreak();
    }
 
    /* completely empty node match, no participants, ever */
@@ -142,15 +142,7 @@ abstract class MatchNodeBase implements MatchNode
    /* BYE match - at least on bye slot, but not all of them */
    public function isBye(): bool
    {
-      $byeFound = false;
-      $filledFound = false;
-      foreach( $this->slots as $slot )
-      {
-         $byeFound = $byeFound || $slot->isBye();
-         $filledFound = $filledFound || !$slot->isBye();
-         if( $byeFound && $filledFound ) return true;
-      }
-      return false;
+      return !$this->isReal() && !$this->isObsolete();
    }
 
    /* Match is a real match, and not just a dummy node that will never be conducted */
@@ -165,28 +157,46 @@ abstract class MatchNodeBase implements MatchNode
       return array_all($this->slots, fn($s) => $s->getParticipant() !== null );
    }
 
-   /* Match is actually spawned, regardless of result */
-   abstract public function isEstablished(): bool;
-
    /* Participants are established, but not started, yet */
-   abstract public function isPending(): bool;
+   public function isPending(): bool
+   {
+      return $this->isDetermined() && !$this->getMatchRecord();
+   }
+
+   /* Match is actually spawned, regardless of result */
+   public function isEstablished(): bool
+   {
+      return $this->getMatchRecord() !== null;
+   }
 
    /* Match is ongoing */
-   abstract public function isOngoing(): bool;
+   public function isOngoing(): bool
+   {
+      return $this->getMatchRecord() && !$this->isCompleted();
+   }
 
    /* There was an actual match, and that one is already finalized */
-   abstract public function isCompleted(): bool;
+   public function isCompleted(): bool
+   {
+      return $this->getMatchRecord()?->isFinalized() ?? false;
+   }
+
+   /* whether match ended with a tie according MatchRecord data */
+   public function isTied(): bool
+   {
+      return $this->getMatchRecord()?->isFinalized() && !$this->getMatchRecord()->getWinner();
+   }
 
    /* whether this is a tie break match */
    public function isTieBreak(): bool
    {
-      return $this->_tieBreak;
+      return $this->tieBreak;
    }
 
    /* make this match a tie break */
    public function makeTieBreak(): void
    {
-      $this->_tieBreak = true;
+      $this->tieBreak = true;
    }
 
    /* "Winner" of this match is known, regardless whether there was an actual match or not */
@@ -195,19 +205,16 @@ abstract class MatchNodeBase implements MatchNode
       return $this->getWinner() !== null;
    }
 
-   /* whether match ended with a tie */
-   abstract public function isTied(): bool;
-
    /* Match points may not be modified anymore */
    public function isFrozen(): bool
    {
-      return $this->_frozen;
+      return $this->frozen;
    }
 
    /* Freeze match results */
    public function freeze(): void
    {
-      $this->_frozen = true;
+      $this->frozen = true;
    }
 
    /* Match data may be modified - if we have determined the participants, and it is not frozen, yet */
@@ -216,10 +223,16 @@ abstract class MatchNodeBase implements MatchNode
       return $this->isDetermined() && !$this->isFrozen();
    }
 
-   /* return participant per parameter */
+   /* return participant per parameter - take from match record if available */
    public function getParticipant(MatchSide|string $side): ?MatchParticipant
    {
-      return $this->getSlot($side)->getParticipant();
+      if (is_string($side)) $side = MatchSide::from($side);
+      return match ($side)
+      {
+         MatchSide::RED   => $this->getMatchRecord()?->getParticipant($side) ?: $this->getRedSlot()->getParticipant(),
+         MatchSide::WHITE => $this->getMatchRecord()?->getParticipant($side) ?: $this->getWhiteSlot()->getParticipant(),
+         default => throw new \OutOfRangeException("invalid match side '$side'"),
+      };
    }
 
    /* return red-side participant */
@@ -234,9 +247,29 @@ abstract class MatchNodeBase implements MatchNode
       return $this->getParticipant(MatchSide::WHITE);
    }
 
-   /* get the winner of this match, or null if not decided, yet */
-   abstract public function getWinner(): ?MatchParticipant;
+   /**
+    * get the winner of this match, or null if not decided, yet
+    */
+   public function getWinner(): ?MatchParticipant
+   {
+      $mr = $this->getMatchRecord();
+      if ($mr) return $mr->getWinner();
+      list($redSlot, $whiteSlot) = [$this->getRedSlot(), $this->getWhiteSlot()];
+      if ($redSlot->isBye())   return $whiteSlot->getParticipant();
+      if ($whiteSlot->isBye()) return $redSlot->getParticipant();
+      return null;
+   }
 
-   /* get the defeated participant of this match, or null if not decided, yet */
-   abstract public function getDefeated(): ?MatchParticipant;
+   /**
+    * get the defeated participant of this match, or null if not decided, yet
+    */
+   public function getDefeated(): ?MatchParticipant
+   {
+      /* derive from getWinner() instead of using MatchRecord->getDefeated() to have
+       * a more generic implementation that also allows for more complex calculation in derived
+       * classes by only overriding getWinner() (e.g. for Team matches) */
+      $winner = $this->getWinner();
+      if( !$winner ) return null;
+      return $winner === $this->getRedParticipant()? $this->getWhiteParticipant() : $this->getRedParticipant();
+   }
 }

@@ -3,6 +3,7 @@
 namespace Tournament\Model\TournamentStructure\MatchNode;
 
 use Tournament\Model\Area\Area;
+use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 
@@ -11,12 +12,22 @@ use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
  */
 interface MatchNode
 {
+   /* whether this is composite match node (e.g. for team matches) */
+   public function isComposite(): bool;
+
+   /* return submatches for composite nodes */
+   public function getSubMatches(): ?MatchNodeCollection;
+
+   /* set a match node name */
    public function setName(string $name): void;
 
+   /* get the current match node name */
    public function getName(): string;
 
+   /* get the area this match node is assigned to */
    public function getArea(): ?Area;
 
+   /* assign the node to an area */
    public function setArea(?Area $area): void;
 
    /**
@@ -99,4 +110,13 @@ interface MatchNode
 
    /* get the defeated participant of this match, or null if not decided, yet */
    public function getDefeated(): ?MatchParticipant;
+
+   /* set the match record associated with this match node */
+   public function setMatchRecord(MatchRecord $matchRecord): void;
+
+   /* provide the match record for this node if existing. */
+   public function getMatchRecord(): ?MatchRecord;
+
+   /* provide the match record for this node. if none available yet, initialize it. */
+   public function provideMatchRecord(): MatchRecord;
 }

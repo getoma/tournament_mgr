@@ -2,20 +2,20 @@
 {% import 'base/form.twig' as form %}
 
 {% if type == 'ko' %}
-{% set update_route, get_route = 'device.categories.ko.matches.update', 'device.categories.ko.matches.show' %}
+{% set route_prefix = 'device.categories.ko.matches.' %}
 {% else %}
-{% set update_route, get_route = 'device.categories.pools.matches.update', 'device.categories.pools.matches.show' %}
+{% set route_prefix = 'device.categories.pools.matches.' %}
 {% endif %}
 
 {%- include 'base/header.twig' with {
-  'active_page': get_route,
+  'active_page': route_prefix ~ 'show',
   'css': ['match.css']
 }%}
 
 {% if node_it.back().valid() -%}
 <nav id="previous_match_nav" class="match_nav">
   <h2>Vorheriger Kampf</h2>
-  {{part.printMatchLinks(get_route, route_context.args, node_it.back(), 1)}}
+  {{part.printMatchLinks(route_prefix ~ 'show', route_context.args, node_it.back(), 1)}}
 </nav>
 {%- endif %}
 
@@ -25,16 +25,38 @@
     Kampf {{node.getLocalId()}}
     {%- if node_it.roundIdx() is not null %} ({{ part.printRoundName(node_it.roundIdx(), node_it.roundCount())}}){% endif -%}
   </h2>
-  {{ part.printMatchTable([node], node.getName(), update_route, route_context.args) }}
+  {% if node.isComposite() -%}
+  {{ part.printMatchTable(node.getSubMatches(), selected, route_prefix, route_context.args|merge({'matchName':node.getName()}),
+                          red_side_selection, white_side_selection) }}
+  {%- else -%}
+  {{ part.printMatchTable([node], node.getName(), route_prefix, route_context.args) }}
+  {% endif %}
   {% if error is not empty %}
   <p class="error">{{error}}</p>
   {% endif %}
 </section>
 
+{% if node.isComposite() -%}
+<section>
+  <h2>Aktuelle Platzierung</h2>
+  {{ part.printMatchRanking(node.getRanking()) }}
+  {% if node.tieBreakNeeded() -%}
+  <form method="POST" action="{{ url_for(route_prefix ~ 'decision.add', route_context.args)}}">
+    {{ form.submit('Entscheidungskampf hinzufügen')}}
+  </form>
+  {%- elseif node.hasTieBreak() -%}
+  <form method="POST" action="{{ url_for(route_prefix ~ 'decision.delete', route_context.args)}}">
+    <input type="hidden" name="_METHOD" value="DELETE">
+    {{ form.submit('Entscheidungskampf löschen')}}
+  </form>
+  {%- endif %}
+</section>
+{%- endif %}
+
 {% if node_it.skip().valid() -%}
 <nav id="next_match_nav" class="match_nav">
   <h2>Nächste Kämpfe</h2>
-  {{part.printMatchLinks(get_route, route_context.args, node_it.skip(), 3, node_it.roundIdx())}}
+  {{part.printMatchLinks(route_prefix ~ 'show', route_context.args, node_it.skip(), 3, node_it.roundIdx())}}
 </nav>
 {% endif -%}
 

@@ -2,9 +2,12 @@
 
 namespace Tournament\Repository;
 
+use Tournament\Model\Category\Category;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\MatchRecord\MatchPointCollection;
+use Tournament\Model\MatchRecord\TeamMatchRecord;
+use Tournament\Model\MatchRecord\SoloMatchRecord;
 use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
 
 class MatchDataRepository
@@ -24,8 +27,18 @@ class MatchDataRepository
     */
    public function getMatchRecordsByCategoryId(int $categoryId): MatchRecordCollection
    {
-      /* first fetch all reletated tournament-specific data */
       $category = $this->tournament_repo->getCategoryById($categoryId);
+      $team_records = $category->team_mode? $this->getTeamMatchRecords($category) : null;
+      $solo_records = $this->getSoloMatchRecords($category, $team_records);
+      return $category->team_mode? $team_records : $solo_records;
+   }
+
+   /**
+    * get match records per category id and optionally assign them to the provided team match records
+    */
+   private function getSoloMatchRecords(Category $category, ?MatchRecordCollection $team_matches): MatchRecordCollection
+   {
+      /* first fetch all reletated tournament-specific data */
       $participants = $this->participant_repo->getParticipantsByCategoryId($category->id);
       $areas = $this->tournament_repo->getAreasByTournamentId($category->tournament_id);
 
@@ -54,9 +67,20 @@ class MatchDataRepository
       $stmt = $this->pdo->prepare('SELECT * FROM matches WHERE category_id = ? ORDER BY id ASC');
       $stmt->execute([$category->id]);
       $result = MatchRecordCollection::new();
+      $team_matches_indexed = $team_matches? $team_matches->column_map('id') : [];
       while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
       {
-         $record = new MatchRecord(
+         if ($team_matches && $row['team_match_id'])
+         {
+            /** @var TeamMatchRecord $tmatch */
+            $tmatch = $team_matches_indexed[$row['team_match_id']] ?? throw new \OutOfRangeException('Could not find team match ' . $row['team_match_id']);
+         }
+         else
+         {
+            $tmatch = null;
+         }
+
+         $record = new SoloMatchRecord(
             id: $row['id'],
             name: $row['name'],
             category: $category,
@@ -68,9 +92,44 @@ class MatchDataRepository
             created_at: new \DateTime($row['created_at']),
             finalized_at: isset($row['finalized_at']) ? new \DateTime($row['finalized_at']) : null,
             points: $points[$row['id']] ?? MatchPointCollection::new(),
+            team_match: $tmatch,
          );
+
+         if( $tmatch ) $tmatch->matches[] = $record;
          $result[] = $record;
       }
+      return $result;
+   }
+
+   /**
+    * get team match records per category id
+    * no buffering needed for now, there is only one path in the application
+    * where this data is needed.
+    */
+   private function getTeamMatchRecords(Category $category): MatchRecordCollection
+   {
+      /* fetch all teams at once */
+      $teams = $this->participant_repo->getTeamsByCategoryId($category->id);
+
+      /* fetch team records */
+      $stmt = $this->pdo->prepare("SELECT * FROM team_matches WHERE category_id = ? ORDER BY id");
+      $stmt->execute([$category->id]);
+      $result = MatchRecordCollection::new();
+      while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
+      {
+         $result[] = new TeamMatchRecord(
+            id: (int)$row['id'],
+            name: $row['name'],
+            category: $category,
+            redTeam: $teams[$row['red_id']],
+            whiteTeam: $teams[$row['white_id']],
+            winner: $row['winner'] ? MatchSide::from($row['winner']) : null,
+            created_at: new \DateTime($row['created_at']),
+            finalized_at: $row['finalized_at'] ? new \DateTime($row['finalized_at']) : null
+         );
+      }
+
+      /* done */
       return $result;
    }
 
@@ -79,43 +138,82 @@ class MatchDataRepository
     */
    public function saveMatchRecord(MatchRecord $record): void
    {
+      $this->pdo->beginTransaction();
+
+      if( $record->isComposite() )
+      {
+         /** @var TeamMatchRecord $record */
+         $this->saveTeamMatchRecord($record);
+         $record->matches->walk(fn($r) => $this->saveSoloMatchRecord($r));
+      }
+      else
+      {
+         /** @var SoloMatchRecord $record */
+         if ($record->team_match) $this->saveTeamMatchRecord($record->team_match);
+         $this->saveSoloMatchRecord($record);
+      }
+
+      $this->pdo->commit();
+   }
+
+   /**
+    * sync a team match record to the data base (without children)
+    */
+   private function saveTeamMatchRecord(TeamMatchRecord $record): void
+   {
+      if( isset($record->id) )
+      {
+         $stmt = $this->pdo->prepare('
+            UPDATE team_matches SET
+               winner = :winner,
+               finalized_at = :finalized_at
+            WHERE id = :id
+         ');
+         $stmt->execute($record->asArray('id', 'winner', 'finalized_at'));
+      }
+      else
+      {
+         $stmt = $this->pdo->prepare(<<<QUERY
+            INSERT INTO team_matches
+               (name, category_id, red_id, white_id, winner, created_at, finalized_at)
+            VALUES
+               (:name, :category, :redTeam, :whiteTeam, :winner, :created_at, :finalized_at)
+         QUERY);
+         $stmt->execute($record->asArray('name', 'category', 'redTeam', 'whiteTeam', 'winner', 'created_at', 'finalized_at'));
+         $record->id = (int)$this->pdo->lastInsertId();
+      }
+   }
+
+   /**
+    * sync a solo match record to the data base
+    */
+   private function saveSoloMatchRecord(SoloMatchRecord $record): void
+   {
       if( isset($record->id) )
       {
          $stmt = $this->pdo->prepare('
             UPDATE matches SET
+               area_id = :area,
+               red_id = :redParticipant,
+               white_id = :whiteParticipant,
                winner = :winner,
                tie_break = :tie_break,
                finalized_at = :finalized_at
             WHERE id = :id
          ');
-         $stmt->execute([
-            'id'          => $record->id,
-            'winner'      => $record->winner->value,
-            'tie_break'   => $record->tie_break? 1 : 0,
-            'finalized_at'=> isset($record->finalized_at)? $record->finalized_at->format('Y-m-d H:i:s') : null,
-         ]);
+         $stmt->execute($record->asArray('id', 'area', 'redParticipant', 'whiteParticipant', 'winner', 'tie_break', 'finalized_at'));
       }
       else
       {
          $stmt = $this->pdo->prepare('
             INSERT INTO matches
-               (name, category_id, area_id, red_id, white_id, winner, tie_break, created_at, finalized_at)
+               (name, category_id, area_id, red_id, white_id, winner, tie_break, created_at, finalized_at, team_match_id)
             VALUES
-               (:name, :category_id, :area_id, :red_id, :white_id, :winner, :tie_break, :created_at, :finalized_at)
+               (:name, :category, :area, :redParticipant, :whiteParticipant, :winner, :tie_break, :created_at, :finalized_at, :team_match)
          ');
-
-         $stmt->execute([
-            'name'        => $record->name,
-            'category_id' => $record->category->id,
-            'area_id'     => $record->area->id,
-            'red_id'      => $record->redParticipant->id,
-            'white_id'    => $record->whiteParticipant->id,
-            'winner'      => $record->winner->value,
-            'tie_break'   => $record->tie_break? 1 : 0,
-            'created_at'  => $record->created_at->format('Y-m-d H:i:s'),
-            'finalized_at'=> isset($record->finalized_at)? $record->finalized_at->format('Y-m-d H:i:s') : null,
-         ]);
-
+         $stmt->execute($record->asArray(
+            'name', 'category', 'area', 'redParticipant', 'whiteParticipant', 'winner', 'tie_break', 'created_at', 'finalized_at', 'team_match'
+         ));
          $record->id = (int)$this->pdo->lastInsertId();
       }
 
@@ -161,15 +259,18 @@ class MatchDataRepository
    {
       $stmt = $this->pdo->prepare('DELETE FROM matches WHERE category_id = ?');
       $stmt->execute([$categoryId]);
+      $stmt = $this->pdo->prepare('DELETE FROM team_matches WHERE category_id = ?');
+      $stmt->execute([$categoryId]);
    }
 
    /**
     * delete a specific match record
     */
-   public function deleteMatchRecordById(int $matchId): void
+   public function deleteMatchRecord(MatchRecord $record): void
    {
-      $stmt = $this->pdo->prepare('DELETE FROM matches WHERE id = :matchId');
-      $stmt->execute(['matchId' => $matchId]);
+      $stmt = $record->isComposite()? $this->pdo->prepare('DELETE FROM team_matches WHERE id = :matchId')
+            :                         $this->pdo->prepare('DELETE FROM matches WHERE id = :matchId');
+      $stmt->execute(['matchId' => $record->getId()]);
    }
 
    /**

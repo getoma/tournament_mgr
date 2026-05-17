@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Service;
 
@@ -38,22 +38,27 @@ class RouteArgsResolverService
       $result = new RouteArgsContext(args: $args);
       if( isset($args['tournamentId']) )
       {
-         $result->tournament = $this->tournamentRepo->getTournamentById($args['tournamentId'])
+         $result->tournament = $this->tournamentRepo->getTournamentById((int)$args['tournamentId'])
                              ?? throw new EntityNotFoundException($request, 'Tournament not found');
       }
       if (isset($args['categoryId']))
       {
-         $result->category = $this->tournamentRepo->getCategoryById($args['categoryId'])
+         $result->category = $this->tournamentRepo->getCategoryById((int)$args['categoryId'])
                            ?? throw new EntityNotFoundException($request, 'Category not found');
       }
       if (isset($args['participantId']))
       {
-         $result->participant = $this->participantRepo->getParticipantById($args['participantId'])
+         $result->participant = $this->participantRepo->getParticipantById((int)$args['participantId'])
                               ?? throw new EntityNotFoundException($request, 'Participant not found');
+      }
+      if (isset($args['teamId']))
+      {
+         $result->team = $this->participantRepo->getTeamById((int)$args['teamId'])
+                       ?? throw new EntityNotFoundException($request, 'Team not found');
       }
       if (isset($args['areaId']))
       {
-         $result->area = $this->tournamentRepo->getAreaById($args['areaId'])
+         $result->area = $this->tournamentRepo->getAreaById((int)$args['areaId'])
                        ?? throw new EntityNotFoundException($request, 'Area not found');
       }
       if (isset($args['pool']))

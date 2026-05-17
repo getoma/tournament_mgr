@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryMode;
-use Tournament\Model\MatchRecord\MatchRecord;
+use Tournament\Model\MatchRecord\SoloMatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
@@ -193,7 +193,7 @@ class KoTreeTest extends TestCase
             $slotWhite->method('getParticipant')->willReturn($whiteParticipant);
          }
          /* create the match record */
-         $records[] = new MatchRecord(
+         $records[] = new SoloMatchRecord(
             1, $node->getName(), $this->category, $area,
             $redParticipant, $whiteParticipant, $red_winner? MatchSide::RED : MatchSide::WHITE,
             tie_break: false, finalized_at: new \DateTime() );
@@ -203,7 +203,7 @@ class KoTreeTest extends TestCase
       }
 
       /* also add another unrelated match record to ensure record loading doesn't trip over it */
-      $records[] = new MatchRecord(
+      $records[] = new SoloMatchRecord(
          1, "test_dummy", $this->category, $area,
          new Participant($pid++, 1, '', ''),
          new Participant($pid++, 1, '', ''),

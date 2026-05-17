@@ -271,7 +271,7 @@ final class MatchParticipantHandler
          // get list of all white slots (= every second starting slot)
          $slotNames = array_filter($starting_slots->keys(), fn($i) => $i % 2, ARRAY_FILTER_USE_KEY);
          // iteratively half the list of slots until we have a chunk for each BYE
-         $slotStack = [$slotNames];
+         $slotStack = [array_values($slotNames)];
          while (count($slotStack) < $numBYEs)
          {
             $next = array_shift($slotStack);

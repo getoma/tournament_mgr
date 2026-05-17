@@ -532,6 +532,10 @@ td.td-link:has(> :first-child:last-child) {
    margin-bottom: 1rem;
 }
 
+ul.error, ul.warning, ul.info {
+   list-style-type: none;
+}
+
 .error {
    background-color: #f8d7da;
    border-left: 4px solid #dc3545;
