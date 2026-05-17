@@ -3,6 +3,8 @@
 namespace Tests\Tournament\Model\TournamentStructure;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 use Tests\Tournament\Model\TestStubs\TestMatchParticipant;
 
 use Tournament\Model\Area\AreaCollection;
@@ -49,28 +51,49 @@ class ParticipantHandlerTest extends TestCase
       }
    }
 
+   public static function combinedModeSetupProvider()
+   {
+      return [
+         # rounds, participants per pool
+         [ 3, 4.5  ], // 4 pools with 5 or 4 participants
+         [ 4, 3.75 ], // 8 pools with 4 or 3 participants
+         [ 5, 3.25 ], // 16 pools with 4 or 3 participants
+      ];
+   }
+
    /**
     * test whether participants are allocated into pools as expected
     * for a combined structure
     */
-   public function testCombinedParticipantDistribution()
+   #[DataProvider('combinedModeSetupProvider')]
+   public function testCombinedParticipantDistribution(int $rounds = 5, float $p_per_pool = 3.5)
    {
-      $participants = $this->participantList(18);
-      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration(3, pool_winners: 2));
+      // derive expected parameters:
+      $winners_per_pool = 2;
+      $expected_pool_count = (int)round((2 ** $rounds) / $winners_per_pool);
+      $participant_count = (int)round($p_per_pool * $expected_pool_count);
+      $min_participants_per_pool = (int)floor($p_per_pool);
+      $ppcount_switch_index = (int)round(fmod($p_per_pool, 1) * $expected_pool_count);
+
+      // generate structure
+      $participants = $this->participantList($participant_count);
+      $category = new Category(1, 1, "test", CategoryMode::Combined, new CategoryConfiguration($rounds, pool_winners: $winners_per_pool));
       $structure = new TournamentStructure($category, AreaCollection::new());
       $structure->generateStructure();
       $assignment = $structure->populate($participants);
 
+      // check that list of assigned participants matches list of provided participants
       $assigned = array_map(fn($p) => $p->getId(), $assignment->values());
       $given = array_map(fn($p) => $p->getId(), $participants->values());
       $this->assertEqualsCanonicalizing($assigned, $given);
 
-      // 4 pools
-      $this->assertCount(4, $structure->pools);
-      $this->assertCount(5, $structure->pools['1']->getParticipants());
-      $this->assertCount(5, $structure->pools['2']->getParticipants());
-      $this->assertCount(4, $structure->pools['3']->getParticipants());
-      $this->assertCount(4, $structure->pools['4']->getParticipants());
+      // check that pool distribution matches
+      $this->assertCount($expected_pool_count, $structure->pools);
+      foreach( $structure->pools->values() as $i => $pool )
+      {
+         $expected = $min_participants_per_pool + ($i<$ppcount_switch_index? 1 : 0);
+         $this->assertCount($expected, $pool->getParticipants());
+      }
    }
 
    /**
