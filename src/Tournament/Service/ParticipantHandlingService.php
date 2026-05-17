@@ -5,6 +5,7 @@ namespace Tournament\Service;
 use Tournament\Model\Category\CategoryCollection;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Tournament\Tournament;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
@@ -48,7 +49,7 @@ class ParticipantHandlingService
          {
             foreach ($struc->ko->getFirstRound() as $node)
             {
-               /** @var KoNode $node */
+               /** @var MatchNode $node */
                $selection[$node->getName()] = $MATCH_PREFIX . ' ' . $node->getName();
             }
          }

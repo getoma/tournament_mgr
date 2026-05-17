@@ -1,8 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\TournamentStructure\MatchSlot;
 
-use Tournament\Model\Participant\Participant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
 class PoolWinnerSlot extends MatchSlot
@@ -21,7 +21,7 @@ class PoolWinnerSlot extends MatchSlot
       return 'Pool ' . $this->pool->getName() . ' Platz ' . $this->rank;
    }
 
-   public function getParticipant(): ?Participant
+   public function getParticipant(): ?MatchParticipant
    {
       return $this->pool->getRanked($this->rank);
    }

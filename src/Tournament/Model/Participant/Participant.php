@@ -1,10 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\Participant;
 
 use Respect\Validation\Validator as v;
+use Tournament\Model\Category\Category;
 
-class Participant implements \Tournament\Model\Base\DbItem
+class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant
 {
    use \Tournament\Model\Base\DbItemTrait;
 
@@ -62,17 +63,31 @@ class Participant implements \Tournament\Model\Base\DbItem
       // add any new category assignment
       foreach ($category_id_list as $catId)
       {
-         if (!$this->categories->keyExists($catId)) $this->categories[] = $catId;
+         $this->categories->emplace((int)$catId);
       }
    }
 
    /**
-    * in some cases, it might be necessary to have a placeholder participant for some calculations
-    * natively provide this. A dummy/placeholder participant is identified by having no lastname set
+    * MatchParticipant interface
     */
-   public static function dummy(): static
+   public function getId(): ?int
    {
-      return new static(null, 0, '', '');
+      return $this->id;
+   }
+
+   public function getDisplayName(): string
+   {
+      return $this->lastname . ", " . $this->firstname;
+   }
+
+   public function isComposite(): bool
+   {
+      return false;
+   }
+
+   public function getClub(): ?string
+   {
+      return $this->club;
    }
 
    /**
@@ -84,4 +99,23 @@ class Participant implements \Tournament\Model\Base\DbItem
       return empty($this->lastname);
    }
 
+   public function setStartSlot(Category $c, ?string $slotName): void
+   {
+      $this->categories->emplace($c)->slot_name = $slotName;
+   }
+
+   public function getStartSlot(Category $c): ?string
+   {
+      return $this->categories[$c->id]?->slot_name;
+   }
+
+   public function setPreAssignedSlot(Category $c, ?string $slotName): void
+   {
+      $this->categories->emplace($c)->pre_assign = $slotName;
+   }
+
+   public function getPreAssignedSlot(Category $c): ?string
+   {
+      return $this->categories[$c->id]?->pre_assign;
+   }
 }

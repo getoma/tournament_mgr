@@ -6,7 +6,7 @@ use Tournament\Model\Category\Category;
 
 class CategoryAssignment
 {
-   public int $categoryId;
+   public readonly int $categoryId;
 
    public function __construct(
       Category|int $categoryId,

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Repository;
 
@@ -8,13 +8,13 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\Area\AreaCollection;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryCollection;
-
-use PDO;
 use Tournament\Model\Category\CategoryConfiguration;
 use Tournament\Model\TournamentStructure\AreaMapping;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 use Tournament\Model\User\UserCollection;
+
+use PDO;
 
 class TournamentRepository
 {
@@ -36,7 +36,7 @@ class TournamentRepository
    {
    }
 
-   private function createTournamentObject($data): Tournament
+   private function createTournamentObject(array $data): Tournament
    {
       $id = $data['id'];
       if( isset($this->tournaments[$id]) ) return $this->tournaments[$id];
@@ -52,14 +52,14 @@ class TournamentRepository
    {
       $result = new TournamentCollection();
       $stmt = $this->pdo->query("SELECT * FROM tournaments order by date asc, name asc");
-      foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
+      while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
       {
          $result[] = $this->createTournamentObject($row);
       }
       return $result;
    }
 
-   public function getTournamentById($id): ?Tournament
+   public function getTournamentById(int $id): ?Tournament
    {
       if( isset($this->tournaments[$id]) ) return $this->tournaments[$id];
 
@@ -69,7 +69,7 @@ class TournamentRepository
       return $data? $this->createTournamentObject($data) : null;
    }
 
-   public function getTournamentOwners($id): UserCollection
+   public function getTournamentOwners(int $id): UserCollection
    {
       $stmt = $this->pdo->prepare("SELECT user_id from tournament_owners where tournament_id=:id");
       $stmt->execute(['id' => $id]);
@@ -78,72 +78,55 @@ class TournamentRepository
       return $users->filter(fn($u) => in_array($u->id, $owner_ids));
    }
 
-   public function saveTournament(Tournament $t): bool
+   public function saveTournament(Tournament $t): void
    {
       $this->pdo->beginTransaction();
 
-      $result = false;
       if ($t->id)
       {
          $stmt = $this->pdo->prepare("UPDATE tournaments SET name = :name, date = :date, status = :status, notes = :notes WHERE id = :id");
-         $result = $stmt->execute($t->asArray(['id', 'name', 'date', 'status', 'notes']));
+         $stmt->execute($t->asArray('id', 'name', 'date', 'status', 'notes'));
       }
       else
       {
          $stmt = $this->pdo->prepare("INSERT INTO tournaments (name, date, status, notes) VALUES (:name, :date, :status, :notes)");
-         $result = $stmt->execute($t->asArray(['name', 'date', 'status', 'notes']));
-         if( $result )
-         {
-            $t->id = $this->pdo->lastInsertId();
-            $this->tournaments[$t->id] = $t;
-         }
+         $stmt->execute($t->asArray('name', 'date', 'status', 'notes'));
+         $t->id = (int)$this->pdo->lastInsertId();
+         $this->tournaments[$t->id] = $t;
       }
 
       /* also update ownership */
-      if( $result )
+      if( $t->owners->empty() )
       {
-         if( $t->owners->empty() )
-         {
-            $stmt = $this->pdo->prepare("DELETE FROM tournament_owners WHERE tournament_id = :id");
-            $stmt->execute(['id' => $t->id]);
-         }
-         else
-         {
-            // only delete removed owners - to not accidently delete any related records
-            // via foreign key constraints. At the moment, we don't have that, but be forward-compatible
-            $placeholders = implode(',', array_fill(0, $t->owners->count(), '?'));
-            $sql = "DELETE FROM tournament_owners WHERE tournament_id = ? AND user_id NOT IN ($placeholders)";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute( array_merge([$t->id], $t->owners->column('id')) );
-
-            // add any possible new relationships
-            $stmt = $this->pdo->prepare("INSERT IGNORE INTO tournament_owners (tournament_id, user_id) VALUES (:tournament_id, :user_id)");
-            foreach ($t->owners as $owner)
-            {
-               $stmt->execute(['tournament_id' => $t->id, 'user_id' => $owner->id]);
-            }
-         }
-      }
-
-      if( $result )
-      {
-         $this->pdo->commit();
+         $stmt = $this->pdo->prepare("DELETE FROM tournament_owners WHERE tournament_id = :id");
+         $stmt->execute(['id' => $t->id]);
       }
       else
       {
-         $this->pdo->rollBack();
+         // only delete removed owners - to not accidently delete any related records
+         // via foreign key constraints. At the moment, we don't have that, but be forward-compatible
+         $placeholders = implode(',', array_fill(0, $t->owners->count(), '?'));
+         $sql = "DELETE FROM tournament_owners WHERE tournament_id = ? AND user_id NOT IN ($placeholders)";
+         $stmt = $this->pdo->prepare($sql);
+         $stmt->execute( array_merge([$t->id], $t->owners->column('id')) );
+
+         // add any possible new relationships
+         $stmt = $this->pdo->prepare("INSERT IGNORE INTO tournament_owners (tournament_id, user_id) VALUES (:tournament_id, :user_id)");
+         foreach ($t->owners as $owner)
+         {
+            $stmt->execute(['tournament_id' => $t->id, 'user_id' => $owner->id]);
+         }
       }
 
-      return $result;
+      $this->pdo->commit();
    }
 
-   public function deleteTournament(int $id): bool
+   public function deleteTournament(int $id): void
    {
-      $stmt = $this->pdo->prepare("DELETE FROM tournaments WHERE id = :id");
-      return $stmt->execute(['id' => $id]);
+      $this->pdo->prepare("DELETE FROM tournaments WHERE id = ?")->execute([$id]);
    }
 
-   public function getAreasByTournamentId($tournamentId): AreaCollection
+   public function getAreasByTournamentId(int $tournamentId): AreaCollection
    {
       if (isset($this->areas_by_tournament[$tournamentId]))
       {
@@ -153,7 +136,7 @@ class TournamentRepository
       $areas = [];
       $stmt = $this->pdo->prepare("SELECT * FROM areas WHERE tournament_id = :tournamentId order by name");
       $stmt->execute(['tournamentId' => $tournamentId]);
-      foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row)
+      while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
       {
          $this->areas[$row['id']] ??= new Area(...$row);
          $areas[] = $this->areas[$row['id']];
@@ -162,7 +145,7 @@ class TournamentRepository
       return new AreaCollection($areas);
    }
 
-   public function getAreaById($id): ?Area
+   public function getAreaById(int $id): ?Area
    {
       if (!isset($this->areas[$id]))
       {
@@ -177,7 +160,7 @@ class TournamentRepository
       return $this->areas[$id] ?? null;
    }
 
-   public function getTournamentByAreaId($id): ?Tournament
+   public function getTournamentByAreaId(int $id): ?Tournament
    {
       $stmt = $this->pdo->prepare("SELECT t.* FROM tournaments t JOIN areas a ON t.id = a.tournament_id WHERE a.id = :id");
       $stmt->execute(['id' => $id]);
@@ -185,32 +168,26 @@ class TournamentRepository
       return $data? $this->createTournamentObject($data) : null;
    }
 
-   public function saveArea(Area $area): bool
+   public function saveArea(Area $area): void
    {
-      $result = false;
       if ($area->id)
       {
          $stmt = $this->pdo->prepare("UPDATE areas SET name = :name WHERE id = :id");
-         $result = $stmt->execute($area->asArray(['id', 'name']));
+         $stmt->execute($area->asArray('id', 'name'));
       }
       else
       {
          $stmt = $this->pdo->prepare("INSERT INTO areas (name, tournament_id) VALUES (:name, :tournament_id)");
-         $result = $stmt->execute($area->asArray(['name', 'tournament_id']));
-         if ($result)
-         {
-            $area->id = $this->pdo->lastInsertId();
-            $this->areas[$area->id] = $area;
-            $this->areas_by_tournament[$area->tournament_id][] = $area;
-         }
+         $stmt->execute($area->asArray('name', 'tournament_id'));
+         $area->id = (int)$this->pdo->lastInsertId();
+         $this->areas[$area->id] = $area;
+         $this->areas_by_tournament[$area->tournament_id][] = $area;
       }
-      return $result;
    }
 
-   public function deleteArea($areaId): bool
+   public function deleteArea(int $areaId): void
    {
-      $stmt = $this->pdo->prepare("DELETE FROM areas WHERE id = :id");
-      return $stmt->execute(['id' => $areaId]);
+      $this->pdo->prepare("DELETE FROM areas WHERE id=?")->execute([$areaId]);
    }
 
    public function getCategoriesByTournamentId(int $tournamentId): CategoryCollection
@@ -220,7 +197,7 @@ class TournamentRepository
          $stmt = $this->pdo->prepare("SELECT id, name, mode, config_json FROM categories WHERE tournament_id = :tournament_id order by id");
          $stmt->execute(['tournament_id' => $tournamentId]);
          $this->categories_by_tournament[$tournamentId] = [];
-         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)
+         while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
          {
             $category =  $this->categories[$row['id']]
                ?? new Category(
@@ -259,32 +236,28 @@ class TournamentRepository
       return $this->categories[$id] ?? null;
    }
 
-   public function saveCategory(Category $category): bool
+   public function saveCategory(Category $category): void
    {
-      $result = false;
       if ($category->id)
       {
          $stmt = $this->pdo->prepare("UPDATE categories SET name = :name, mode = :mode, config_json = :config WHERE id = :id");
-         $result = $stmt->execute($category->asArray(['id', 'name', 'mode', 'config']));
+         $stmt->execute($category->asArray('id', 'name', 'mode', 'config'));
       }
       else
       {
-         $stmt = $this->pdo->prepare("INSERT INTO categories (tournament_id, name, mode, config_json) VALUES (:tournament_id, :name, :mode, :config)");
-         $result = $stmt->execute($category->asArray(['tournament_id', 'name', 'mode', 'config']));
-         if ($result)
-         {
-            $category->id = $this->pdo->lastInsertId();
-            $this->categories[$category->id] = $category;
-            $this->categories_by_tournament[$category->tournament_id][] = $category;
-         }
+         $stmt = $this->pdo->prepare(<<<QUERY
+            INSERT INTO categories (tournament_id, name, mode, config_json) VALUES (:tournament_id, :name, :mode, :config)
+         QUERY);
+         $stmt->execute($category->asArray('tournament_id', 'name', 'mode', 'config'));
+         $category->id = (int)$this->pdo->lastInsertId();
+         $this->categories[$category->id] = $category;
+         $this->categories_by_tournament[$category->tournament_id][] = $category;
       }
-      return $result;
    }
 
-   public function deleteCategory(int $id): bool
+   public function deleteCategory(int $id): void
    {
-      $stmt = $this->pdo->prepare("DELETE FROM categories WHERE id = :id");
-      return $stmt->execute(['id' => $id]);
+      $this->pdo->prepare("DELETE FROM categories WHERE id=?")->execute([$id]);
    }
 
    public function getMatchAreaMappingByCategoryId(int $id): AreaMapping
@@ -292,14 +265,14 @@ class TournamentRepository
       $stmt = $this->pdo->prepare("SELECT type, name, area_id FROM match_areas WHERE category_id = ?");
       $stmt->execute([$id]);
       $result = new AreaMapping();
-      foreach( $stmt->fetchAll(\PDO::FETCH_ASSOC) as $e )
+      while ($e = $stmt->fetch(\PDO::FETCH_ASSOC))
       {
          $result->store(...$e);
       }
       return $result;
    }
 
-   public function storeAreaAssignment(MatchNode|Pool $entity)
+   public function storeAreaAssignment(MatchNode|Pool $entity): void
    {
       $type = match(true)
       {

@@ -12,11 +12,11 @@
 {% endif %}
 <form method="post" action="{{ url_for('account.update') }}">
   <input type="hidden" name="_METHOD" value="PATCH">
-  <p class="info">
+  <p>
     E-Mail: <span>{{user.email}}</span>
   </p>
   {{ form.input('text', 'display_name', 'Angezeigter Name', prev.display_name ?? user.display_name, errors.display_name, {'maxlength':100}, required=true) }}
-  <p class="info">
+  <p>
     <span class="label">Rollen:</span> {{ user.roles|map(r => r.value)|join(', ') }}
   </p>
   <fieldset>
@@ -32,6 +32,6 @@
   </fieldset>
   {{ form.submit('Aktualisieren')}}
 </form>
-</div>
+</section>
 
 {% include 'base/footer.twig' %}

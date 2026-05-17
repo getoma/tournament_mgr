@@ -1,13 +1,13 @@
 <?php
 
-namespace Tournament\Model\PoolRankHandler;
+namespace Tournament\Model\MatchRankHandler;
 
-use Tournament\Model\Participant\Participant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 
-class PoolRank
+class MatchRank
 {
    public function __construct(
-      public Participant $participant,
+      public MatchParticipant $participant,
       public int $rank = 0,
       public int $wins = 0,
       public int $ties = 0,

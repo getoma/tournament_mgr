@@ -2,10 +2,10 @@
 
 namespace Tournament\Model\MatchCreationHandler;
 
-use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 
 interface MatchCreationHandler
 {
-   function generate(ParticipantCollection $participants): MatchNodeCollection;
+   function generate(MatchParticipantCollection $participants): MatchNodeCollection;
 }

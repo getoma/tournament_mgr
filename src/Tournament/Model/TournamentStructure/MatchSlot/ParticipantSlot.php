@@ -1,12 +1,12 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\TournamentStructure\MatchSlot;
 
-use Tournament\Model\Participant\Participant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 
 class ParticipantSlot extends MatchSlot
 {
-   public function __construct(public ?Participant $participant = null, public ?string $slotName = null)
+   public function __construct(public ?MatchParticipant $participant = null, public ?string $slotName = null)
    {
    }
 
@@ -17,12 +17,12 @@ class ParticipantSlot extends MatchSlot
 
    public function str(): string
    {
-      return !$this->isBye()? 'Teilnehmer ' . $this->participant->id : '--';
+      return !$this->isBye()? $this->participant->getDisplayName() : '--';
    }
 
-   public function getParticipant(): ?Participant
+   public function getParticipant(): ?MatchParticipant
    {
-      return $this->participant ?? null; // still return a dummy participant, therefore do not check on isBye()
+      return $this->participant; // still return a dummy participant, therefore do not check on isBye()
    }
 
    public function freezeResult(): void
@@ -32,7 +32,7 @@ class ParticipantSlot extends MatchSlot
 
    /**
     * get the slot name for any slot that is a starting slot
-    * @return string name of the slot: name of owning node + color
+    * @return string name of the slot
     */
    public function getName(): ?string
    {

@@ -47,7 +47,7 @@ class Category implements \Tournament\Model\Base\DbItem
       $this->config->updateFromArray($data);
    }
 
-   protected function convertValue($key, $value): mixed
+   protected function convertValue(string $key, mixed $value): mixed
    {
       if( $value instanceof CategoryConfiguration )
       {
@@ -68,11 +68,11 @@ class Category implements \Tournament\Model\Base\DbItem
    }
 
    /**
-    * same for PoolRankHandler
+    * same for MatchRankHandler
     */
-   public function getPoolRankHandler(): \Tournament\Model\PoolRankHandler\PoolRankHandler
+   public function getMatchRankHandler(): \Tournament\Model\MatchRankHandler\MatchRankHandler
    {
-      return new \Tournament\Model\PoolRankHandler\GenericPoolRankHandler($this->getMatchPointHandler());
+      return new \Tournament\Model\MatchRankHandler\GenericMatchRankHandler($this->getMatchPointHandler());
    }
 
    /**

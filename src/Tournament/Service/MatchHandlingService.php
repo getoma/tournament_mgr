@@ -1,9 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Service;
 
 use Tournament\Model\MatchRecord\MatchPoint;
-use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
 use Tournament\Repository\MatchDataRepository;
@@ -25,7 +25,7 @@ class MatchHandlingService
    {
    }
 
-   public function updateMatchPoint(MatchNode $node, array $post_data): ?string
+   public function updateMatchPoint(SoloMatch $node, array $post_data): ?string
    {
       /* prepare error message */
       $error = null;
@@ -66,20 +66,20 @@ class MatchHandlingService
                }
                else
                {
-                  $record->winner = null;
+                  $record->setWinner(null);
                   $record->finalized_at = new \DateTime();
                   $saveRecord = true;
                }
             }
             else
             {
-               $participant = $this->p_repo->getParticipantById($post_data['participant']) ?? throw new \OutOfBoundsException('Unknown Participant');
+               $participant = $this->p_repo->getParticipantById((int)$post_data['participant']) ?? throw new \OutOfBoundsException('Unknown Participant');
 
                if ($post_data['action'] === 'winner')
                {
                   if ($node->isModifiable())
                   {
-                     $record->winner = $participant;
+                     $record->setWinner($participant);
                      $record->finalized_at = new \DateTime();
                      $saveRecord = true;
                   }
@@ -96,7 +96,7 @@ class MatchHandlingService
                {
                   if ($post_data['action'] === 'undo')
                   {
-                     if ($pointHdl->removePoint($record, $post_data['undo']))
+                     if ($pointHdl->removePoint($record, (int)$post_data['undo']))
                      {
                         $saveRecord = true;
                      }
@@ -122,14 +122,7 @@ class MatchHandlingService
 
             if ($saveRecord)
             {
-               if ($this->m_repo->saveMatchRecord($record))
-               {
-                  $node->setMatchRecord($record);
-               }
-               else
-               {
-                  $error = 'Aktualisierung ist fehlgeschlagen :-(';
-               }
+               $this->m_repo->saveMatchRecord($record);
             }
          }
       }
@@ -149,21 +142,25 @@ class MatchHandlingService
          $nodes = $pool->createDecisionRound();
          foreach ($nodes as $node)
          {
-            $record = $node->provideMatchRecord();
-            $record->tie_break = $nodes->count() === 1; // if only a single decision match - make it a tie break match.
-            if (!$this->m_repo->saveMatchRecord($record))
+            if( $node instanceof SoloMatch )
             {
-               return 'Match-Generierung ist fehlgeschlagen :-(';
+               $record = $node->provideMatchRecord();
+               $record->tie_break = $nodes->count() === 1; // if only a single decision match - make it a tie break match.
+               $this->m_repo->saveMatchRecord($record);
+            }
+            else
+            {
+               throw new \LogicException("unsupported node type " . get_class($node));
             }
          }
       }
       return null;
    }
 
-   public function deletePoolTieBreak(Pool $pool, string $round_name): ?string
+   public function deletePoolTieBreak(Pool $pool, int $roundId): ?string
    {
       /* get the list of current decision matches */
-      $matches = $pool->getDecisionMatches($round_name);
+      $matches = $pool->getDecisionMatches($roundId);
 
       /* check if we can delete them - only if no points are currently assigned and not frozen */
       $is_frozen  = $matches->any(fn($n) => $n->isFrozen());
@@ -184,7 +181,7 @@ class MatchHandlingService
       /* all fine, try to delete */
       foreach ($matches as $node)
       {
-         if (!$this->m_repo->deleteMatchRecordById($node->getMatchRecord()->id))
+         if (!($node instanceof SoloMatch) || !$this->m_repo->deleteMatchRecordById($node->getMatchRecord()->id))
          {
             return "match data deletion failed!";
          }

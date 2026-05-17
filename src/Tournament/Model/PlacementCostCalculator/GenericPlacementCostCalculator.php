@@ -1,10 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\PlacementCostCalculator;
 
-use Tournament\Model\Participant\Participant;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
-use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
+use Tournament\Model\TournamentStructure\KoTree;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 
 class GenericPlacementCostCalculator implements PlacementCostCalculator
@@ -16,7 +15,7 @@ class GenericPlacementCostCalculator implements PlacementCostCalculator
    {
    }
 
-   public function calculateCost(Participant $candidate, string $slotName, SlotPlacmentCollection $placed): float
+   public function calculateCost(MatchParticipant $candidate, string $slotName, SlotPlacmentCollection $placed): float
    {
       $cost = 0;
 
@@ -34,7 +33,7 @@ class GenericPlacementCostCalculator implements PlacementCostCalculator
          $cost += 1/$distance;
 
          /* cost for being placed near candidates from the same club */
-         if( $candidate->club && $candidate->club === $placement->participant->club )
+         if( $candidate->getClub() && $candidate->getClub() === $placement->participant->getClub() )
          {
             $cost += $this->club_weight / $distance;
          }
@@ -43,16 +42,16 @@ class GenericPlacementCostCalculator implements PlacementCostCalculator
       return $cost;
    }
 
-   public function loadStructure(KoNode $root): void
+   public function loadStructure(KoTree $ko): void
    {
       /* derive the paths for each node and collect all starting slots */
       $root_path = [];
       $start_slots = [];
-      $node_stack = [$root];
+      $node_stack = [$ko->root];
       while ($node = array_shift($node_stack))
       {
          $path = $root_path[$node->getName()] ?? [];
-         foreach ([$node->slotRed, $node->slotWhite] as $slot)
+         foreach ($node->getSlots() as $slot)
          {
             $node_path = array_merge([$node], $path);
             if ($slot instanceof MatchWinnerSlot)

@@ -26,7 +26,8 @@ trait DbItemTrait
     *           optional fields do not need to be listed in required
     * @param $data     - the input data to validate
     * @param $required - list of fields that are expected and required
-    * @param $optional - list of fields that are expected and optional
+    * @param $optional - list of fields that shall be optional
+    * @return array - list of errors on validation isses, or empty array if no issues.
     */
    public static function validateArray(array $data, ?array $required = null, ?array $optional = null): array
    {
@@ -34,11 +35,15 @@ trait DbItemTrait
 
       if ($required !== null)
       {
+         /**
+          * if a list of expected fields is given, override the rules for any other fields to require them to be null
+          */
          $expected = array_flip(array_merge($required, $optional??[]));
          foreach ($rules as $key => &$rule)
          {
             if (!isset($expected[$key])) $rule = v::nullType();
          }
+         unset($rule);
       }
 
       if ($optional !== null)
@@ -52,8 +57,10 @@ trait DbItemTrait
       return DataValidationService::validate($data, $rules);
    }
 
-   /* convert object to an array to provide it to PDOStatement::execute */
-   public function asArray(array $keys = []): array
+   /**
+    * convert object to an array to provide it to PDOStatement::execute
+    */
+   public function asArray(string ...$keys): array
    {
       $result = [];
 
@@ -98,7 +105,7 @@ trait DbItemTrait
       return $result;
    }
 
-   protected function convertValue($key, $value): mixed
+   protected function convertValue(string $key, mixed $value): mixed
    {
       throw new \UnexpectedValueException(get_class($this) . ": Unexpected DbItem attribute for key '$key' of type " . get_class($value) ?? gettype($value));
    }

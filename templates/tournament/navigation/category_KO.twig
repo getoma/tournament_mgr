@@ -9,7 +9,7 @@
 <section>
 <h2>{{ route_context.category.name }} - KO-Runde</h2>
 <nav class="ko-full-tree">
-{{ part.printKo(ko, 'tournaments.categories.ko.matches.show', route_context.args) }}
+{{ part.printKo(ko_rounds, 'tournaments.categories.ko.matches.show', route_context.args) }}
 </nav>
 </section>
 
@@ -20,7 +20,7 @@
   <h2>Nicht zugewiesen</h2>
   <ul>
     {% for p in unmapped_participants %}
-    <li>{{p.lastname}}, {{p.firstname}}</li>
+    <li>{{p.getDisplayName()}}</li>
     {% endfor %}
   </ul>
   <form action="{{url_for('tournaments.categories.assignParticipants', route_context.args)}}" method="post">

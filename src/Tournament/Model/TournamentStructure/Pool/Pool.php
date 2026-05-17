@@ -1,25 +1,27 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tournament\Model\TournamentStructure\Pool;
 
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
-use Tournament\Model\Participant\Participant;
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
-use Tournament\Model\Participant\ParticipantCollection;
-use Tournament\Model\PoolRankHandler\PoolRank;
-use Tournament\Model\PoolRankHandler\PoolRankCollection;
+use Tournament\Model\MatchRankHandler\MatchRank;
+use Tournament\Model\MatchRankHandler\MatchRankCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
+use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
+use Tournament\Model\TournamentStructure\MatchParticipant\DummyMatchParticipant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 
 class Pool
 {
    private MatchNodeCollection $matches;
-   /** @var Participant[] */
+   /** @var MatchParticipant[] */
    private array $slots = [];
-   private PoolRankCollection $ranking;
+   private MatchRankCollection $ranking;
 
    public const DEFAULT_NUM_WINNERS = 2;
 
@@ -69,25 +71,26 @@ class Pool
       /** @var MatchNode $node */
       foreach ($this->matches as $node)
       {
-         $node->area = $area;
+         $node->setArea($area);
       }
    }
 
    /**
     * recursively collect all participants in this match tree
-    * @return ParticipantCollection of Participant objects
+    * @return MatchParticipantCollection of Participant objects
     */
-   public function getParticipants(): ParticipantCollection
+   public function getParticipants(): MatchParticipantCollection
    {
-      return ParticipantCollection::new($this->slots);
+      return MatchParticipantCollection::new($this->slots);
    }
 
-   public function loadParticipants(ParticipantCollection $participants): void
+   public function loadParticipants(MatchParticipantCollection $participants): void
    {
       $this->slots = [];
+      /** @var MatchParticipant $p */
       foreach( $participants as $p )
       {
-         if( $slot = $p->categories[$this->category->id]?->slot_name )
+         if( $slot = $p->getStartSlot($this->category) )
          {
             list($poolId, $slotId) = static::splitSlotName($slot);
             if( $poolId !== $this->name ) throw new \UnexpectedValueException('participant is assigned to a different pool');
@@ -109,28 +112,22 @@ class Pool
    /**
     * add a new participant and return their slot
     */
-   public function addParticipants(ParticipantCollection $participants): void
+   public function addParticipants(MatchParticipantCollection $participants): void
    {
       $slotId = 0;
       $current = $this->getParticipants();
+      /** @var MatchParticipant $p */
       foreach( $participants as $p )
       {
          /* silently skip for already assigned participants */
          if ($current->contains($p)) continue;
-
-         /* plausibility check */
-         if( !$p->categories->keyExists($this->category->id) )
-         {
-            throw new \OutOfRangeException('participant not assigned to current category');
-         }
 
          /* find a free slot and add them there */
          while( isset($this->slots[$slotId]) ) $slotId += 1;
          $this->slots[$slotId] = $p;
 
          /* add the slot assignment into the participant */
-         $slotName = $this->name . '.' . $slotId;
-         $p->categories[$this->category->id]->slot_name = $slotName;
+         $p->setStartSlot($this->category, $this->name . '.' . $slotId);
       }
 
       /* store participants in slot order */
@@ -159,12 +156,12 @@ class Pool
        * for the match generation, fill those up with dummy participants, whose matches are
        * removed at the end of the generation in addNewMatchesFor() */
       $this->matches = MatchNodeCollection::new();
-      $plist = ParticipantCollection::new();
+      $plist = MatchParticipantCollection::new();
       foreach ($this->slots as $slotId => $p)
       {
          while ($plist->count() < $slotId)
          {
-            $plist[] = Participant::dummy();
+            $plist[] = new DummyMatchParticipant(false);
          }
          $plist[] = $p;
       }
@@ -180,9 +177,9 @@ class Pool
    /**
     * get the current ranking (via lazy calculation)
     */
-   public function getRanking(): PoolRankCollection
+   public function getRanking(): MatchRankCollection
    {
-      return $this->ranking ??= $this->category->getPoolRankHandler()->deriveRanking($this->matches);
+      return $this->ranking ??= $this->category->getMatchRankHandler()->derivePoolRanking($this);
    }
 
    /**
@@ -191,7 +188,7 @@ class Pool
     * to not confuse with invalid intermediate results
     * if intermediate results are needed, use getRanking()
     */
-   public function getRanked(int $rank): ?Participant
+   public function getRanked(int $rank): ?MatchParticipant
    {
       if( !$this->isDecided() ) return null;
       $ranked = $this->getRanking()->filter(fn($r) => $r->rank === $rank);
@@ -241,12 +238,12 @@ class Pool
    {
       if( !$this->needsDecisionRound() ) throw new \RuntimeException("no tie break matches needed right now, refusing");
 
-      /** @var ParticipantCollection[] $per_rank - all participants sorted by rank into collections */
+      /** @var MatchParticipantCollection[] $per_rank - all participants sorted by rank into collections */
       $per_rank = [];
-      /** @var PoolRank $rank_entry */
+      /** @var MatchRank $rank_entry */
       foreach( $this->getRanking() as $rank_entry )
       {
-         $per_rank[$rank_entry->rank] ??= ParticipantCollection::new();
+         $per_rank[$rank_entry->rank] ??= MatchParticipantCollection::new();
          $per_rank[$rank_entry->rank][] = $rank_entry->participant;
       }
 
@@ -316,7 +313,7 @@ class Pool
          {
             $red     = new ParticipantSlot($p_red);
             $white   = new ParticipantSlot($p_white);
-            $newNode = new MatchNode($matchName, $this->category, $red, $white, $this->area);
+            $newNode = new SoloMatch($matchName, $this->category, $red, $white, $this->area);
             $newNode->setMatchRecord($record);
             $this->matches[] = $newNode;
          }
@@ -335,7 +332,7 @@ class Pool
          $fixedMatches = $this->matches->filter( fn($node) => $this->getExtensionId($node->getName()) !== $this->current_extension );
          foreach( $fixedMatches as $node )
          {
-            $node->frozen = true;
+            $node->freeze();
          }
       }
    }
@@ -347,21 +344,21 @@ class Pool
    {
       foreach ($this->matches as $match)
       {
-         $match->frozen = true;
+         $match->freeze();
       }
    }
 
    /**
     * generate the matches in this Pool.
     */
-   private function addNewMatchesFor(ParticipantCollection $p): MatchNodeCollection
+   private function addNewMatchesFor(MatchParticipantCollection $p): MatchNodeCollection
    {
       $report  = $this->category->getMatchCreationHandler()->generate($p);
       $matchId = $this->getNextMatchId();
       foreach ($report as $match)
       {
          $match->setName($this->nameFor($matchId++, $this->current_extension));
-         $match->area = $this->area;
+         $match->setArea($this->area);
          // only actually store matches without dummy participants
          // we still calculate a name for them above to have fixed match ids regardless
          if( $match->isReal() ) $this->matches[] = $match;

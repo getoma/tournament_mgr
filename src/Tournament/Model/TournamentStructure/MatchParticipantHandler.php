@@ -2,13 +2,13 @@
 
 namespace Tournament\Model\TournamentStructure;
 
-use Tournament\Model\Participant\Participant;
-use Tournament\Model\Participant\ParticipantCollection;
-use Tournament\Model\Participant\CategoryAssignment;
 use Tournament\Model\PlacementCostCalculator\SlotPlacement;
 use Tournament\Model\PlacementCostCalculator\SlotPlacmentCollection;
-use Tournament\Model\TournamentStructure\MatchNode\KoNode;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
+use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlotCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\ByeSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
@@ -16,12 +16,12 @@ use Tournament\Model\TournamentStructure\MatchSlot\PoolWinnerSlot;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
 /**
- * ParticipantHandler - handle assignment of Participants to starting slots for a given
+ * MatchParticipantHandler - handle assignment of MatchParticipants to starting slots for a given
  * TournamentStructure
  * This module is there to move the participant assignment algorithms into a separate file,
  * and this class is tightly coupled to TournamentStructure
  */
-final class ParticipantHandler
+final class MatchParticipantHandler
 {
    function __construct(private TournamentStructure $struc)
    {
@@ -30,7 +30,7 @@ final class ParticipantHandler
    /**
     * load a collection of slot-assigned participants into the Tournament structure
     */
-   public function loadParticipants(ParticipantCollection $participants): void
+   public function loadParticipants(MatchParticipantCollection $participants): void
    {
       if (!$this->struc->pools->empty())
       {
@@ -49,14 +49,13 @@ final class ParticipantHandler
    /**
     * assign participants to each KO first round slot according the given mapping
     */
-   private function loadKoParticipants(ParticipantCollection $participants)
+   private function loadKoParticipants(MatchParticipantCollection $participants)
    {
       $slots = $this->getSlots($this->struc->ko->getFirstRound());
       foreach ($participants as $p)
       {
-         /** @var Participant $p */
-         if( $p->withdrawn ) continue;
-         $slot_name = $p->categories[$this->struc->category->id]->slot_name;
+         /** @var MatchParticipant $p */
+         $slot_name = $p->getStartSlot($this->struc->category);
          if (isset($slot_name) && isset($slots[$slot_name])) $slots[$slot_name]->participant = $p;
          else $this->struc->unmapped_participants[] = $p;
       }
@@ -65,21 +64,20 @@ final class ParticipantHandler
    /**
     * assign participants into pools according the given mapping
     */
-   private function loadPoolParticipants(ParticipantCollection $participants)
+   private function loadPoolParticipants(MatchParticipantCollection $participants)
    {
       /* distribute the participants to a separate collection for each pool */
       $pool_participants = [];
       foreach ($participants as $p)
       {
-         /** @var Participant $p */
-         if( $p->withdrawn ) continue;
-         $slot_name = $p->categories[$this->struc->category->id]->slot_name;
+         /** @var MatchParticipant $p */
+         $slot_name = $p->getStartSlot($this->struc->category);
          if( $slot_name )
          {
             $poolId = Pool::getPoolIdFromSlotName($slot_name);
             if ($this->struc->pools->keyExists($poolId))
             {
-               $pool_participants[$poolId] ??= ParticipantCollection::new();
+               $pool_participants[$poolId] ??= MatchParticipantCollection::new();
                $pool_participants[$poolId][] = $p;
             }
             else
@@ -103,7 +101,7 @@ final class ParticipantHandler
    /**
     * populate a TournamentStructure with a collection of Participants
     */
-   public function populate(ParticipantCollection $participants): ParticipantCollection
+   public function populate(MatchParticipantCollection $participants): MatchParticipantCollection
    {
       /* prepare the placement cost calculator */
       $calculator = $this->struc->category->getPlacementCostCalculator();
@@ -115,9 +113,6 @@ final class ParticipantHandler
 
       /* extract all previous slot assignements */
       $assigned = $this->getSlotPlacements($starting_slots);
-
-      /* remove any withdrawn participants from the collection before populating */
-      $participants = $participants->filter(fn($p) => !$p->withdrawn);
 
       /* get the actual number of participants we have to allocate */
       $participantCount = $assigned->count() + $participants->count();
@@ -132,11 +127,10 @@ final class ParticipantHandler
       $participants->walk( fn($p) => $this->struc->unmapped_participants->drop($p) );
 
       /* add any manuell presets */
-      $get_pre_assign = fn(Participant $p) => $p->categories[$this->struc->category->id]?->pre_assign ?? null;
       foreach ($participants as $p)
       {
-         /** @var Participant $p */
-         $pre_assign_slot = $get_pre_assign($p);
+         /** @var MatchParticipant $p */
+         $pre_assign_slot = $p->getPreAssignedSlot($this->struc->category);
          if (!$pre_assign_slot) continue;
 
          $slotName = null;
@@ -144,7 +138,7 @@ final class ParticipantHandler
          {
             /* pre-assign value is a MatchNode Name/ID, assign to its red slot */
             $node = $first_round->findNode($pre_assign_slot);
-            if (isset($node) && !$node->slotRed->getParticipant()) $slotName = $node->slotRed->getName();
+            if (isset($node) && !$node->getRedParticipant()) $slotName = $node->getRedSlot()->getName();
          }
          else
          {
@@ -216,7 +210,7 @@ final class ParticipantHandler
       {
          /** @var SlotPlacement $from */
          $from = $entry['slot'];
-         if( $get_pre_assign($from->participant) ) continue; // skip participants with fixed assignment
+         if( $from->participant->getPreAssignedSlot($this->struc->category) ) continue; // skip participants with fixed assignment
          $current_from_cost = $calculator->calculateCost($from->participant, $from->slot->getName(), $assigned);
          $bestCost = PHP_FLOAT_MAX;
          $bestTgt = null;
@@ -224,7 +218,7 @@ final class ParticipantHandler
          {
             /** @var SlotPlacement $tgt */
             if( $tgt->slot === $from->slot ) continue; // skip non-switches
-            if ($get_pre_assign($tgt->participant)) continue; // skip participants with fixed assignment
+            if ($tgt->participant->getPreAssignedSlot($this->struc->category)) continue; // skip participants with fixed assignment
 
             /* calculate current cost for both participants */
             $current_cost = $current_from_cost + $calculator->calculateCost($tgt->participant, $tgt->slot->getName(), $assigned);
@@ -325,37 +319,35 @@ final class ParticipantHandler
     *       this *might* result into better seeding results - so far the seeding
     *       seems to work well enough without.
     */
-   private function shuffleParticipantList(ParticipantCollection $participants): ParticipantCollection
+   private function shuffleParticipantList(MatchParticipantCollection $participants): MatchParticipantCollection
    {
       $rng = new \Random\Randomizer();
-      return ParticipantCollection::new($rng->shuffleArray($participants->values()));
+      return MatchParticipantCollection::new($rng->shuffleArray($participants->values()));
    }
 
    /**
     * transform the resulting structure from the internally used SlotPlacementCollection
     * to the required ParticipantCollection
     */
-   private function updateSlotAssignments(SlotPlacmentCollection $assigned, ParticipantCollection $unassigned): ParticipantCollection
+   private function updateSlotAssignments(SlotPlacmentCollection $assigned, MatchParticipantCollection $unassigned): MatchParticipantCollection
    {
-      $catId    = $this->struc->category->id;
-      $result   = ParticipantCollection::new();
+      $category = $this->struc->category;
+      $result   = MatchParticipantCollection::new();
 
       /* store the assigned slot name in each participant, and add them to the result */
       $perPool = [];
       foreach ($assigned as $a)
       {
          /** @var SlotPlacement $a */
-         $a->participant->categories[$catId] ??= new CategoryAssignment($catId);
-         /** @var SlotPlacement $a */
          if ($a->slot instanceof ParticipantSlot)
          {
             /* just take over directly */
-            $a->participant->categories[$catId]->slot_name = $a->slot->getName();
+            $a->participant->setStartSlot($category, $a->slot->getName());
          }
          else if ($a->slot instanceof PoolWinnerSlot)
          {
             /* collect for each pool */
-            $perPool[$a->slot->pool->getName()]  ??= ParticipantCollection::new();
+            $perPool[$a->slot->pool->getName()]  ??= MatchParticipantCollection::new();
             $perPool[$a->slot->pool->getName()][]  = $a->participant;
          }
          else
@@ -374,9 +366,9 @@ final class ParticipantHandler
       /* also add all unassigned participants to the result */
       foreach ($unassigned as $p)
       {
-         $p->categories[$catId] ??= new CategoryAssignment($catId);
-         $p->categories[$catId]->slot_name = null;
-         $result [] = $p;
+         /** @var MatchParticipant $p */
+         $p->setStartSlot($category, null);
+         $result[] = $p;
       }
 
       /* done */
@@ -389,11 +381,14 @@ final class ParticipantHandler
    private function getSlots(MatchNodeCollection $nodes): MatchSlotCollection
    {
       $result = MatchSlotCollection::new();
+      /** @var MatchNode $node */
       foreach ($nodes as $node)
       {
-         /** @var KoNode $node */
-         if ($node->slotRed->getName())   $result[$node->slotRed->getName()] = $node->slotRed;
-         if ($node->slotWhite->getName()) $result[$node->slotWhite->getName()] = $node->slotWhite;
+         foreach( MatchSide::cases() as $side )
+         {
+            $slot = $node->getSlot($side);
+            if( $slot->getName() ) $result[$slot->getName()] = $slot;
+         }
       }
       return $result->ksort(SORT_STRING);
    }

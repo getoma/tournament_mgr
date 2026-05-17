@@ -304,13 +304,7 @@ class TournamentSettingsController
          name: $data['name'],
          mode: $data['mode']
       );
-
-      if( !$this->repo->saveCategory($category) )
-      {
-         $prev = ['categories' => ['new' => $data]];
-         $err = ['categories' => ['new' => [['msg' => 'Failed to create category']]]];
-         return $this->showTournamentConfiguration($request, $response, $args, $err, $prev);
-      }
+      $this->repo->saveCategory($category);
 
       return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'category_created');
    }

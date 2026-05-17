@@ -22,7 +22,7 @@
   {% endif %}
   <form method="post" action="{{ url_for('users.update', { 'userId': user.id }) }}">
     <input type="hidden" name="_METHOD" value="PATCH">
-    <p class="info">
+    <p>
       E-Mail: <span>{{user.email}}</span>
     </p>
     <fieldset id="user_roles">
