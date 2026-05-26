@@ -21,6 +21,12 @@ class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\To
    {
    }
 
+   public function __clone(): void
+   {
+      $this->categories = CategoryAssignmentCollection::new($this->categories->map(fn($a) => clone $a));
+      $this->id = null;
+   }
+
    /* get the validation rules for the participant */
    public static function validationRules(): array
    {
@@ -37,9 +43,9 @@ class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\To
    {
       if (isset($data['lastname'])) $this->lastname = $data['lastname'];
       if (isset($data['firstname'])) $this->firstname = $data['firstname'];
-      if (array_key_exists('club', $data)) $this->club = $data['club']; // null is allowed here
-      if (isset($data['withdrawn'])) $this->withdrawn = (bool)$data['withdrawn'];
-      $this->updateCategories($data['categories']);
+      if (array_key_exists('club', $data)) $this->club = $data['club'] ?: null; // null is allowed here
+      if (isset($data['withdrawn']))  $this->withdrawn = (bool)$data['withdrawn'];
+      if (isset($data['categories'])) $this->updateCategories($data['categories']);
    }
 
    static public function createFromArray(int $tournament_id, array $data): static

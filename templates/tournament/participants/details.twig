@@ -47,4 +47,40 @@
   </form>
 </section>
 
+{% if change_log is not empty -%}
+<section>
+  <h2>Änderungshistorie</h2>
+  <table class="change_log">
+    <thead>
+      <tr>
+      <th>Zeit</th>
+      <th>Änderung</th>
+      <th>Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in change_log|reverse -%}
+      <tr>
+        <td>{{ entry.changed_at|date('d.m.Y H:i', timezone) }}</td>
+        <td>{{ entry.change_type }}</td>
+        <td>
+          {%- if entry.details['category_id'] is defined %}<span>{{ categories[entry.details['category_id']].name }}</span>{% endif -%}
+          {%- if entry.change_type == 'category_removed' %} <del>{{ entry.details['slot_name']|humanizeSlotName }}</del>
+          {%- else -%}
+            {%- if entry.details['from'] is not empty -%}
+              {%- if entry.change_type == 'category_slot_changed' %} <del>{{entry.details['from']|humanizeSlotName}}</del>
+              {%- else %} <del>{{entry.details['from']}}</del>
+              {%- endif %}
+            {%- endif -%}
+            {%- if entry.details['to'] is not empty %} <ins>{{ entry.details['to'] }}</ins>{% endif -%}
+            {%- if entry.details['slot_name'] is not empty %} <ins>{{ entry.details['slot_name']|humanizeSlotName }}</ins>{% endif -%}
+          {%- endif -%}
+        </td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</section>
+{%- endif %}
+
 {% include 'base/footer.twig' %}
