@@ -29,7 +29,7 @@ class KoTreeTest extends TestCase
    protected KoTree $ko;
    /** @var MatchNode[] - flat list of all created nodes as test input */
    protected array $node_list;
-   /** @var Stub[] list of all starting slots (ParticipantSlots, basically) */
+   /** @var ParticipantSlot[] list of all starting slots (ParticipantSlots, basically) */
    protected array $start_slots;
 
    /* match point handler for the match node */
@@ -55,9 +55,9 @@ class KoTreeTest extends TestCase
          function($i) use ($category)
          {
             /** @var ParticipantSlot $a */
-            $this->start_slots[] = $a = $this->createStub(ParticipantSlot::class);
+            $this->start_slots[] = $a = new ParticipantSlot();
             /** @var ParticipantSlot $b */
-            $this->start_slots[] = $b = $this->createStub(ParticipantSlot::class);
+            $this->start_slots[] = $b = new ParticipantSlot();
             return new SoloKoMatch("test_".$i, $category, $a, $b);
          }
          , range(1, $round1_cnt) );
@@ -136,13 +136,12 @@ class KoTreeTest extends TestCase
          // add the new participant
          $p = new Participant($i+1, 1, '', '');
          $participants[] = $p;
-         $this->start_slots[$i]->method('getParticipant')->willReturn($p);
+         $this->start_slots[$i]->participant = $p;
 
          // get list of participants and see if it matches
          usort($participants, $sortCbk);
-         $received = $this->ko->getParticipantList();
-         usort($received, $sortCbk);
-         $this->assertSame($participants, $received);
+         $received = $this->ko->getParticipantList()->usort($sortCbk);
+         $this->assertSame($participants, $received->values());
       }
    }
 
@@ -157,7 +156,7 @@ class KoTreeTest extends TestCase
        * fill expected ranks accordingly
        */
       $pid = 1;
-      $ranks = [[new Participant($pid++, 1, '', '')]];
+      $ranks = [[new Participant($pid++, 1, "lastname_$pid", "firstname_$pid")]];
       $next = [[1, $this->ko->root, $ranks[0][0]]];
       $records = MatchRecordCollection::new();
       $red_winner = true;
@@ -166,7 +165,7 @@ class KoTreeTest extends TestCase
          /** @var MatchNode $node */
          /* fetch/create input data */
          list($rank_idx, $node, $winner) = array_shift($next);
-         $defeated = new Participant($pid++, 1, '', '');
+         $defeated = new Participant($pid++, 1, "lastname_$pid", "firstname_$pid");
          /* prepare expected ranks */
          $ranks[$rank_idx] ??= [];
          $ranks[$rank_idx][] = $defeated;
@@ -178,19 +177,26 @@ class KoTreeTest extends TestCase
          {
             $next[] = [$rank_idx+1, $slotRed->matchNode, $redParticipant];
          }
+         else if( $slotRed instanceof ParticipantSlot )
+         {
+            $slotRed->participant = $redParticipant;
+         }
          else
          {
-            /** @var Stub $slotRed */
-            $slotRed->method('getParticipant')->willReturn($redParticipant);
+            throw new \LogicException('unsupported slot type');
          }
          if ($slotWhite instanceof MatchWinnerSlot)
          {
             $next[] = [$rank_idx+1, $slotWhite->matchNode, $whiteParticipant];
          }
+         else if( $slotWhite instanceof ParticipantSlot )
+         {
+            /** @var ParticipantSlot $slotWhite */
+            $slotWhite->participant = $whiteParticipant;
+         }
          else
          {
-            /** @var Stub $slotWhite */
-            $slotWhite->method('getParticipant')->willReturn($whiteParticipant);
+            throw new \LogicException('unsupported slot type');
          }
          /* create the match record */
          $records[] = new MatchRecord(

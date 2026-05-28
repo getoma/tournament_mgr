@@ -51,7 +51,7 @@ final class MatchParticipantHandler
     */
    private function loadKoParticipants(MatchParticipantCollection $participants)
    {
-      $slots = $this->getSlots($this->struc->ko->getFirstRound());
+      $slots = $this->struc->ko->getStartSlots();
       foreach ($participants as $p)
       {
          /** @var MatchParticipant $p */
@@ -107,9 +107,9 @@ final class MatchParticipantHandler
       $calculator = $this->struc->category->getPlacementCostCalculator();
       $calculator->loadStructure($this->struc->ko);
 
-      /* get the list of starting slots, but only from matches that are not started, yet */
+      /* get the list of starting slots */
       $first_round = $this->struc->ko->getFirstRound();
-      $starting_slots = $this->getSlots($first_round);
+      $starting_slots = $first_round->getNamedSlots();
 
       /* extract all previous slot assignements */
       $assigned = $this->getSlotPlacements($starting_slots);
@@ -372,24 +372,6 @@ final class MatchParticipantHandler
       }
 
       /* done */
-      return $result;
-   }
-
-   /**
-    * extract the MatchNode slots from a node collection
-    */
-   private function getSlots(MatchNodeCollection $nodes): MatchSlotCollection
-   {
-      $result = MatchSlotCollection::new();
-      /** @var MatchNode $node */
-      foreach ($nodes as $node)
-      {
-         foreach( MatchSide::cases() as $side )
-         {
-            $slot = $node->getSlot($side);
-            if( $slot->getName() ) $result[$slot->getName()] = $slot;
-         }
-      }
       return $result;
    }
 
