@@ -14,6 +14,7 @@ use Tournament\Model\TournamentStructure\Pool\Pool;
 
 use Tournament\Service\MatchHandlingService;
 use Tournament\Service\TournamentStructureService;
+use Tournament\Service\ChangeLogEvaluationService;
 
 use Tournament\Service\RouteArgsContext;
 use Tournament\Policy\AuthContext;
@@ -29,6 +30,7 @@ class AreaDeviceViewController
       private TournamentStructureService $structureLoadService,
       private MatchHandlingService $matchService,
       private PrgService $prgService,
+      private ChangeLogEvaluationService $chgLogService,
       private Twig $view,
    )
    {
@@ -74,9 +76,13 @@ class AreaDeviceViewController
       // Load the tournament structure for this category
       $structure = $this->structureLoadService->load($ctx->category);
 
+      // get change log for this area for pure KO categories
+      $chgLog = $structure->pools->empty() ? $this->chgLogService->getChangesForKoTree($structure->ko, $auth->area) : null;
+
       return $this->view->render($response, 'device/categories_show.twig', [
          'pools'     => $structure->pools->filter(fn($p) => $p->getArea() === $auth->area),
          'ko_rounds' => $structure->getFinaleRounds()->filterRounds(fn($n) => $n->getArea() === $auth->area && $n->isReal()),
+         'change_log' => $chgLog,
       ]);
    }
 
@@ -110,11 +116,15 @@ class AreaDeviceViewController
       $idx = array_search($pool, $area_pool_list);
       $next_pool = $area_pool_list[$idx+1] ?? null;
 
+      /* get any changes since planning phase */
+      $poolChgLog = $this->chgLogService->getChangesForPool($pool);
+
       return $this->view->render($response, 'device/pool_show.twig', [
          'pool'      => $pool,
          'next_pool' => $next_pool,
          'selected'  => $selected,
          'error'     => $error,
+         'change_log' => $poolChgLog,
       ]);
    }
 

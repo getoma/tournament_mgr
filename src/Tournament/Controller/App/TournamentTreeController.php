@@ -14,6 +14,7 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
 use Tournament\Service\RouteArgsContext;
 use Tournament\Service\MatchHandlingService;
 use Tournament\Service\TournamentStructureService;
+use Tournament\Service\ChangeLogEvaluationService;
 
 use Tournament\Exception\EntityNotFoundException;
 
@@ -28,6 +29,7 @@ class TournamentTreeController
       private TournamentStructureService $structureLoadService,
       private MatchHandlingService $matchService,
       private PrgService $prgService,
+      private ChangeLogEvaluationService $chgLogService,
       private Twig $view,
    )
    {
@@ -60,11 +62,13 @@ class TournamentTreeController
 
       // Load the tournament structure for this category
       $structure = $this->structureLoadService->load($ctx->category);
+      $chgLog = $structure->pools->empty()? $this->chgLogService->getChangesForKoTree($structure->ko) : null;
 
       return $this->view->render($response, 'tournament/navigation/category_KO.twig', [
          'no_pools'   => $structure->pools->empty(),
          'ko_rounds'  => $structure->getFinaleRounds(),
          'unmapped_participants' => $structure->unmapped_participants,
+         'change_log' => $chgLog,
       ]);
    }
 
@@ -95,11 +99,13 @@ class TournamentTreeController
       $ctx = $request->getAttribute('route_context');
       $structure ??= $this->structureLoadService->load($ctx->category);
       $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found');
+      $poolChgLog = $this->chgLogService->getChangesForPool($pool);
 
       return $this->view->render($response, 'tournament/navigation/pool_home.twig', [
          'pool' => $pool,
          'error' => $error,
          'area_selection' => $structure->areas->column('name', 'id'),
+         'change_log' => $poolChgLog,
       ]);
    }
 
