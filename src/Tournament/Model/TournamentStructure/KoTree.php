@@ -4,11 +4,13 @@ namespace Tournament\Model\TournamentStructure;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
+use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\TournamentStructure\MatchNode\KoNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
+use Tournament\Model\TournamentStructure\MatchSlot\MatchSlotCollection;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchWinnerSlot;
 
 /**
@@ -143,25 +145,16 @@ class KoTree
 
    /**
     * recursively collect all participants in this KO tree (or a subtree)
-    * @return array of Participant objects
     */
-   public function getParticipantList(?KoNode $root = null): array
+   public function getParticipantList(?KoNode $root = null): MatchParticipantCollection
    {
       $root ??= $this->root;
-      $participants = [];
-      foreach ($root->getSlots() as $slot)
+      $participants = MatchParticipantCollection::new();
+      foreach ($this->getStartSlots() as $slot)
       {
-         if ($slot instanceof MatchWinnerSlot)
+         if ($p = $slot->getParticipant())
          {
-            array_push($participants, ...$this->getParticipantList($slot->matchNode));
-         }
-         else
-         {
-            $p = $slot->getParticipant();
-            if ($p !== null)
-            {
-               $participants[] = $p;
-            }
+            $participants[] = $p;
          }
       }
       return $participants;
@@ -204,6 +197,14 @@ class KoTree
    public function getMatchList(): MatchNodeCollection
    {
       return $this->getRounds()->flatten();
+   }
+
+   /**
+    * Return a flat list of all starting slots
+    */
+   public function getStartSlots(): MatchSlotCollection
+   {
+      return $this->getFirstRound()->getNamedSlots();
    }
 
    /**
