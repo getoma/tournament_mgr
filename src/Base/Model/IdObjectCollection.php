@@ -62,4 +62,12 @@ class IdObjectCollection extends ObjectCollection
       $cmp ??= fn($a, $b) => static::get_id($a) <=> static::get_id($b);
       return parent::intersect($other, $cmp);
    }
+
+   /**
+    * for IdObjectCollection, enforce key preservation
+    */
+   public function chunk(int $length, bool $preserve_keys = false): array
+   {
+      return parent::chunk($length, true);
+   }
 }

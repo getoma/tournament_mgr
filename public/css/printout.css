@@ -1,0 +1,118 @@
+@media screen {
+
+   .page {
+      background: white;
+      border: 1px solid #666;
+      box-shadow: 0 0 5mm rgba(0, 0, 0, 0.2);
+      margin: 1rem;
+   }
+
+   .page.a4-portrait {
+      aspect-ratio: 210/297;
+      width: 210mm;
+   }
+
+   .page.a4-landscape {
+      aspect-ratio: 297/210;
+      width: 297mm;
+   }
+
+}
+
+@media print {
+
+   @page {
+      margin:0;
+      padding: 0;
+   }
+
+   @page a4portrait {
+      size: a4 portrait;
+   }
+
+   @page a4landscape {
+      size: a4 landscape;
+   }
+
+   * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      overflow: visible !important;
+   }
+
+   .page {
+      margin: 0;
+      padding: 15mm;
+      box-sizing: border-box;
+      page-break-after: always;
+      break-after: page;
+      box-shadow: none;
+      border: none;
+      overflow: hidden;
+   }
+
+   .page > * {
+      break-inside: avoid;
+   }
+
+   .page.a4-portrait {
+      width: 210mm;
+      height: 296mm; /* keep one mm free to compensate for strange page breaks due to overflow */
+      page: a4portrait;
+   }
+
+   .page.a4-landscape {
+      width: 297mm;
+      height: 209mm; /* keep one mm free to compensate for strange page breaks due to overflow */
+      page: a4landscape;
+   }
+
+   body {
+      display: contents;
+   }
+
+   body > *,
+   main > * {
+      display: none;
+
+      &:has(.print-container) {
+         display: contents;
+      }
+
+      h2 {
+         display: none;
+      }
+   }
+
+   .print-container {
+      display:contents;
+   }
+}
+
+.namesheet_page {
+   height: 100%;
+   margin: 0;
+   padding: 0;
+   border: none;
+   list-style-type: none;
+   display: flex;
+   flex-direction: column;
+   justify-content: space-around;
+
+
+   &>li {
+      text-align: center;
+   }
+
+   .name {
+      display: block;
+      font-weight: bolder;
+      font-size: 5cqw;
+      font-family: 'Times New Roman', serif;
+   }
+}
+
+.mapping_label {
+   color: #555;
+   font-size: 0.9em;
+}

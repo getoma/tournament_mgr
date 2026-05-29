@@ -1,0 +1,20 @@
+{% import 'base/form.twig' as form %}
+
+{%- include 'base/header.twig' with {
+  'active_page': 'tournaments.categories.printouts.index',
+  'nav_entry_label': 'Namenszettel',
+  'css': [ 'printout.css' ]
+} %}
+
+<section class="preview_control">
+  <h2>Einstellungen</h2>
+  <form method="GET" action="{{ url_for('tournaments.categories.printouts.namesheets.show', route_context.args)}}">
+    {{ form.select('order', 'Sortierung', order_options, options.order) }}
+    {{ form.input('number', 'fontSize', 'Schriftgröße', options.fontSize|default(96), attributes: { min: 10, max: 128, placeholder: 96}) }}
+    {{ form.submit('Aktualisieren') }}
+  </form>
+</section>
+
+{% include 'printouts/document_preview.twig' %}
+
+{% include 'base/footer.twig' %}

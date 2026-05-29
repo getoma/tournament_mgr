@@ -20,6 +20,7 @@ use Base\Service\SessionValidationIssue;
 use Base\Service\RedirectHandler;
 
 use Slim\Routing\RouteCollectorProxy;
+use Tournament\Controller\App\PrintOutController;
 
 return function (\Slim\App $app)
 {
@@ -203,6 +204,10 @@ return function (\Slim\App $app)
 
             $cgrp->post('/addNewParticipants', [TournamentTreeController::class, 'addUnslottedParticipants'])->setName('tournaments.categories.assignParticipants')
                ->add($policyGuard->for(TournamentAction::ModifyParticipants));
+
+            /* printouts */
+            $cgrp->get('prints[/]', [PrintOutController::class, 'showMenu'])->setName('tournaments.categories.printouts.index');
+            $cgrp->get('prints/namesheets', [PrintOutController::class, 'showNamesheets'])->setName('tournaments.categories.printouts.namesheets.show');
 
             /* Tournament tree navigation */
             $cgrp->get('/category', [TournamentTreeController::class, 'showCategoryHome'])->setName('tournaments.categories.show');
