@@ -73,6 +73,9 @@ return function (\Slim\App $app)
    // General authorization checks
    $authGuard = \Base\Middleware\AuthMiddleware::create($app, 'auth.login.form');
 
+   // Area Device Account authorization checks
+   $deviceGuard = \Tournament\Middleware\AreaDeviceAccessGuard::create($app);
+
    /**********************
     * Route setup
     */
@@ -276,7 +279,7 @@ return function (\Slim\App $app)
    $app->post('/device/login', [AreaDeviceAuthController::class, 'login'])->setName('device.login.attempt');
    $app->get('/device/logout', [AreaDeviceAuthController::class, 'logout'])->setName('device.logout');
 
-   $app->group('/device', function (RouteCollectorProxy $device_grp) use ($policyGuard)
+   $app->group('/device', function (RouteCollectorProxy $device_grp) use ($deviceGuard, $policyGuard)
    {
       $device_grp->get('/category[/]', [AreaDeviceViewController::class, 'showCategories'])->setName('device.categories.index');
 
@@ -303,7 +306,8 @@ return function (\Slim\App $app)
             $mgrp->delete('/pool/{pool}/delete/{decision_round}', [AreaDeviceViewController::class, 'deletePoolDecisionRound'])->setName('device.categories.pools.decision.delete');
          })
          ->add($policyGuard->for(TournamentAction::RecordResults));
-      });
+      })
+      ->add($deviceGuard);
    })
    ->add($policyGuard->as(AuthType::DEVICE));
 };

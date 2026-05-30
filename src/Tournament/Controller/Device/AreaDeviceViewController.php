@@ -9,8 +9,6 @@ use Slim\Views\Twig;
 
 use Tournament\Model\TournamentStructure\TournamentStructure;
 use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
-use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
-use Tournament\Model\TournamentStructure\Pool\Pool;
 
 use Tournament\Service\MatchHandlingService;
 use Tournament\Service\TournamentStructureService;
@@ -21,7 +19,6 @@ use Tournament\Policy\AuthContext;
 use Base\Service\PrgService;
 
 use Tournament\Exception\EntityNotFoundException;
-use Slim\Exception\HttpForbiddenException;
 
 class AreaDeviceViewController
 {
@@ -32,20 +29,6 @@ class AreaDeviceViewController
       private Twig $view,
    )
    {
-   }
-
-   /**
-    * device access is limited to a specific area.
-    * But for knowing whether a specific entity is mapped to a specific area,
-    * we need to load the whole structure and match record list, which we do not
-    * want to do on policy level. Therefore the area access is checked here on Controller level
-    */
-   private function guardAccess(Request $request, Pool|MatchNode $entity, AuthContext $auth): void
-   {
-      if ($entity->getArea() !== $auth->area)
-      {
-         throw new HttpForbiddenException($request, 'Zugriff nicht erlaubt');
-      }
    }
 
    /**
@@ -72,7 +55,7 @@ class AreaDeviceViewController
       $auth = $request->getAttribute('auth_context');
 
       // Load the tournament structure for this category
-      $structure = $this->structureLoadService->load($ctx->category);
+      $structure = $request->getAttribute('tournament_structure') ?? $this->structureLoadService->load($ctx->category);
 
       return $this->view->render($response, 'device/categories_show.twig', [
          'pools'     => $structure->pools->filter(fn($p) => $p->getArea() === $auth->area),
@@ -90,11 +73,9 @@ class AreaDeviceViewController
       /** @var AuthContext $auth */
       $auth = $request->getAttribute('auth_context');
 
-      $structure ??= $this->structureLoadService->load($ctx->category);
-      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found');
-
-      /** @var Pool $pool */
-      $this->guardAccess($request, $pool, $auth);
+      /* load the structure and find the current pool */
+      $structure = $request->getAttribute('tournament_structure') ?? $this->structureLoadService->load($ctx->category);
+      $pool = $structure->pools[$ctx->pool_name] ?? throw new EntityNotFoundException($request, 'Pool not found');
 
       /* select an active match from this pool */
       $matches = $pool->getMatchList();
@@ -125,13 +106,10 @@ class AreaDeviceViewController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
-      /** @var AuthContext $auth */
-      $auth = $request->getAttribute('auth_context');
 
-      $structure = $this->structureLoadService->load($ctx->category);
-      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found');
-
-      $this->guardAccess($request, $pool, $auth);
+      /* load the structure and find the current pool */
+      $structure = $request->getAttribute('tournament_structure') ?? $this->structureLoadService->load($ctx->category);
+      $pool = $structure->pools[$ctx->pool_name] ?? throw new EntityNotFoundException($request, 'Pool not found');
 
       $error = $this->matchService->addPoolTieBreak($pool);
 
@@ -152,13 +130,10 @@ class AreaDeviceViewController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
-      /** @var AuthContext $auth */
-      $auth = $request->getAttribute('auth_context');
 
-      $structure = $this->structureLoadService->load($ctx->category);
-      $pool = $structure->pools[$args['pool']] ?? throw new EntityNotFoundException($request, 'Pool not found');
-
-      $this->guardAccess($request, $pool, $auth);
+      /* load the structure and find the current pool */
+      $structure = $request->getAttribute('tournament_structure') ?? $this->structureLoadService->load($ctx->category);
+      $pool = $structure->pools[$ctx->pool_name] ?? throw new EntityNotFoundException($request, 'Pool not found');
 
       $error = $this->matchService->deletePoolTieBreak($pool, (int)$args['decision_round']);
       /* forward to output page */
@@ -172,7 +147,7 @@ class AreaDeviceViewController
       }
    }
 
-   public function showMatch(Request $request, Response $response, array $args, ?TournamentStructure $structure = null, $error = null): Response
+   public function showMatch(Request $request, Response $response, array $args, ?string $error = null): Response
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
@@ -180,10 +155,8 @@ class AreaDeviceViewController
       $auth = $request->getAttribute('auth_context');
 
       /* load the structure and find the current node/match */
-      $structure ??= $this->structureLoadService->load($ctx->category);
+      $structure = $request->getAttribute('tournament_structure') ?? $this->structureLoadService->load($ctx->category);
       $node = $structure->findNode($ctx->match_name, $ctx->pool_name ?? false) ?? new EntityNotFoundException($request, "unknown Match '{$ctx->match_name}'");
-
-      $this->guardAccess($request, $node, $auth);
 
       /* get pointers to the previous and next "real" matches for our area */
       $matchList = $structure->getFinaleRounds()->filterRounds(fn($n) => $n->isReal() && $n->getArea() === $auth->area);
@@ -203,21 +176,17 @@ class AreaDeviceViewController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
-      /** @var AuthContext $auth */
-      $auth = $request->getAttribute('auth_context');
 
       /* load the structure and find the current node/match */
-      $structure = $this->structureLoadService->load($ctx->category);
+      $structure = $request->getAttribute('tournament_structure') ?? $this->structureLoadService->load($ctx->category);
       $node = $structure->findNode($ctx->match_name, $ctx->pool_name ?? false) ?? new EntityNotFoundException($request, "unknown Match '{$ctx->match_name}'");
-
-      $this->guardAccess($request, $node, $auth);
 
       /* evaluate the match update data via our match service */
       $error = $this->matchService->updateMatchPoint($node, (array)$request->getParsedBody());
 
       if ($error)
       {
-         return $this->showMatch($request, $response, $args, $structure, $error);
+         return $this->showMatch($request, $response, $args, $error);
       }
       else
       {
