@@ -80,6 +80,11 @@ abstract class MatchNodeBase implements MatchNode
       return $this->name;
    }
 
+   public function getCategory(): Category
+   {
+      return $this->category;
+   }
+
    public function getArea(): ?Area
    {
       return $this->area;

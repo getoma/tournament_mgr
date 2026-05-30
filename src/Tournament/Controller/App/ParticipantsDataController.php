@@ -6,6 +6,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 use Tournament\Model\Category\CategoryCollection;
+use Tournament\Model\Participant\ParticipantChangeLog;
 
 use Tournament\Service\ParticipantHandlingService;
 use Tournament\Service\ParticipantImportService;
@@ -17,6 +18,8 @@ use Tournament\Repository\ParticipantRepository;
 use Base\Service\PrgService;
 use Base\Service\DataValidationService;
 use Base\Service\TmpStorageService;
+
+use Base\Repository\ChangeLogRepository;
 
 use Respect\Validation\Validator as v;
 
@@ -35,6 +38,7 @@ class ParticipantsDataController
       private ParticipantImportService $importService,
       private TmpStorageService $storage,
       private PrgService $prgService,
+      private ChangeLogRepository $chgLogRepo,
    ) {
    }
 
@@ -348,14 +352,18 @@ class ParticipantsDataController
 
       $starting_slots = $this->service->getStartingSlotSelection($categories, $ctx->participant);
 
-      $withdrawal_allowed = $ctx->participant && $this->service->mayWithdraw($ctx->participant);
+      $withdrawel_allowed = $ctx->participant && $this->service->mayWithdraw($ctx->participant);
+
+      $changeLog = $this->chgLogRepo->getChangeLogsById('Participant', $ctx->participant->id);
+      $changeLog = ParticipantChangeLog::from($changeLog);
 
       return $this->view->render($response, 'tournament/participants/details.twig', [
          'tournament'       => $ctx->tournament,
          'categories'       => $categories,
          'starting_slots'   => $starting_slots,
          'participant'      => $ctx->participant ?? null, // null to get the form for a new participant
-         'withdraw_allowed' => $withdrawal_allowed,
+         'withdraw_allowed' => $withdrawel_allowed,
+         'change_log'       => $changeLog,
       ]);
    }
 

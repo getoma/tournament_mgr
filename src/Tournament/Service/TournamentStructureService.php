@@ -4,6 +4,7 @@ namespace Tournament\Service;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
+use Tournament\Model\Participant\ParticipantChangeLog;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
@@ -14,6 +15,8 @@ use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
 use Tournament\Repository\TournamentRepository;
 
+use Base\Repository\ChangeLogRepository;
+
 /**
  * Service to load a complete tournament structure from the repositories, with all data contained
  */
@@ -22,7 +25,8 @@ class TournamentStructureService
    public function __construct(
       private TournamentRepository $tournamentRepo,
       private ParticipantRepository $participantRepo,
-      private MatchDataRepository $matchDataRepo
+      private MatchDataRepository $matchDataRepo,
+      private ChangeLogRepository $chgLogRepo,
    ) {
    }
 
@@ -48,10 +52,7 @@ class TournamentStructureService
    {
       $struc = $this->initialize($category);
       $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
-      $mp = $struc->populate($participants->filter(fn($p) => !$p->withdrawn));
-      $assigned = ParticipantCollection::new($mp->values());
-      $this->participantRepo->updateAllParticipantSlots($category->id, $assigned);
-      return $struc;
+      return $this->addParticipants($struc, $participants->filter(fn($p) => !$p->withdrawn));
    }
 
    /**
@@ -61,14 +62,30 @@ class TournamentStructureService
     */
    public function addParticipants(Category|TournamentStructure $struc, ?MatchParticipantCollection $participants = null): TournamentStructure
    {
-      if ($struc instanceof Category)
-      {
-         $struc = $this->load($struc);
-      }
-      $participants  ??= $struc->unmapped_participants->copy();
+      /* load up/initialize input data */
+      if ($struc instanceof Category) $struc = $this->load($struc);
+      $participants ??= $struc->unmapped_participants->copy();
+
+      /* check if we need to handle participant change logs */
+      $tournament    = $this->tournamentRepo->getTournamentById($struc->category->tournament_id);
+      $track_changes = $tournament->getStateHandler()->trackChanges();
+      $old_state = $track_changes? $participants->map(fn($p) => clone $p) : null;
+
+      /* perform slot assignments */
       $mp = $struc->populate($participants);
       $assigned = ParticipantCollection::new($mp->values());
       $this->participantRepo->updateAllParticipantSlots($struc->category->id, $assigned);
+
+      /* generate the change log */
+      if( $track_changes )
+      {
+         $log = ParticipantChangeLog::new();
+         foreach( $participants as $p )
+         {
+            $log->mergeInPlace(ParticipantChangeLog::create($old_state[$p->id], $p));
+         }
+         $this->chgLogRepo->storeChangeLog($log);
+      }
       return $struc;
    }
 

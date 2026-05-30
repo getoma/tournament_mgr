@@ -2,6 +2,8 @@
 
 namespace Tournament\Model\TournamentStructure\MatchNode;
 
+use Tournament\Model\TournamentStructure\MatchSlot\MatchSlotCollection;
+
 class MatchNodeCollection extends \Base\Model\ObjectCollection
 {
    protected const DEFAULT_ELEMENTS_TYPE = MatchNode::class;
@@ -28,5 +30,19 @@ class MatchNodeCollection extends \Base\Model\ObjectCollection
       {
          return null;
       }
+   }
+
+   public function getNamedSlots(): MatchSlotCollection
+   {
+      $result = MatchSlotCollection::new();
+      /** @var MatchNode $node */
+      foreach ($this->elements as $node)
+      {
+         foreach ($node->getSlots() as $slot)
+         {
+            if ($slot->getName()) $result[] = $slot;
+         }
+      }
+      return $result;
    }
 }

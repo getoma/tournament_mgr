@@ -4,12 +4,15 @@ namespace Tournament\Service;
 
 use Tournament\Model\Category\CategoryCollection;
 use Tournament\Model\Participant\Participant;
+use Tournament\Model\Participant\ParticipantChangeLog;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 
 use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
 use Tournament\Repository\TournamentRepository;
+
+use Base\Repository\ChangeLogRepository;
 
 use Base\Service\DataValidationService;
 
@@ -24,6 +27,7 @@ class ParticipantHandlingService
       private ParticipantRepository $repo,
       private MatchDataRepository $matchDataRepo,
       private TournamentRepository $tournamentRepo,
+      private ChangeLogRepository $chgLogRepo,
       private TournamentStructureService $tournamentService,
    )
    {
@@ -120,8 +124,25 @@ class ParticipantHandlingService
     */
    public function patchParticipant(Participant $participant, array $data): Participant
    {
+      /* check if we need to track changes, and memorize the current participant content */
+      $tournament    = $this->tournamentRepo->getTournamentById($participant->tournament_id);
+      $track_changes = $tournament->getStateHandler()->trackChanges();
+      $old_state = $track_changes? clone $participant : null;
+
+      /* update and save the participant data */
+      $data['withdrawn']  ??= false;
+      $data['categories'] ??= [];
       $participant->updateFromArray($data);
       $this->updateAndSaveParticipant($participant, $data);
+
+      /* update change tracking if needed */
+      if( $track_changes )
+      {
+         $delta = ParticipantChangeLog::create($old_state, $participant);
+         $this->chgLogRepo->storeChangeLog($delta);
+      }
+
+      /* done */
       return $participant;
    }
 
@@ -155,16 +176,17 @@ class ParticipantHandlingService
          }
       }
 
-      // save
-      $this->repo->saveParticipant($participant);
-
       // if participant was withdrawn, also delete any assigned matches that may already exist
       // as well as any starting slot assignment, to free up this slot
       if ($participant->withdrawn)
       {
          $this->matchDataRepo->deleteMatchRecordsByParticipantId($participant->id);
          $this->repo->freeParticipantSlots($participant->id);
+         $participant->categories->walk(fn($ca) => $ca->slot_name = null);
       }
+
+      // save
+      $this->repo->saveParticipant($participant);
    }
 
    /**
