@@ -15,6 +15,11 @@ use Tournament\Service\RouteArgsContext;
  */
 final class TournamentPolicy
 {
+   /**
+    * as neiter auth_context nor route_context are modifyable, only evaluate the general route access once
+    */
+   private bool $_hasRouteAccess;
+
    function __construct(
       private readonly AuthContext $auth_context,      // auth_context is always available
       private readonly RouteArgsContext $route_context // policy must be accessible/usable even if no RouteArgsContext available
@@ -28,18 +33,54 @@ final class TournamentPolicy
     */
    public function hasAccessAs(AuthType $authType): bool
    {
-      if( $this->auth_context->authtype !== $authType ) return false;
-      if( $this->auth_context->isDevice() )
+      return $this->auth_context->authtype === $authType;
+   }
+
+   /**
+    * Check if the current authorization context has access to the current route
+    */
+   public function hasRouteAccess(): bool
+   {
+      if( !isset($this->_hasRouteAccess) )
       {
-         if( $this->route_context->tournament && $this->auth_context->tournament !== $this->route_context->tournament ) return false;
-         if( $this->route_context->category   && !$this->auth_context->tournament->categories->contains($this->route_context->category) ) return false;
-         if( $this->route_context->area       && $this->auth_context->area !== $this->route_context->area) return false;
+         $this->_hasRouteAccess = false;
+
          /**
-          * we cannot easily check match name or pool here, because the whole TournamentStructure needs to be loaded for that
-          * this access check has to be done on Controller level, unfortunately...
+          * user access is typically restricted to specific tournaments, therefore check
+          * route access if any tournament is target of the current route.
           */
+         if ($this->route_context->tournament)
+         {
+            if (!$this->hasTournamentAccess($this->route_context->tournament)) return false;
+         }
+         else
+         {
+            if( $this->route_context->category )
+            {
+               /* special case: route context only contains category, but no tournament (for area device account, for example).
+               * deny access unless authorization context contains a tournament AND the route category belongs to this tournament
+               */
+               if( $this->auth_context->tournament === null ||
+                  $this->route_context->category->tournament_id !== $this->auth_context->tournament->id)
+               {
+                  return false;
+               }
+            }
+         }
+
+         /**
+          * accounts may also have restricted access to specific match areas.
+          */
+         if ($this->auth_context->area)
+         {
+            $route_area = $this->route_context->area ?? $this->route_context->pool?->getArea() ?? $this->route_context->match?->getArea();
+            if ($route_area && $route_area !== $this->auth_context->area) return false;
+         }
+
+         $this->_hasRouteAccess = true; // all checks passed
       }
-      return true; // all checks passed
+
+      return $this->_hasRouteAccess;
    }
 
    /**
@@ -99,6 +140,7 @@ final class TournamentPolicy
    private function checkAuthorizationPolicy(TournamentAction $action): bool
    {
       if ($this->auth_context->hasRole(Role::ADMIN)) return true; // no restrictions for admins
+      if (!$this->hasRouteAccess() ) return false;
 
       // determine authorization status depending on the specific action
       switch( $action )
@@ -118,22 +160,9 @@ final class TournamentPolicy
             return  $this->auth_context->isUser()
                  && $this->route_context->tournament?->owners->contains($this->auth_context->user) ?? false;
 
-         case TournamentAction::BrowseTournament:
          case TournamentAction::RecordResults:
-            /* allowed if has access to the tournament and is not anonymous */
-            if( !$this->auth_context->isAuthenticated() ) return false;
-            /* allowed if tournament access defined via auth context */
-            if( $this->auth_context->tournament )
-            {
-               return !$this->route_context->tournament || $this->route_context->tournament === $this->auth_context->tournament;
-            }
-            /* allowed if current user has access to this specific tournament */
-            if( $this->route_context->tournament )
-            {
-               return $this->hasTournamentAccess($this->route_context->tournament);
-            }
-            /* tournament isn't even defined, decline access */
-            return false;
+            /* always allowed if any access at all */
+            return true;
 
          case TournamentAction::CreateTournaments:
             return $this->auth_context->hasRole(Role::ORGANIZER);
