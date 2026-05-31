@@ -21,7 +21,7 @@
 
 <section>
 <h2>
-  {%- if pool is not empty %}Pool {{pool}} - {%endif-%}
+  {%- if pool is not empty %}Pool {{ pool.getName() }} - {% endif -%}
   Kampf {{node.getLocalId()}}
 </h2>
 {{ part.printMatchTable([node], node.getName(), update_route, route_context.args) }}

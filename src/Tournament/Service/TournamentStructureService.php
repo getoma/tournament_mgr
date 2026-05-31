@@ -5,6 +5,7 @@ namespace Tournament\Service;
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 use Tournament\Model\TournamentStructure\Pool\Pool;
@@ -24,6 +25,22 @@ class TournamentStructureService
       private ParticipantRepository $participantRepo,
       private MatchDataRepository $matchDataRepo
    ) {
+   }
+
+   /**
+    * assign TournamentStructure loading hook to a specific category
+    */
+   public function prepare(Category $category): void
+   {
+      $category->setTournamentStructure(fn($c) => $this->load($c));
+   }
+
+   /**
+    * assign TournamentStructure loading hooks to all categories of a tournament
+    */
+   public function prepareTournament(Tournament $tournament): void
+   {
+      $tournament->categories->walk(fn($c) => $this->prepare($c));
    }
 
    /**
@@ -82,18 +99,21 @@ class TournamentStructureService
       $struc = new TournamentStructure($category, $areas);
       $struc->generateStructure();
       $struc->loadAreaMappings($area_mappings);
+      $category->setTournamentStructure($struc);
       return $struc;
    }
 
    /**
     * reset all match records for a specific category - TEMPORARY, FOR TESTING PURPOSES ONLY
-    * @param Category $category
     */
    public function resetMatchRecords(Category $category): void
    {
       $this->matchDataRepo->deleteMatchRecordsByCategoryId($category->id);
    }
 
+   /**
+    * explicitly assign an area to a match or pool, that superseeds the automatic assignment
+    */
    public function updateAreaAssignment(MatchNode|Pool $entity, Area|int $area): void
    {
       if( is_int($area) )
@@ -109,5 +129,4 @@ class TournamentStructureService
       $entity->setArea($area);
       $this->tournamentRepo->storeAreaAssignment($entity);
    }
-
 }
