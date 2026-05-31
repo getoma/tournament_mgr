@@ -8,25 +8,17 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 use Slim\Exception\HttpForbiddenException;
-use Tournament\Exception\EntityNotFoundException;
 
 use Tournament\Policy\AuthContext;
 use Tournament\Service\RouteArgsContext;
-use Tournament\Service\TournamentStructureService;
 
 /**
  * middleware to guard access for area device accounts - only grant access
- * if the entity (pool, matchnode) access via the current route is assigned
+ * if the target entity of the current route (pool, matchnode) is assigned
  * to the right area
  */
 class AreaDeviceAccessGuard implements MiddlewareInterface
 {
-   public function __construct(
-      private TournamentStructureService $structureLoadService
-   )
-   {
-   }
-
    /**
     * guard processing
     */
@@ -42,23 +34,12 @@ class AreaDeviceAccessGuard implements MiddlewareInterface
          throw new \LogicException("Area Device guard entered for user without area restriction");
       }
 
-      if( $ctx->match_name || $ctx->pool_name )
+      if( $entity = $ctx->match ?? $ctx->pool )
       {
-         $structure = $this->structureLoadService->load($ctx->category);
-         $entity = $ctx->match_name? $structure->findNode($ctx->match_name, $ctx->pool_name ?? false)
-                 :                   $structure->pools[$ctx->pool_name];
-
-         if( !$entity )
-         {
-            throw new EntityNotFoundException($request, 'target not found');
-         }
-
          if ($entity->getArea() !== $auth->area)
          {
             throw new HttpForbiddenException($request, 'Zugriff nicht erlaubt');
          }
-
-         $request = $request->withAttribute('tournament_structure', $structure);
       }
 
       return $handler->handle($request);
@@ -69,11 +50,8 @@ class AreaDeviceAccessGuard implements MiddlewareInterface
     */
    public static function create(
       \Slim\App $app,
-      ?TournamentStructureService $structureLoadService = null,
    ): self
    {
-      $container = $app->getContainer();
-      $structureLoadService ??= $container->get(TournamentStructureService::class);
-      return new self($structureLoadService);
+      return new self();
    }
 }

@@ -51,10 +51,10 @@ class Navigation
                      [  'label' => 'Pools',
                         'route' => 'tournaments.categories.pools.index',
                         'children' => [
-                           [  'label' => 'Pool ' . $ctx?->pool_name,
+                           [  'label' => 'Pool ' . $ctx?->pool?->getName(),
                               'route' => 'tournaments.categories.pools.show',
                               'children' => [
-                                 [  'label' => 'Kampf ' . $ctx?->match_name,
+                                 [  'label' => 'Kampf ' . $ctx?->match?->getName(),
                                     'route' => 'tournaments.categories.pools.matches.show'
                                  ]
                               ]
@@ -65,7 +65,7 @@ class Navigation
                      [  'label'    => 'KO-Baum',
                         'route'    => 'tournaments.categories.ko.show',
                         'children' => [
-                           [  'label' => 'Kampf '.$ctx?->match_name,
+                           [  'label' => 'Kampf '. $ctx?->match?->getName(),
                               'route' => 'tournaments.categories.ko.matches.show'
                            ]
                         ]
@@ -101,17 +101,17 @@ class Navigation
                [  'route'      => 'device.categories.show',
                   'label'      => $ctx?->category?->name,
                   'children'   => [
-                     [  'label' => 'Pool ' . $ctx?->pool_name,
+                     [  'label' => 'Pool ' . $ctx?->pool?->getName(),
                         'route' => 'device.categories.pools.show',
                         'children' => [
                            [
-                              'label' => 'Kampf ' . $ctx?->match_name,
+                              'label' => 'Kampf ' . $ctx?->match?->getName(),
                               'route' => 'device.categories.pools.matches.show'
                            ]
                         ]
                      ],
 
-                     [  'label' => 'Kampf ' . $ctx?->match_name,
+                     [  'label' => 'Kampf ' . $ctx?->match?->getName(),
                         'route' => 'device.categories.ko.matches.show'
                      ],
                   ],
