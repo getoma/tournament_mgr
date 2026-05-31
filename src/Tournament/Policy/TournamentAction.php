@@ -6,7 +6,6 @@ enum TournamentAction: string
 {
    case CreateTournaments   = "CreateTournaments";   // allowed to create new tournaments
 
-   case BrowseTournament    = "BrowseTournament";    // see/browse a specific tournament at all
    case ManageDetails       = "ManageDetails";       // manage tournament details (name, date, notes)
    case ManageOwners        = "ManageOwners";        // allow to assign owners to a tournament
    case ManageSetup         = "ManageSetup";         // manage tournament setup (categories, areas, structure, shuffle participants)
