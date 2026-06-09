@@ -7,7 +7,13 @@
 {% if prg_message == 'tournament_created' %}<p class="ok">Turnier erfolgreich angelegt!</p>{% endif %}
 {% if prg_message == 'tournament_updated' %}<p class="ok">Daten übernommen!</p>{% endif %}
 {% if prg_message == 'tournament_status'  %}<p class="ok">Turnier-Status aktualisiert!</p>{% endif %}
-{% if errors -%}<p class="error">Daten konnten nicht übernommen werden.</p>{%- endif %}
+{% if errors -%}
+<p class="error">
+{%- if errors.status %}Tunier-Status konnte nicht aktualisiert werden: {{ errors.status }}
+{%- else -%}Daten konnten nicht übernommen werden.
+{%- endif -%}
+</p>
+{%- endif %}
 
 <section id="section-tournament-details">
   <h2>Turnier-Details</h2>
@@ -29,18 +35,46 @@
 <section id="section-tournament-status">
   <h2>Turnier-Phase</h2>
   <p>Aktuell: <span class="current-selection">{{ route_context.tournament.status.value }}</span></p>
-  <form action="{{ url_for('tournaments.setState', route_context.args) }}" method="post" id="tournament-status-form">
-    <input type="hidden" name="_METHOD" value="PATCH">
-    {%- set status_details = {
-    'planning': 'Turnier konfigurieren und Teilnehmer importieren',
-    'planned': 'Turnierkonfiguration einfrieren',
-    'running': 'Turnier durchführen und Kampfergebnisse erfassen',
-    'completed': 'Turnier abschließen und Ergebnisse einfrieren',
-    } %}
-    {% for status in route_context.tournament.getStateHandler().getPossibleTransitions() -%}
-    {{ form.submit(status.value, 'status', status.value, attributes: { 'title': status_details[status.value]}) }}
-    {%- endfor %}
-  </form>
+
+  {%- set status_details = {
+  'planning': 'Turnier konfigurieren und Teilnehmer importieren',
+  'planned': 'Turnierkonfiguration einfrieren',
+  'running': 'Turnier durchführen und Kampfergebnisse erfassen',
+  'completed': 'Turnier abschließen und Ergebnisse einfrieren',
+  } -%}
+  {%- set consent_action_titles = {
+  'action_delete_match_results': 'Bisher erfasste Kampfergebnisse löschen?',
+  'accept_unassigned_participants': 'Teilnehmer ohne Startslot ignorieren?',
+  'accept_unfitting_tournament_tree': 'Teilnehmerzahl viel zu niedrig für aktuellen Turnierbaum?',
+  'accept_incomplete_tournament_results': 'Noch nicht alle Kampfergebnisse erfasst?',
+  'issue_no_participants': 'Bisher keine Teilnehmer zugewiesen',
+  'issue_no_combat_areas_created': 'Noch keine Kampfflächen angelegt',
+  } -%}
+
+  <div class="form-collection-box">
+  {% for status, consent in state_change_consent -%}
+  <details>
+    <summary>{{ status }}</summary>
+    <form action="{{ url_for('tournaments.setState', route_context.args) }}" method="post" class="tournament-status-form">
+      {%- set submit_active = (consent|keys|filter(k => k starts with 'issue_') is empty) -%}
+      {% for consent_action, relevant_categories in consent -%}
+      {% set consent_label = consent_action_titles[consent_action]|default(consent_action) -%}
+      {% if relevant_categories is iterable -%}
+      {% set consent_label = relevant_categories|map(c => categories[c].name)|join(', ') ~ ': ' ~ consent_label -%}
+      {%- endif %}
+      {% if consent_action starts with 'issue_' -%}
+      <p class="warning">{{ consent_label }}</p>
+      {%- else %}
+      {{ form.checkbox('user_consent[]', consent_label, consent_action, required: true) }}
+      {%- endif %}
+      {%- endfor %}
+      <input type="hidden" name="_METHOD" value="PATCH">
+      <input type="hidden" name="status" value="{{ status }}">
+      {{ form.submit('Status ändern', active: submit_active, attributes: { 'title': status_details[status]}) }}
+    </form>
+  </details>
+  {%- endfor %}
+  </div>
 </section>
 
 <section id="section-tournament-organisators">
