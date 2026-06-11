@@ -248,12 +248,11 @@ class TournamentStateHandlingService
       {
          /** @var Category $category */
          $structure = $category->getTournamentStructure();
-         $pcount = $this->participantRepo->getParticipantsByCategoryId($category->id)->count();
 
-         /* for pure KO, size is deemed unfitting if we do not have more than half of the starting slots filled */
+         /* for pure KO, size is deemed unfitting if there is at most one participant per first-round-match */
          /* for pools, size is deemed unfitting if any pool has less than 2 participants */
-         $issue = $structure->pools->empty()? ($structure->ko->getFirstRound()->count() <= $pcount)
-                  :                           ($structure->pools->count() > 2*$pcount);
+         $issue = $structure->pools->empty()? ($structure->ko->getFirstRound()->count() >= $structure->ko->getParticipantList()->count())
+                  :                           ($structure->pools->any(fn($p) => $p->getParticipants()->count() < 2));
          if( $issue )
          {
             $result[] = $category->id;
