@@ -52,9 +52,9 @@ class Tournament implements \Tournament\Model\Base\DbItem
    {
       return match ($this->status)
       {
-         TournamentStatus::Planning => [TournamentStatus::Planned],
-         TournamentStatus::Planned  => [TournamentStatus::Planning, TournamentStatus::Running],
-         TournamentStatus::Running  => [TournamentStatus::Planning, TournamentStatus::Completed],
+         TournamentStatus::Planning  => [TournamentStatus::Planned],
+         TournamentStatus::Planned   => [TournamentStatus::Running,   TournamentStatus::Planning],
+         TournamentStatus::Running   => [TournamentStatus::Completed, TournamentStatus::Planning],
          TournamentStatus::Completed => [],
       };
    }

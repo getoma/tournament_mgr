@@ -70,7 +70,7 @@
       {%- endfor %}
       <input type="hidden" name="_METHOD" value="PATCH">
       <input type="hidden" name="status" value="{{ status }}">
-      {{ form.submit('Status ändern', active: submit_active, attributes: { 'title': status_details[status]}) }}
+      {{ form.submit('Zu ' ~ status ~ ' wechseln', active: submit_active, attributes: { 'title': status_details[status]}) }}
     </form>
   </details>
   {%- endfor %}
