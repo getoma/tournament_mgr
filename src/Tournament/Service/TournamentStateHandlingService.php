@@ -54,26 +54,12 @@ class TournamentStateHandlingService
             {
                case TournamentStatus::Planned:
                {
-                  $checkResult = [];
-                  /* Prio 1: check for unacceptable issues */
-                  $emptyCategories = $this->checkCategoryAssignment($tournament);
-                  if( $emptyCategories ) $checkResult[self::ISSUE_NO_PARTICIPANTS] = $emptyCategories;
+                  /* check for unacceptable issues first */
+                  $checkResult = $this->performStateChangeChecks($tournament, self::ISSUE_NO_PARTICIPANTS, self::ISSUE_NO_COMBAT_AREAS_CREATED);
+                  if( $checkResult !== true ) return $checkResult;
 
-                  if( $this->tournamentRepo->getAreasByTournamentId($tournament->id)->empty() )
-                  {
-                     $checkResult[self::ISSUE_NO_COMBAT_AREAS_CREATED] = true;
-                  }
-
-                  /* if any issues, return here */
-                  if( $checkResult ) return $checkResult;
-
-                  /* Prio 2: check for any neccessary consent requests */
-                  $incompleteCategories = $this->checkForUnassignedParticipants($tournament);
-                  if( $incompleteCategories ) $checkResult[self::ACCEPT_UNASSIGNED_PARTICIPANTS] = $incompleteCategories;
-                  $wronglySizedCategories = $this->checkForUnfittingTournamentSize($tournament);
-                  if( $wronglySizedCategories ) $checkResult[self::ACCEPT_UNFITTING_TOURNAMENT_TREE] = $wronglySizedCategories;
-
-                  return count($checkResult)? $checkResult : true;
+                  /* if no unacceptable issues, check for needed consent requests */
+                  return $this->performStateChangeChecks($tournament, self::ACCEPT_UNASSIGNED_PARTICIPANTS, self::ACCEPT_UNFITTING_TOURNAMENT_TREE);
                }
 
                default:
@@ -101,26 +87,10 @@ class TournamentStateHandlingService
             switch ($newStatus)
             {
                case TournamentStatus::Completed:
-               {
-                  $checkResult = [];
-
-                  /* check if all tournament categories are fully resolved */
-                  $matchRecordsList = $this->checkMatchesCompleted($tournament);
-                  if ($matchRecordsList) $checkResult[self::ACCEPT_INCOMPLETE_TOURNAMENT_RESULTS] = $matchRecordsList;
-
-                  return count($checkResult) ? $checkResult : true;
-               }
+                  return $this->performStateChangeChecks($tournament, self::ACCEPT_INCOMPLETE_TOURNAMENT_RESULTS);
 
                case TournamentStatus::Planning:
-               {
-                  $checkResult = [];
-
-                  /* check if we already have any recorded match results, which need to be deleted on transition */
-                  $matchRecordsList = $this->checkMatchRecordExistence($tournament);
-                  if( $matchRecordsList ) $checkResult[self::ACTION_DELETE_MATCH_RESULTS] = $matchRecordsList;
-
-                  return count($checkResult)? $checkResult : true;
-               }
+                  return $this->performStateChangeChecks($tournament, self::ACTION_DELETE_MATCH_RESULTS);
 
                default:
                   return false;
@@ -184,8 +154,7 @@ class TournamentStateHandlingService
     */
    private function performStateChangeActions(Tournament $tournament, array $consentList): void
    {
-      $actions = array_filter($consentList, fn($a) => str_starts_with($a, 'action_'));
-      foreach( $actions as $action )
+      foreach ($consentList as $action)
       {
          switch($action)
          {
@@ -194,16 +163,47 @@ class TournamentStateHandlingService
                break;
 
             default:
-               throw new \LogicException("unhandled tournament state change action '{$action}'");
+               if( str_starts_with($action, 'action_') )
+                  throw new \LogicException("unhandled tournament state change action '{$action}'");
+               break;
          }
       }
+   }
+
+   /**
+    * perform a list of provided state change checks
+    * @param Tournament $tournament - the Tournament to update
+    * @param string[] $checkList - list of checks to be performed - see constants in this class for possible values
+    * @return bool|array: true: all checks passed, array: list of all checks that did not pass (format: [ <check_name> => <further details> ] - further details is usually a list of category ids for which the check failed)
+    *
+    */
+   private function performStateChangeChecks(Tournament $tournament, string ...$checkList): bool|array
+   {
+      $result = [];
+      foreach( $checkList as $check )
+      {
+         $issue = match( $check )
+         {
+            self::ACTION_DELETE_MATCH_RESULTS          => $this->getCategoriesWithMatchResults($tournament),
+
+            self::ACCEPT_UNASSIGNED_PARTICIPANTS       => $this->getCategoriesWithUnassignedParticipants($tournament),
+            self::ACCEPT_UNFITTING_TOURNAMENT_TREE     => $this->getCategoriesWithUnfittingStructureSize($tournament),
+            self::ACCEPT_INCOMPLETE_TOURNAMENT_RESULTS => $this->getCategoriesWithUncompletedMatches($tournament),
+
+            self::ISSUE_NO_PARTICIPANTS                => $this->getCategoriesWithNoParticipants($tournament),
+            self::ISSUE_NO_COMBAT_AREAS_CREATED        => $this->tournamentRepo->getAreasByTournamentId($tournament->id)->empty(),
+         };
+
+         if ($issue) $result[$check] = $issue;
+      }
+      return count($result)? $result : true;
    }
 
    /**
     * check whether all tournament categories do have at least one participant assigned.
     * Return a list of all category ids where this is not the case
     */
-   private function checkCategoryAssignment(Tournament $tournament): array
+   private function getCategoriesWithNoParticipants(Tournament $tournament): array
    {
       $catList = $tournament->categories->column('id', 'id');
       foreach ($this->participantRepo->getParticipantsByTournamentId($tournament->id) as $p)
@@ -222,7 +222,7 @@ class TournamentStateHandlingService
     * check whether there are any participants without a starting slot
     * Return a list of all category ids where this is not the case
     */
-   private function checkForUnassignedParticipants(Tournament $tournament): array
+   private function getCategoriesWithUnassignedParticipants(Tournament $tournament): array
    {
       $result = [];
       foreach( $tournament->categories as $category )
@@ -241,7 +241,7 @@ class TournamentStateHandlingService
     * of participants.
     * Return a list of all category ids where issues where detected
     */
-   private function checkForUnfittingTournamentSize(Tournament $tournament): array
+   private function getCategoriesWithUnfittingStructureSize(Tournament $tournament): array
    {
       $result = [];
       foreach( $tournament->categories as $category )
@@ -265,7 +265,7 @@ class TournamentStateHandlingService
    /**
     * check for existing match records - return a list of all categories where there are already match records available
     */
-   private function checkMatchRecordExistence(Tournament $tournament): array
+   private function getCategoriesWithMatchResults(Tournament $tournament): array
    {
       $result = [];
       foreach( $tournament->categories as $category )
@@ -282,7 +282,7 @@ class TournamentStateHandlingService
    /**
     * check if we have full match results for each match - return a list of all incomplete categories
     */
-   private function checkMatchesCompleted(Tournament $tournament): array
+   private function getCategoriesWithUncompletedMatches(Tournament $tournament): array
    {
       $result = [];
       foreach ($tournament->categories as $category)
@@ -296,5 +296,4 @@ class TournamentStateHandlingService
       }
       return $result;
    }
-
 }
