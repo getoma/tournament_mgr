@@ -11,6 +11,8 @@ use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
 use Tournament\Repository\TournamentRepository;
 
+use Base\Repository\ChangeLogRepository;
+
 /**
  * service for tournament state transition handling
  * This service performs necessary condition checks when attempting a state transition,
@@ -20,6 +22,7 @@ use Tournament\Repository\TournamentRepository;
 class TournamentStateHandlingService
 {
    public const ACTION_DELETE_MATCH_RESULTS = 'action_delete_match_results';
+   public const ACTION_DELETE_CHANGE_LOGS   = 'action_delete_change_logs';
 
    public const ACCEPT_UNASSIGNED_PARTICIPANTS = 'accept_unassigned_participants';
    public const ACCEPT_UNFITTING_TOURNAMENT_TREE = 'accept_unfitting_tournament_tree';
@@ -32,6 +35,7 @@ class TournamentStateHandlingService
       private TournamentRepository $tournamentRepo,
       private ParticipantRepository $participantRepo,
       private MatchDataRepository $matchDataRepo,
+      private ChangeLogRepository $chgLogRepo,
    )
    {
 
@@ -84,14 +88,16 @@ class TournamentStateHandlingService
             switch ($newStatus)
             {
                case TournamentStatus::Running:
-                  /* planned -> running is always allowed. consent for unexpected setups was already requested
-                   * when transitioning from planning to planned
+                  /* planned -> running is always allowed without additional actions.
+                   * Consent for unexpected setups was already requested when transitioning from planning to planned
                    */
                   return true;
 
                case TournamentStatus::Planning:
-                  /* returning into planning stage from planned is always allowed */
-                  return true;
+                  /* when returning to planning, delete any acquired change logs */
+                  $checkResult = [];
+                  if( $this->checkForChangeLogs($tournament) ) $checkResult[self::ACTION_DELETE_CHANGE_LOGS] = true;
+                  return count($checkResult) ? $checkResult : true;
 
                default:
                   return false;
@@ -115,9 +121,10 @@ class TournamentStateHandlingService
                {
                   $checkResult = [];
 
-                  /* check if we already have any recorded match results, which need to be deleted on transition */
+                  /* check if we already have any recorded match results and change logs, which need to be deleted on transition */
                   $matchRecordsList = $this->checkMatchRecordExistence($tournament);
                   if( $matchRecordsList ) $checkResult[self::ACTION_DELETE_MATCH_RESULTS] = $matchRecordsList;
+                  if ($this->checkForChangeLogs($tournament)) $checkResult[self::ACTION_DELETE_CHANGE_LOGS] = true;
 
                   return count($checkResult)? $checkResult : true;
                }
@@ -191,6 +198,10 @@ class TournamentStateHandlingService
          {
             case self::ACTION_DELETE_MATCH_RESULTS:
                $this->matchDataRepo->deleteMatchRecordsByTournamentId($tournament->id);
+               break;
+
+            case self::ACTION_DELETE_CHANGE_LOGS:
+               $this->chgLogRepo->deleteChangeLogsByGroupId($tournament->id);
                break;
 
             default:
@@ -295,6 +306,14 @@ class TournamentStateHandlingService
          if( $structure->ko->getRanked(1)->empty() ) $result[] = $category->id;
       }
       return $result;
+   }
+
+   /**
+    * check if there are any change logs acquired already
+    */
+   private function checkForChangeLogs(Tournament $tournament): bool
+   {
+      return $this->chgLogRepo->hasChangeLogsForGroupId($tournament->id);
    }
 
 }

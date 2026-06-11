@@ -108,6 +108,28 @@ class ChangeLogRepository
    }
 
    /**
+    * check if there are any change logs acquired for a specific group, optionally filter by entity type and/or change type
+    */
+   public function hasChangeLogsForGroupId(int $group_id, ?string $entity_type = null, ?string $change_type = null): bool
+   {
+      $query = 'SELECT COUNT(*) FROM change_log WHERE group_id = :group_id';
+      $params = [':group_id' => $group_id];
+      if( $entity_type !== null )
+      {
+         $query .= ' AND entity_type = :entity_type';
+         $params[':entity_type'] = $entity_type;
+      }
+      if( $change_type !== null )
+      {
+         $query .= ' AND change_type = :change_type';
+         $params[':change_type'] = $change_type;
+      }
+      $stmt = $this->pdo->prepare($query);
+      $stmt->execute($params);
+      return $stmt->fetchColumn() > 0;
+   }
+
+   /**
     * delete all change logs for a specific group, optionally filter by entity type and/or change type
     */
    public function deleteChangeLogsByGroupId(int $group_id, ?string $entity_type = null, ?string $change_type = null): void
