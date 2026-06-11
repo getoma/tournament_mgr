@@ -67,20 +67,23 @@ class TournamentStructureService
     */
    public function repopulate(Category $category): TournamentStructure
    {
-      $struc = $this->initialize($category);
+      /* fetch list of participants from repo */
       $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
-      return $this->addParticipants($struc, $participants->filter(fn($p) => !$p->withdrawn));
+      /* (re)initialize category structure without loading any participants */
+      $this->initialize($category);
+      /* add all active participants to the initialized structure */
+      return $this->addParticipants($category, $participants->filter(fn($p) => !$p->withdrawn));
    }
 
    /**
     * add a new list of participants to an already populated structure
-    * @param Category|TournamentStructure $struc - the tournament structure to add participants to (optionally identified by the category)
+    * @param Category $category - the category to add participants to
     * @param MatchParticipantCollection $participants - the participants to add, defaults to $struc->unmapped_participants
     */
-   public function addParticipants(Category|TournamentStructure $struc, ?MatchParticipantCollection $participants = null): TournamentStructure
+   public function addParticipants(Category $category, ?MatchParticipantCollection $participants = null): TournamentStructure
    {
       /* load up/initialize input data */
-      if ($struc instanceof Category) $struc = $this->load($struc);
+      $struc = $category->getTournamentStructure();
       $participants ??= $struc->unmapped_participants->copy();
 
       /* check if we need to handle participant change logs */
@@ -138,7 +141,7 @@ class TournamentStructureService
          $area = $this->tournamentRepo->getAreaById($area);
       }
 
-      if( !$area instanceof Area )
+      if( !($area instanceof Area) )
       {
          throw new \OutOfRangeException('invalid area assigned');
       }
