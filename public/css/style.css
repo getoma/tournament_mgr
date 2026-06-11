@@ -535,15 +535,6 @@ td.td-link:has(> :first-child:last-child) {
       border-radius: 6px;
       padding: 0.8rem 1rem;
       box-sizing: border-box;
-
-      button:first-child {
-         margin: 0 !important;
-      }
-
-      div {
-         width: 100%;
-         text-align: left;
-      }
    }
 }
 
