@@ -14,6 +14,7 @@ use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\Tournament\TournamentStatus;
+use Tournament\Service\TournamentStateHandlingService;
 
 use Tournament\Service\RouteArgsContext;
 
@@ -29,6 +30,7 @@ class TournamentSettingsController
       private TournamentRepository $repo,
       private UserRepository $user_repo,
       private PrgService $prgService,
+      private TournamentStateHandlingService $tournamentStateService,
    ) {
    }
 
@@ -104,16 +106,24 @@ class TournamentSettingsController
       $categories = $this->repo->getCategoriesByTournamentId($ctx->tournament->id);
       $areas = $this->repo->getAreasByTournamentId($ctx->tournament->id);
 
-      /* get list of owners that can be added */
+      /* get list of all users that can be added as owners */
       $available_owners = $this->user_repo->getAllUsers()
                            ->filter(fn($u) => !$ctx->tournament->owners->contains($u))
                            ->column('display_name', 'id');
+
+      /* status change: assemble list of needed user consent */
+      $state_change_consent = [];
+      foreach( $ctx->tournament->getPossibleStateTransitions() as $state )
+      {
+         $state_change_consent[$state->value] = $this->tournamentStateService->checkStatusChangeConditions($ctx->tournament, $state);
+      }
 
       return $this->view->render($response, 'tournament/settings/tournament.twig', [
          'areas' => $areas,
          'categories' => $categories,
          'category_modes' => CategoryMode::cases(),
          'available_owners' => $available_owners,
+         'state_change_consent' => $state_change_consent,
          'errors' => $errors,
          'prev' => $prev,
       ]);
@@ -207,18 +217,15 @@ class TournamentSettingsController
       $data = $request->getParsedBody();
       $new_state = TournamentStatus::tryFrom($data['status']);
 
-      if( $new_state && $ctx->tournament->getStateHandler()->canTransition($new_state) )
+      if( $new_state && $this->tournamentStateService->updateState($ctx->tournament, $new_state, $data['user_consent']??[] ) )
       {
-         $ctx->tournament->status = $new_state;
-         $this->repo->saveTournament($ctx->tournament);
+         return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'tournament_status');
       }
       else
       {
-         $err = ['status' => 'not allowed'];
+         $err = ['status' => 'transition not allowed'];
          return $this->showTournamentConfiguration($request, $response, $args, $err);
       }
-
-      return $this->prgService->redirect($request, $response, 'tournaments.edit', $args, 'tournament_status');
    }
 
    /**

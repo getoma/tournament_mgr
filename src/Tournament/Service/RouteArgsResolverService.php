@@ -20,7 +20,8 @@ class RouteArgsResolverService
 {
    public function __construct(
       private TournamentRepository  $tournamentRepo,
-      private ParticipantRepository $participantRepo
+      private ParticipantRepository $participantRepo,
+      private TournamentStructureService $structureService,
    )
    {
    }
@@ -28,9 +29,6 @@ class RouteArgsResolverService
    /**
     * Resolve the route arguments to their corresponding data objects.
     * If any entity is not found, an EntityNotFoundException is thrown.
-    * @param array $args The route arguments, typically from $request->getAttribute('routeInfo')[2]
-    * @return array An associative array with keys 'tournament', 'category', 'participant', 'area' depending on which IDs were present in $args
-    * @return null if any entry could not be found
     */
    public function resolve(ServerRequestInterface $request): RouteArgsContext
    {
@@ -40,11 +38,13 @@ class RouteArgsResolverService
       {
          $result->tournament = $this->tournamentRepo->getTournamentById((int)$args['tournamentId'])
                              ?? throw new EntityNotFoundException($request, 'Tournament not found');
+         $this->structureService->prepareTournament($result->tournament);
       }
       if (isset($args['categoryId']))
       {
          $result->category = $this->tournamentRepo->getCategoryById((int)$args['categoryId'])
                            ?? throw new EntityNotFoundException($request, 'Category not found');
+         if( !$result->tournament ) $this->structureService->prepare($result->category);
       }
       if (isset($args['participantId']))
       {
@@ -63,11 +63,13 @@ class RouteArgsResolverService
       }
       if (isset($args['pool']))
       {
-         $result->pool_name = $args['pool'];
+         $result->pool = $result->category->getTournamentStructure()->pools[$args['pool']]
+                       ?? throw new EntityNotFoundException($request, 'Unknown Pool');
       }
       if (isset($args['matchName']))
       {
-         $result->match_name = $args['matchName'];
+         $result->match = $result->category->getTournamentStructure()->findNode($args['matchName'], $result->pool?->getName() ?? false)
+                        ?? throw new EntityNotFoundException($request, 'match not found');
       }
       return $result;
    }

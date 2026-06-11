@@ -44,9 +44,18 @@ class Tournament implements \Tournament\Model\Base\DbItem
       ];
    }
 
-   /* get the state handler */
-   public function getStateHandler()
+   /**
+    * Returns a list of possible status transitions for the given tournament.
+    * @return TournamentStatus[]
+    */
+   public function getPossibleStateTransitions(): array
    {
-      return new TournamentStateHandler($this);
+      return match ($this->status)
+      {
+         TournamentStatus::Planning  => [TournamentStatus::Planned],
+         TournamentStatus::Planned   => [TournamentStatus::Running,   TournamentStatus::Planning],
+         TournamentStatus::Running   => [TournamentStatus::Completed, TournamentStatus::Planning],
+         TournamentStatus::Completed => [],
+      };
    }
 }

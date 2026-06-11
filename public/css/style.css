@@ -524,6 +524,20 @@ td.td-link:has(> :first-child:last-child) {
    min-width: 30em;
 }
 
+/* form collection box */
+.form-collection-box {
+   display: flex;
+   gap: 10px;
+
+   details {
+      width: 30em;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      box-sizing: border-box;
+   }
+}
+
 /* error/ok/etc message blocks */
 .error, .ok, .warning, .info {
    display: block;

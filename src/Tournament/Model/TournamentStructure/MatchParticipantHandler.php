@@ -390,7 +390,7 @@ final class MatchParticipantHandler
             if( $slot->getName() ) $result[$slot->getName()] = $slot;
          }
       }
-      return $result->ksort(SORT_STRING);
+      return $result;
    }
 
    /**

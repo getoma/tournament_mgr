@@ -5,6 +5,7 @@ namespace Tournament\Model\Category;
 use Respect\Validation\Validator as v;
 use Tournament\Model\MatchPointHandler\MatchPointHandler;
 use Tournament\Model\TournamentStructure\MatchNodeFactory;
+use Tournament\Model\TournamentStructure\TournamentStructure;
 
 /**
  * Represents a competition category within a tournament.
@@ -17,6 +18,13 @@ class Category implements \Tournament\Model\Base\DbItem
    public CategoryMode $mode;            // Tournament mode (e.g., "ko", "pool", "combined")
 
    private MatchPointHandler $mpHdl;
+
+   private TournamentStructure $structure;
+
+   /**
+    * @var callable optional hook to load structure on demand
+    */
+   private mixed $structureLoader;
 
    public function __construct(
       public ?int $id,                       // Unique identifier for the category
@@ -95,6 +103,61 @@ class Category implements \Tournament\Model\Base\DbItem
       $config = [];
       if( $this->config->ignore_club ) $config['club_weight'] = 0;
       return new \Tournament\Model\PlacementCostCalculator\GenericPlacementCostCalculator(...$config);
+   }
+
+   /**
+    * store a loaded structure, or a hook to load a structure if needed
+    */
+   public function setTournamentStructure(callable|TournamentStructure $struc): void
+   {
+      if ($struc instanceof TournamentStructure)
+      {
+         /* generating the tournament structure is quite expensive - add an exception here in case the
+          * structure is set more than once, which would mean that on some path it is also generated
+          * more than once.
+          *
+          * TODO: make it a warning later to not break in production
+          */
+         if( isset($this->structure) && $this->structure !== $struc )
+         {
+            throw new \LogicException('Multiple TournamentStructure generations happened!');
+         }
+         $this->structure = $struc;
+      }
+      else if( is_callable($struc) )
+      {
+         $this->structureLoader = $struc;
+      }
+      else
+      {
+         throw new \InvalidArgumentException('unsupported structure type: ' . gettype($struc));
+      }
+   }
+
+   /**
+    * return a preset structure
+    */
+   public function getTournamentStructure(): TournamentStructure
+   {
+      if( isset($this->structure) )
+      {
+         return $this->structure;
+      }
+      else if( isset($this->structureLoader) )
+      {
+         $load = $this->structureLoader;
+         $struc = $load($this);
+         if( !($struc instanceof TournamentStructure) )
+         {
+            throw new \DomainException('structure loading hook returned unexpected value of type ' . gettype($struc));
+         }
+         $this->structure = $struc;
+         return $struc;
+      }
+      else
+      {
+         throw new \LogicException('attempt to get unprepared TournamentStructure from Category');
+      }
    }
 }
 

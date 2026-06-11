@@ -7,6 +7,8 @@ use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\Participant\Team;
 use Tournament\Model\Tournament\Tournament;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
+use Tournament\Model\TournamentStructure\Pool\Pool;
 
 class RouteArgsContext
 {
@@ -17,8 +19,8 @@ class RouteArgsContext
       public ?Area        $area        = null,
       public ?Participant $participant = null,
       public ?Team        $team        = null,
-      public ?string      $pool_name   = null,
-      public ?string      $match_name  = null,
+      public ?Pool        $pool        = null,
+      public ?MatchNode   $match       = null,
    )
    {}
 }
