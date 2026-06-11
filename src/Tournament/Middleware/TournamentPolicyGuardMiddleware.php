@@ -44,7 +44,7 @@ class TournamentPolicyGuardMiddleware
       {
          /** @var TournamentPolicy $policy */
          $policy = $request->getAttribute('policy');
-         if (!$policy->hasAccessAs($auth))
+         if (!$policy->hasAccessAs($auth) || !$policy->hasRouteAccess())
          {
             throw new HttpForbiddenException($request, "Zugriff mit aktueller Authorisierung nicht erlaubt");
          }

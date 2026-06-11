@@ -234,8 +234,7 @@ return function (\Slim\App $app)
             })
             ->add($policyGuard->for(TournamentAction::RecordResults));
          });
-      })
-      ->add($policyGuard->for(TournamentAction::BrowseTournament));
+      });
 
       /* user management */
       $auth_grp->group('/users', function (RouteCollectorProxy $ugrp)

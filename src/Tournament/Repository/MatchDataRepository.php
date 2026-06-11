@@ -164,6 +164,16 @@ class MatchDataRepository
    }
 
    /**
+    * delete all match records for a specific tournament
+    */
+   public function deleteMatchRecordsByTournamentId(int $tournamentId): void
+   {
+      $this->pdo->prepare('DELETE m FROM matches m LEFT JOIN categories c ON m.category_id=c.id WHERE c.tournament_id=?')
+                ->execute([$tournamentId]);
+
+   }
+
+   /**
     * delete a specific match record
     */
    public function deleteMatchRecordById(int $matchId): void

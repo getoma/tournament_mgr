@@ -126,7 +126,7 @@ class ParticipantHandlingService
    {
       /* check if we need to track changes, and memorize the current participant content */
       $tournament    = $this->tournamentRepo->getTournamentById($participant->tournament_id);
-      $track_changes = $tournament->getStateHandler()->trackChanges();
+      $track_changes = $tournament->trackChanges();
       $old_state = $track_changes? clone $participant : null;
 
       /* update and save the participant data */
