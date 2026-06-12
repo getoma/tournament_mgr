@@ -3,6 +3,7 @@
 namespace Tests\Tournament\Model\TestStubs;
 
 use Tournament\Model\Area\Area;
+use Tournament\Model\Category\Category;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
@@ -20,6 +21,7 @@ class TestMatchNode implements MatchNode
    private bool $frozen = false;
 
    public function __construct(
+      private Category $category,
       private string $name,
       private MatchSlot $red,
       private MatchSlot $white,
@@ -30,6 +32,11 @@ class TestMatchNode implements MatchNode
    {
    }
 
+   /* return the associated category */
+   public function getCategory(): Category
+   {
+      return $this->category;
+   }
 
    /* set a match node name */
    public function setName(string $name): void

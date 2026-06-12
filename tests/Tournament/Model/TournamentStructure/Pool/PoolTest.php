@@ -73,7 +73,7 @@ class PoolTest extends TestCase
          {
             $red   = new ParticipantSlot($parr[$i]);
             $white = new ParticipantSlot($parr[$j]);
-            $res[] = new TestMatchNode(strval($matchid++), $red, $white);
+            $res[] = new TestMatchNode($this->category, strval($matchid++), $red, $white);
          }
       }
 
