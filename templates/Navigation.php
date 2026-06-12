@@ -78,6 +78,10 @@ class Navigation
                      [  'label' => 'Konfiguration',
                         'route' => 'tournaments.categories.edit'
                      ],
+
+                     [  'label' => 'Ausdrucke',
+                        'route' => 'tournaments.categories.printouts.index'
+                     ]
                   ],
                ],
 
