@@ -267,7 +267,7 @@ class TeamMatch extends MatchNodeBase
    {
       /* tie break match is always the last solo node, and has the corresponding property set */
       $current_last = $this->getSubMatches()->last();
-      return $current_last->isTieBreak()? $current_last : null;
+      return $current_last?->isTieBreak()? $current_last : null;
    }
 
    /**
