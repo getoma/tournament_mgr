@@ -7,6 +7,7 @@ use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\Participant\ParticipantChangeLog;
 use Tournament\Model\TournamentStructure\KoTree;
 use Tournament\Model\TournamentStructure\Pool\Pool;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 
 use Base\Model\ChangeLogEntry;
 use Base\Repository\ChangeLogRepository;
@@ -64,7 +65,8 @@ class ChangeLogEvaluationService
    {
       $log = ParticipantChangeLog::from($this->repo->getChangeLogsByGroupId($tree->root->getCategory()->tournament_id))->compress();
       $slots = $tree->getFirstRound()->filter(fn($n) => !$area || $n->getArea() === $area)->getNamedSlots();
-      $participants = ParticipantCollection::new(array_filter($slots->map(fn($s) => $s->getParticipant())));
+      $match_participants = MatchParticipantCollection::new(array_filter($slots->map(fn($s) => $s->getParticipant())));
+      $participants = ParticipantCollection::from($match_participants, true);
       $result = ParticipantChangeLog::new();
       foreach ($log as $e)
       {
