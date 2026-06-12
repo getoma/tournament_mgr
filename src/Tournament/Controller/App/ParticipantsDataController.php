@@ -354,8 +354,11 @@ class ParticipantsDataController
 
       $withdrawel_allowed = $ctx->participant && $this->service->mayWithdraw($ctx->participant);
 
-      $changeLog = $this->chgLogRepo->getChangeLogsById('Participant', $ctx->participant->id);
-      $changeLog = ParticipantChangeLog::from($changeLog);
+      if( $ctx->participant )
+      {
+         $changeLog = $this->chgLogRepo->getChangeLogsById('Participant', $ctx->participant->id);
+         $changeLog = ParticipantChangeLog::from($changeLog);
+      }
 
       return $this->view->render($response, 'tournament/participants/details.twig', [
          'tournament'       => $ctx->tournament,
@@ -363,7 +366,7 @@ class ParticipantsDataController
          'starting_slots'   => $starting_slots,
          'participant'      => $ctx->participant ?? null, // null to get the form for a new participant
          'withdraw_allowed' => $withdrawel_allowed,
-         'change_log'       => $changeLog,
+         'change_log'       => $changeLog ?? null,
       ]);
    }
 
