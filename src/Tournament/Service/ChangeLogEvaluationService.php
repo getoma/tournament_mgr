@@ -63,7 +63,8 @@ class ChangeLogEvaluationService
 
    public function getChangesForKoTree(KoTree $tree, ?Area $area = null): ParticipantChangeLog
    {
-      $log = ParticipantChangeLog::from($this->repo->getChangeLogsByGroupId($tree->root->getCategory()->tournament_id))->compress();
+      $category = $tree->root->getCategory();
+      $log = ParticipantChangeLog::from($this->repo->getChangeLogsByGroupId($category->tournament_id))->compress();
       $slots = $tree->getFirstRound()->filter(fn($n) => !$area || $n->getArea() === $area)->getNamedSlots();
       $match_participants = MatchParticipantCollection::new(array_filter($slots->map(fn($s) => $s->getParticipant())));
       $participants = ParticipantCollection::from($match_participants, true);
@@ -73,6 +74,9 @@ class ChangeLogEvaluationService
          /** @var ChangeLogEntry $e */
          /* for a dedicated tree changes list, we only care about renames and slot changes. Skip others */
          if (in_array($e->change_type, ['withdraw', 'club_changed'])) continue;
+
+         /* if the change log is assigned to a dedicated category, ignore any change for a different category */
+         if( array_key_exists('category_id', $e->details) && $e->details['category_id'] != $category->id ) continue;
 
          $hasSlotName = $slots->keyExists($e->details['slot_name'] ?? '');
          $hasFromSlot = $e->change_type === 'category_slot_changed'? $slots->keyExists($e->details['from']??'') : null;
