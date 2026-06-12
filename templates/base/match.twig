@@ -138,7 +138,7 @@
       </td>
       {%- endif %}
       <td class="participant side-red">
-        {%- if redSelection is empty -%}
+        {%- if redSelection is empty or not (node.isModifiable() and policy.isActionAllowed('RecordResults')) -%}
         {{ _self.printSlot(node, 'red') }}
         {%- else -%}
         {{ select_plain('redSide[]', redSelection, node.getRedParticipant().getId(), attributes: {'form': 'match_team_order'}) }}
@@ -159,7 +159,7 @@
       <td class="points side-white">{{_self.printPoints(node.getWhitePoints(), nodeIsActive? node.getLastWhitePoint() : null)}}</td>
       <td class="penalty side-white">{{_self.printPoints(node.getWhitePenalties(), nodeIsActive? node.getLastWhitePoint(): null)}}</td>
       <td class="participant side-white">
-        {%- if redSelection is empty -%}
+        {%- if whiteSelection is empty or not (node.isModifiable() and policy.isActionAllowed('RecordResults')) -%}
         {{ _self.printSlot(node, 'white') }}
         {%- else -%}
         {{ select_plain('whiteSide[]', whiteSelection, node.getWhiteParticipant().getId(), attributes: {'form': 'match_team_order'}) }}
@@ -189,7 +189,7 @@
     {%- endfor %}
   </tbody>
 </table>
-{% if redSelection is not empty and whiteSelection is not empty -%}
+{% if policy.isActionAllowed('RecordResults') and redSelection is not empty and whiteSelection is not empty and node.isModifiable() -%}
 <form method="post" action="{{ url_for(route_prefix ~ 'teamOrder.update', route_args) }}" id="match_team_order">
   {% if error.team_order %}<p class="error">{{ error.team_order }}</p>{% endif %}
   <input type="hidden" name="_METHOD" value="PATCH">
