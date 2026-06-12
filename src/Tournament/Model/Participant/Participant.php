@@ -44,7 +44,7 @@ class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\To
    {
       if (isset($data['lastname'])) $this->lastname = $data['lastname'];
       if (isset($data['firstname'])) $this->firstname = $data['firstname'];
-      if (array_key_exists('club', $data)) $this->club = $data['club']; // null is allowed here
+      if (array_key_exists('club', $data)) $this->club = $data['club'] ?: null; // null is allowed here
       if (isset($data['withdrawn']))  $this->withdrawn = (bool)$data['withdrawn'];
       if (isset($data['categories'])) $this->categories->updateFromArray($data['categories']);
    }
@@ -56,8 +56,8 @@ class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\To
          tournament_id: $tournament_id,
          lastname: $data['lastname'] ?? throw new \DomainException('no lastname provided'),
          firstname: $data['firstname'] ?? throw new \DomainException('no firstname provided'),
-         club: $data['club'] ?? null,
-         withdrawn: $data['withdrawn'] ?? false,
+         club: $data['club'] ?: null,
+         withdrawn: (bool)($data['withdrawn'] ?? false),
       );
       $result->categories->updateFromArray($data['categories'] ?? []);
       return $result;
