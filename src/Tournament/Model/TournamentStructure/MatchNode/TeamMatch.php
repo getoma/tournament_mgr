@@ -64,7 +64,7 @@ class TeamMatch extends MatchNodeBase
          }
          /** @var Team $redTeam */
          /** @var Team $whiteTeam */
-         list($redParticipants, $whiteParticipants) = [$redTeam->members->values(), $whiteTeam->members->values()];
+         list($redParticipants, $whiteParticipants) = [$redTeam->getMembers()->values(), $whiteTeam->getMembers()->values()];
          $numMatches = $this->category->config->team_size;
          for ($i = 0; $i < $numMatches; $i++)
          {
@@ -139,7 +139,7 @@ class TeamMatch extends MatchNodeBase
          {
             $team = $this->getParticipant($side);
             $p = $mr->getParticipant($side);
-            if( !$team->members->contains($p) ) throw new \OutOfRangeException("match record contains member not in relevant team: " . $p->id);
+            if( !$team->getMembers()->contains($p) ) throw new \OutOfRangeException("match record contains member not in relevant team: " . $p->id);
             /** @var ParticipantSlot $slot */
             $slot = $node->getSlot($side);
             $slot->participant = $p;
@@ -285,8 +285,8 @@ class TeamMatch extends MatchNodeBase
          $tieBreak = new TeamSoloMatch(
             node_name: $this->nameFor($this->soloNodes->count()),
             parent:    $this,
-            slotRed:   new ParticipantSlot($redTeam->members->last()),
-            slotWhite: new ParticipantSlot($whiteTeam->members->last()),
+            slotRed:   new ParticipantSlot($redTeam->getMembers()->last()),
+            slotWhite: new ParticipantSlot($whiteTeam->getMembers()->last()),
             tieBreak:  true,
          );
          /* freeze all previous matches */

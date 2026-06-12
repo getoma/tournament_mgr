@@ -276,7 +276,7 @@ class MatchHandlingService
       $updated = false;
       foreach( MatchSide::cases() as $side )
       {
-         $team = $match->getParticipant($side)->members; // IdObjectCollection team
+         $team = $match->getParticipant($side)->getMembers(); // IdObjectCollection team
          $team_arr = $team->column('id');                // 0-based indexed team participant ids
          /** @var ParticipantCollection $team */
          /** @var int[] $team_arr     */
