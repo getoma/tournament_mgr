@@ -90,7 +90,7 @@ class AreaDeviceViewController
       $next_pool = $area_pool_list[$idx+1] ?? null;
 
       /* get any changes since planning phase */
-      $poolChgLog = $this->chgLogService->getChangesForPool($pool);
+      $poolChgLog = $this->chgLogService->getChangesForPool($ctx->pool);
 
       return $this->view->render($response, 'device/pool_show.twig', [
          'pool'      => $ctx->pool,
