@@ -109,15 +109,22 @@
 </form>
 {% endmacro -%}
 
-{% macro printMatchTable(nodeList, activeNodeName, route_prefix, route_args, redSelection = [], whiteSelection = []) %}
+{% macro printMatchTable(node, activeNodeName, route_prefix, route_args, redSelection = [], whiteSelection = [], show_route = null) %}
 {% from 'base/form.twig' import submit, select_plain -%}
+{%- set nodeList = node.getMatchList() ?? [ node ] -%}
 <table class="match_table">
   <thead>
     <tr>
-      {% if nodeList.count() > 1 %}<th rowspan="2"></th>{% endif %}
+      {% if nodeList|length > 1 %}<th rowspan="{{ node.hasTeams()? 3 : 2 }}"></th>{% endif %}
       <th colspan="4" class="side-red">Kämpfer Rot</th>
       <th colspan="4" class="side-white">Kämpfer Weiß</th>
     </tr>
+    {% if node.hasTeams() -%}
+    <tr>
+      <th colspan="4" class="participant side-red">{{ _self.printSlot(node, 'red') }}</th>
+      <th colspan="4" class="participant side-white">{{ _self.printSlot(node, 'white') }}</th>
+    </tr>
+    {%- endif %}
     <tr>
       <th class="side-red">Name</th><th class="side-red">Hansoku</th><th class="side-red">Punkte</th>
       <th colspan="2" class="side-none">Sieger</th>
@@ -133,7 +140,7 @@
         {% if nodeIsActive -%}
         <a>&gt;</a>
         {%- else -%}
-        <a href="{{ url_for(route_prefix ~ 'show', route_args) }}?selected={{ node.getName() }}">&gt;</a>
+        <a href="{{ url_for(show_route ?? (route_prefix ~ 'show'), route_args) }}?selected={{ node.getName() }}">&gt;</a>
         {%- endif %}
       </td>
       {%- endif %}

@@ -45,11 +45,10 @@ class TeamMatchTest extends TestCase
       $slotWhite->participant = $teamWhite;
 
       /* all set up, now verify DUT behavior */
-      $matches = $dut->getSubMatches();
+      $matches = $dut->getMatchList();
       $teamRedIndexed = $teamRed->members->values();
       $teamWhiteIndexed = $teamWhite->members->values();
 
-      $this->assertTrue($dut->isComposite());
       $this->assertEquals($teamSize, $matches->count());
       foreach( range(0, $teamSize-1) as $i )
       {

@@ -11,6 +11,7 @@ use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\MatchRecord\SoloMatchRecord;
 use Tournament\Model\MatchRecord\TeamMatchRecord;
 use Tournament\Model\Participant\Team;
+use Tournament\Model\TournamentStructure\CompositeNode;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
 
@@ -18,7 +19,7 @@ use Tournament\Model\TournamentStructure\MatchSlot\ParticipantSlot;
  * class of a match between two teams, which might be part of a KO tree, a pool, or whatever
  * a team match consists of a series of solo matches between the members of each team.
  */
-class TeamMatch extends MatchNodeBase
+class TeamMatch extends MatchNodeBase implements CompositeNode
 {
    /* list of solo nodes that make up this team match */
    private MatchNodeCollection $soloNodes;
@@ -40,14 +41,8 @@ class TeamMatch extends MatchNodeBase
       parent::__construct($node_name, $category, $slotRed, $slotWhite, $area, $frozen, false, $tiesAllowed);
    }
 
-   /* whether this is composite match node (e.g. for team matches) */
-   public function isComposite(): bool
-   {
-      return true;
-   }
-
    /* return submatches for composite nodes */
-   public function getSubMatches(): ?MatchNodeCollection
+   public function getMatchList(): MatchNodeCollection
    {
       /* as long as participants are not known, return empty list */
       if( !$this->isDetermined() ) return MatchNodeCollection::new();
@@ -79,6 +74,12 @@ class TeamMatch extends MatchNodeBase
 
       /* done */
       return $this->soloNodes;
+   }
+
+   /* whether there are dedicated red/white side teams */
+   public function hasTeams(): bool
+   {
+      return true;
    }
 
    /**
@@ -120,7 +121,7 @@ class TeamMatch extends MatchNodeBase
       }
 
       /* verify and assign the sub match records */
-      $nodes = $this->getSubMatches();
+      $nodes = $this->getMatchList();
       /** @var MatchRecord $mr */
       foreach( $matchRecord->matches as $mr )
       {
@@ -173,7 +174,7 @@ class TeamMatch extends MatchNodeBase
       if( !$this->matchRecord )
       {
          /* fetch any already existing sub node records, but do not create new ones here */
-         $subrecords = array_filter($this->getSubMatches()->map(fn($m) => $m->getMatchRecord()));
+         $subrecords = array_filter($this->getMatchList()->map(fn($m) => $m->getMatchRecord()));
          $this->matchRecord = new TeamMatchRecord(
             id: null,
             name: $this->getName(),
@@ -190,7 +191,7 @@ class TeamMatch extends MatchNodeBase
    public function freeze(): void
    {
       parent::freeze();
-      $this->getSubMatches()->walk(fn($m) => $m->freeze());
+      $this->getMatchList()->walk(fn($m) => $m->freeze());
    }
 
    /**
@@ -198,7 +199,7 @@ class TeamMatch extends MatchNodeBase
     */
    public function isConducted(): bool
    {
-      return $this->isDetermined() && $this->getSubMatches()->all(fn($m) => $m->isCompleted());
+      return $this->isDetermined() && $this->getMatchList()->all(fn($m) => $m->isCompleted());
    }
 
    /**
@@ -266,7 +267,7 @@ class TeamMatch extends MatchNodeBase
    public function getTieBreakMatch(): ?TeamSoloMatch
    {
       /* tie break match is always the last solo node, and has the corresponding property set */
-      $current_last = $this->getSubMatches()->last();
+      $current_last = $this->getMatchList()->last();
       return $current_last?->isTieBreak()? $current_last : null;
    }
 

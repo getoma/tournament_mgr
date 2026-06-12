@@ -24,12 +24,8 @@
   {%- if pool is not empty %}Pool {{ pool.getName() }} - {% endif -%}
   Kampf {{node.getLocalId()}}
 </h2>
-{% if node.isComposite() -%}
-{{ part.printMatchTable(node.getSubMatches(), selected, route_prefix, route_context.args|merge({'matchName': node.getName()}),
+{{ part.printMatchTable(node, selected, route_prefix, route_context.args|merge({'matchName': node.getName()}),
                         red_side_selection, white_side_selection) }}
-{%- else -%}
-{{ part.printMatchTable([node], node.getName(), route_prefix, route_context.args) }}
-{% endif %}
 {% if error is not empty %}
 <p class="error">{{error}}</p>
 {% endif %}

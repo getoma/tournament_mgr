@@ -263,7 +263,7 @@ class MatchHandlingService
     */
    public function updateTeamMatchParticipantOrder(TeamMatch $match, array $redIds, array $whiteIds): ?string
    {
-      if( count($redIds) !== count($whiteIds) || count($redIds) !== $match->getSubMatches()->count() )
+      if( count($redIds) !== count($whiteIds) || count($redIds) !== $match->getMatchList()->count() )
       {
          throw new \OutOfRangeException("id count does not match");
       }
@@ -271,7 +271,7 @@ class MatchHandlingService
       if ($match->isFrozen()) return 'Kampfergebnisse bereits eingefroren';
 
       $ids = [ MatchSide::RED->value => $redIds, MatchSide::WHITE->value => $whiteIds ];
-      $matches = $match->getSubMatches();
+      $matches = $match->getMatchList();
       $matchCount = $matches->count();
       $updated = false;
       foreach( MatchSide::cases() as $side )

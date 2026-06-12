@@ -34,9 +34,7 @@
 
 <section class="pool_match_list">
   <h2>Kämpfe - Pool {{pool.getName()}}</h2>
-
-  {{ part.printMatchTable(pool.getMatchList(), selected, 'device.categories.pools.', route_context.args) }}
-
+  {{ part.printMatchTable(pool, selected, 'device.categories.pools.matches.', route_context.args, show_route: 'device.categories.pools.show') }}
   {% if error -%}
   <p class="error">{{ error }}</p>
   {%- endif %}
