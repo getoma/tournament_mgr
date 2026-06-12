@@ -36,6 +36,11 @@ class DummyMatchParticipant implements MatchParticipant
       return $this->composite;
    }
 
+   public function getMembers(): ?MatchParticipantCollection
+   {
+      return $this->isComposite()? MatchParticipantCollection::new() : null;
+   }
+
    public function isDummy(): bool
    {
       return true;
