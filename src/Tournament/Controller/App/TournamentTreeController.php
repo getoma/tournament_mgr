@@ -243,8 +243,8 @@ class TournamentTreeController
       $current_it = $matchList->getNodeIteratorAt($node->getName());
 
       /* for team matches (getMembers() !== null), we need to allow modifying the participant order */
-      $redSideSelection   = $node->getRedParticipant()->getMembers()?->map(fn($p) => $p->getDisplayName());
-      $whiteSideSelection = $node->getWhiteParticipant()->getMembers()?->map(fn($p) => $p->getDisplayName());
+      $redSideSelection   = $node->getRedParticipant()?->getMembers()?->map(fn($p) => $p->getDisplayName());
+      $whiteSideSelection = $node->getWhiteParticipant()?->getMembers()?->map(fn($p) => $p->getDisplayName());
 
       return $this->view->render($response, 'tournament/match/match.twig', [
          'type'     => $ctx->pool? 'pool' : 'ko',
@@ -254,8 +254,8 @@ class TournamentTreeController
          'node_it'  => $current_it,
          'area'     => $ctx->match->getArea(),  // explicitly mark that we provide the match list for this area, only
          'area_selection' => $structure->areas->column('name', 'id'),
-         'red_side_selection' => $redSideSelection,
-         'white_side_selection' => $whiteSideSelection,
+         'red_side_selection'   => ['' => '--'] + $redSideSelection,
+         'white_side_selection' => ['' => '--'] + $whiteSideSelection,
          'error'    => $error,
       ]);
    }
@@ -292,7 +292,7 @@ class TournamentTreeController
 
       if ($error)
       {
-         return $this->showMatch($request, $response, $args, ['team_order' => $error]);
+         return $this->showMatch($request, $response, $args, $error);
       }
       else
       {

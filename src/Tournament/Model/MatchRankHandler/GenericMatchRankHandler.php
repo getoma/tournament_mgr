@@ -103,10 +103,10 @@ class GenericMatchRankHandler implements MatchRankHandler
             }
          }
 
-         /* increase point counters */
+         /* increase point counters - for team matches, single participants might be NULL */
          $points = $this->mpHdl->getPoints($mr);
-         $ranks[self::RED]->points += $points->for($mr->getParticipant(MatchSide::RED))->count();
-         $ranks[self::WHITE]->points += $points->for($mr->getParticipant(MatchSide::WHITE))->count();
+         if( $redP = $mr->getParticipant(MatchSide::RED)  ) $ranks[self::RED]->points += $points->for($redP)->count();
+         if( $whiP = $mr->getParticipant(MatchSide::WHITE)) $ranks[self::WHITE]->points += $points->for($whiP)->count();
       }
    }
 

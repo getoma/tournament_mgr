@@ -40,14 +40,14 @@ class MatchPointCollection extends \Base\Model\IdObjectCollection
     * change ownership of match points
     * use case: team order modification in team matches AFTER points where already conducted
     */
-   public function updateParticipant(Participant $from, Participant $to): void
+   public function movePoints(Participant $from, ?Participant $to): void
    {
       foreach( $this as $pt )
       {
          /** points are unmodifyable, therefore duplicate to a new point */
          if( $pt->participant === $from )
          {
-            $this[] = $pt->cloneFor($to);
+            if( $to ) $this[] = $pt->cloneFor($to);
             $this->drop($pt);
          }
       }

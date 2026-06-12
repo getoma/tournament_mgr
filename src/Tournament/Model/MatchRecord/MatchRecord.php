@@ -23,5 +23,5 @@ interface MatchRecord
 
    public function getParticipant(MatchSide $side): ?MatchParticipant;
 
-   public function getOpponent(MatchParticipant $p): MatchParticipant;
+   public function getOpponent(MatchParticipant $p): ?MatchParticipant;
 }

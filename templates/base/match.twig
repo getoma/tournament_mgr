@@ -102,10 +102,11 @@
   <input type="hidden" name="participant" value="{{ participant.id }}">
   <input type="hidden" name="undo" value="{{ undo.id }}">
   {% for name, pt in node.getPossiblePoints() -%}
-  {{ submit(pt, 'action', pt) }}
+  {{ submit(pt, 'action', pt, active=participant is not null) }}
   {% endfor -%}
   {{ submit('Undo' ~ (undo? '(%s)'|format(undo.point) : ''), 'action', 'undo', active=undo is not null)}}
-  {{ submit('Als Gewinner setzen', 'action', 'winner', active=node.isModifiable() and node.getWinner() is not same as(participant)) }}
+  {{ submit('Als Gewinner setzen', 'action', 'winner',
+             active=participant is not null and node.isModifiable() and node.getWinner() is not same as(participant)) }}
 </form>
 {% endmacro -%}
 
@@ -184,7 +185,8 @@
         {% if node.tiesAllowed() -%}
         <form method="post" action="{{ url_for(route_prefix ~ 'update', args) }}" class="match_control">
           <input type="hidden" name="_METHOD" value="PATCH">
-          {{ submit('Unentschieden', 'action', 'tie', active=node.isModifiable() and not node.isTied()) }}
+          {{ submit('Unentschieden', 'action', 'tie',
+                     active=not node.isBye() and node.isModifiable() and not node.isTied()) }}
         </form>
         {%- endif %}
       </td>

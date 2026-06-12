@@ -219,8 +219,8 @@ class AreaDeviceViewController
          'node'    => $ctx->match,
          'node_it' => $current_it,
          'selected' => $selected,
-         'red_side_selection'   => $redSideSelection,
-         'white_side_selection' => $whiteSideSelection,
+         'red_side_selection'   => ['' => '--'] + $redSideSelection,
+         'white_side_selection' => ['' => '--'] + $whiteSideSelection,
          'error'   => $error,
       ]);
    }

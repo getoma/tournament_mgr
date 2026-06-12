@@ -134,13 +134,13 @@ class TeamMatch extends MatchNodeBase implements CompositeNode
             if( $mr->name !== $node->getName() ) $node = null; // fallback to error handling if record does not match
          }
          if( !$node ) throw new \OutOfRangeException("sub match not found: " . $mr->name);
-         /* as team members typically may modify their order in ev      ery match, we now explicitly assign the participants
+         /* as team members typically may modify their order in every match, we now explicitly assign the participants
           * to the corresponding match slots based on the recorded info in $mr */
          foreach( MatchSide::cases() as $side )
          {
             $team = $this->getParticipant($side);
             $p = $mr->getParticipant($side);
-            if( !$team->getMembers()->contains($p) ) throw new \OutOfRangeException("match record contains member not in relevant team: " . $p->id);
+            if( $p && !$team->getMembers()->contains($p) ) throw new \OutOfRangeException("match record contains member not in relevant team: " . $p->id);
             /** @var ParticipantSlot $slot */
             $slot = $node->getSlot($side);
             $slot->participant = $p;

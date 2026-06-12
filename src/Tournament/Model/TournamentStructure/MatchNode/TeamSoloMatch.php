@@ -47,4 +47,21 @@ class TeamSoloMatch extends SoloMatch
       }
       return $this->matchRecord;
    }
+
+   /* Match is a real match, and not just a dummy node that will never be conducted
+    * For Team matches, a single match is "real" as soon as it has ANY participant
+    */
+   public function isReal(): bool
+   {
+      return !$this->isObsolete();
+   }
+
+   /* Participants of this match are known
+    * For Team matches, a single match is determined as soon as it has ANY participant
+    * otherwise, it won't even be created
+    */
+   public function isDetermined()
+   {
+      return !$this->isObsolete();
+   }
 }

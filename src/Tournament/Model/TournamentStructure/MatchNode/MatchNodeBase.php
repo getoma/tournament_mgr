@@ -142,7 +142,13 @@ abstract class MatchNodeBase implements MatchNode
    /* BYE match - at least on bye slot, but not all of them */
    public function isBye(): bool
    {
-      return !$this->isReal() && !$this->isObsolete();
+      $mem = null;
+      foreach( $this->slots as $slot )
+      {
+         if( $mem === null ) $mem = $slot->isBye();
+         else if( $mem !== $slot->isBye() ) return true;
+      }
+      return false;
    }
 
    /* Match is a real match, and not just a dummy node that will never be conducted */
