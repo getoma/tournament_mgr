@@ -294,18 +294,18 @@ class MatchHandlingService
          /* update each team member on this side */
          for( $i = 0; $i < $matchCount; ++$i )
          {
-            $selected_pid = (int)$ids[$side->value][$i];
+            $selected_pid = (int)$ids[$side->value][$i] ?: null;
 
             // continue with next entry if no change
-            if( $matches[$i]->getParticipant($side)->getId() === $selected_pid ) continue;
+            if( $matches[$i]->getParticipant($side)?->getId() === $selected_pid ) continue;
 
             // check if valid id
-            if( !$team->keyExists($selected_pid) ) return 'participant id not part of team: ' . $selected_pid;
+            if( $selected_pid && !$team->keyExists($selected_pid) ) return 'participant id not part of team: ' . $selected_pid;
 
             // update the match record to contain the selected team member instead
             /** @var SoloMatchRecord $record */
             $record = $matches[$i]->provideMatchRecord();
-            $record->setParticipant($side, $team[$selected_pid]);
+            $record->setParticipant($side, $selected_pid? $team[$selected_pid] : null);
             $updated = true;
          }
       }

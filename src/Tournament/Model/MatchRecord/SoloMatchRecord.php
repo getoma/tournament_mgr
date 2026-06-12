@@ -17,8 +17,9 @@ class SoloMatchRecord implements \Tournament\Model\Base\DbItem, MatchRecord
       public readonly string $name,
       public readonly Category $category,
       public Area $area,
-      public Participant $redParticipant,   // participants inside a team match must be modifyable also after creation
-      public Participant $whiteParticipant,
+      // participants inside a team match must be modifyable also after creation, and may also be null for smaller teams
+      public ?Participant $redParticipant,
+      public ?Participant $whiteParticipant,
       public ?MatchSide $winner = null,
       public bool $tie_break = false,
       public readonly \DateTime $created_at = new \DateTime(),
@@ -93,19 +94,19 @@ class SoloMatchRecord implements \Tournament\Model\Base\DbItem, MatchRecord
       };
    }
 
-   public function setParticipant(MatchSide $side, Participant $p): void
+   public function setParticipant(MatchSide $side, ?Participant $p): void
    {
       if( $side === MatchSide::RED ) $slot = &$this->redParticipant;
       else if( $side === MatchSide::WHITE) $slot = &$this->whiteParticipant;
       else throw new \DomainException('invalid match side value');
-      if( $slot !== $p )
+      if( $slot && $slot !== $p )
       {
-         $this->points->updateParticipant($slot, $p);
-         $slot = $p;
+         $this->points->movePoints($slot, $p);
       }
+      $slot = $p;
    }
 
-   public function getOpponent(MatchParticipant $p): Participant
+   public function getOpponent(MatchParticipant $p): ?Participant
    {
       if ($p === $this->redParticipant) return $this->whiteParticipant;
       if ($p === $this->whiteParticipant) return $this->redParticipant;

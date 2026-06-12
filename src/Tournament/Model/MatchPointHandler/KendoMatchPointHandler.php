@@ -115,8 +115,8 @@ final class KendoMatchPointHandler implements MatchPointHandler
       /* reduce the match point list to actual points */
       $fullPts = $match->points->filter(fn(MatchPoint $pt) => isset(self::$_POINTS[$pt->point]));
 
-      /* get the points for the red participant */
-      $redPts = $fullPts->for($match->redParticipant);
+      /* get the points for the red participant - consider that this participant might be NULL */
+      $redPts = $match->redParticipant? $fullPts->for($match->redParticipant) : MatchPointCollection::new();
 
       /* check if red has enough points */
       if( $redPts->count() >= $this->max_points ) return $match->redParticipant;

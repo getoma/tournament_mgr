@@ -42,12 +42,12 @@ class SoloMatch extends MatchNodeBase
       list($p_red, $p_white) = [$redSlot->getParticipant(), $whiteSlot->getParticipant()];
 
       /* verify that match record and tree model are consistent */
-      if ($p_red?->id !== $matchRecord->redParticipant->id || $p_white?->id !== $matchRecord->whiteParticipant->id)
+      if ($p_red?->id !== $matchRecord->redParticipant?->id || $p_white?->id !== $matchRecord->whiteParticipant?->id)
       {
          $rid = $p_red?->id ?? 0;
-         $rid2 = $matchRecord->redParticipant->id;
+         $rid2 = $matchRecord->redParticipant?->id ?? 0;
          $ridw = $p_white?->id ?? 0;
-         $ridw2 = $matchRecord->whiteParticipant->id;
+         $ridw2 = $matchRecord->whiteParticipant?->id ?? 0;
          throw new \OutOfRangeException("inconsistent match record: participants do not match: $rid vs $rid2 | $ridw vs $ridw2" . $this->getName());
       }
 
@@ -95,6 +95,7 @@ class SoloMatch extends MatchNodeBase
    public function getRedPoints(): ?MatchPointCollection
    {
       if( !$this->matchRecord ) return null;
+      if( !$this->matchRecord->redParticipant ) return MatchPointCollection::new();
       return $this->category->getMatchPointHandler()->getPoints($this->matchRecord)->for($this->matchRecord->redParticipant);
    }
 
@@ -106,6 +107,7 @@ class SoloMatch extends MatchNodeBase
    public function getWhitePoints(): ?MatchPointCollection
    {
       if (!$this->matchRecord) return null;
+      if (!$this->matchRecord->whiteParticipant) return MatchPointCollection::new();
       return $this->category->getMatchPointHandler()->getPoints($this->matchRecord)->for($this->matchRecord->whiteParticipant);
    }
 
@@ -133,6 +135,7 @@ class SoloMatch extends MatchNodeBase
    public function getRedPenalties(): ?MatchPointCollection
    {
       if (!$this->matchRecord) return null;
+      if (!$this->matchRecord->redParticipant) return MatchPointCollection::new();
       return $this->category->getMatchPointHandler()->getActivePenalties($this->matchRecord)->for($this->matchRecord->redParticipant);
    }
 
@@ -144,6 +147,7 @@ class SoloMatch extends MatchNodeBase
    public function getWhitePenalties(): ?MatchPointCollection
    {
       if (!$this->matchRecord) return null;
+      if (!$this->matchRecord->whiteParticipant) return MatchPointCollection::new();
       return $this->category->getMatchPointHandler()->getActivePenalties($this->matchRecord)->for($this->matchRecord->whiteParticipant);
    }
 
@@ -170,7 +174,8 @@ class SoloMatch extends MatchNodeBase
     */
    public function getLastRedPoint(): ?MatchPoint
    {
-      return $this->matchRecord?->points->for($this->matchRecord->redParticipant)->filter(fn($p) => $p->isSolitary())->last();
+      $pts = $this->getRedPoints();
+      return $pts? $pts->filter(fn($p) => $p->isSolitary())->last() : null;
    }
 
    /**
@@ -180,7 +185,8 @@ class SoloMatch extends MatchNodeBase
     */
    public function getLastWhitePoint(): ?MatchPoint
    {
-      return $this->matchRecord?->points->for($this->matchRecord->whiteParticipant)->filter(fn($p) => $p->isSolitary())->last();
+      $pts = $this->getWhitePoints();
+      return $pts? $pts->filter(fn($p) => $p->isSolitary())->last() : null;
    }
    /**
     * get the most current point or penalty of a participant identified by parameter (e.g. for undo selection)
