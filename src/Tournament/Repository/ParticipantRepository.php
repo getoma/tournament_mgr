@@ -103,7 +103,7 @@ class ParticipantRepository
          $stmt = $this->pdo->prepare(<<<QUERY
             SELECT p.*, CONCAT(team_id) as team_id
             FROM participants_teams tp LEFT JOIN participants p on tp.participant_id=p.id
-            where team_id=?
+            WHERE team_id=? AND p.withdrawn=0
          QUERY);
          $stmt->execute([$team->id]);
          while ( $p_row = $stmt->fetch(PDO::FETCH_ASSOC) )
@@ -295,14 +295,20 @@ class ParticipantRepository
 
 
    /**
-    * free participant slots for a single participant
+    * free participant slots from participants_categories and participants_teams for a single participant, optionally filter by category
     */
-   public function freeParticipantSlots(int $participantId): void
+   public function freeParticipantSlots(int $participantId, ?int $category_id = NULL): void
    {
-      $stmt = $this->pdo->prepare(
-         "UPDATE participants_categories SET slot_name=null WHERE participant_id=:participant_id"
-      );
-      $stmt->execute(['participant_id' => $participantId]);
+      $query_pc = "UPDATE participants_categories SET slot_name=null WHERE participant_id=:participant_id";
+      $query_teams = "DELETE FROM participants_teams WHERE participant_id=:participant_id";
+      $params = ['participant_id' => $participantId];
+      if( $category_id )      {
+         $query_pc .= " AND category_id=:category_id";
+         $query_teams .= " AND category_id=:category_id";
+         $params['category_id'] = $category_id;
+      }
+      $this->pdo->prepare($query_pc)->execute($params);
+      $this->pdo->prepare($query_teams)->execute($params);
    }
 
    /**
