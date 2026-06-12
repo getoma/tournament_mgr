@@ -95,9 +95,17 @@ class TournamentStructureService
       $old_state = $track_changes? $participants->map(fn($p) => clone $p) : null;
 
       /* perform slot assignments */
-      $mp = $struc->populate($participants);
-      $assigned = ParticipantCollection::new($mp->values());
-      $this->participantRepo->updateAllParticipantSlots($struc->category->id, $assigned);
+      $assigned = $struc->populate($participants);
+      if ($category->team_mode)
+      {
+         $col = TeamCollection::new($assigned->values());
+         $this->participantRepo->updateAllTeamSlots($category->id, $col);
+      }
+      else
+      {
+         $col = ParticipantCollection::new($assigned->values());
+         $this->participantRepo->updateAllParticipantSlots($category->id, $col);
+      }
 
       /* generate the change log */
       if( $track_changes )
@@ -109,6 +117,7 @@ class TournamentStructureService
          }
          $this->chgLogRepo->storeChangeLog($log);
       }
+
       return $struc;
    }
 
@@ -124,23 +133,6 @@ class TournamentStructureService
       $struc->loadAreaMappings($area_mappings);
       $category->setTournamentStructure($struc);
       return $struc;
-   }
-
-   /**
-    * sync start slots assignments to repository
-    */
-   private function updateAllStartSlots(Category $category, MatchParticipantCollection $p): void
-   {
-      if( $category->team_mode )
-      {
-         $col = TeamCollection::new( $p->values() );
-         $this->participantRepo->updateAllTeamSlots($category->id, $col);
-      }
-      else
-      {
-         $col = ParticipantCollection::new( $p->values() );
-         $this->participantRepo->updateAllParticipantSlots($category->id, $col);
-      }
    }
 
    /**
