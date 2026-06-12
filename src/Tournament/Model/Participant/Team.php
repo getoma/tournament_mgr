@@ -6,6 +6,7 @@ namespace Tournament\Model\Participant;
 
 use Respect\Validation\Validator as v;
 use Tournament\Model\Category\Category;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 
 class Team implements \Tournament\Model\Base\DbItem, \Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant
 {
@@ -67,6 +68,11 @@ class Team implements \Tournament\Model\Base\DbItem, \Tournament\Model\Tournamen
    public function isComposite(): bool
    {
       return true;
+   }
+
+   public function getMembers(): ?MatchParticipantCollection
+   {
+      return $this->members;
    }
 
    /**

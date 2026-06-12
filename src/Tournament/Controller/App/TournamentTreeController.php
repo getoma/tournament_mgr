@@ -249,17 +249,9 @@ class TournamentTreeController
       /** @var MatchNodeCollection|MatchRoundCollection $matchList */
       $current_it = $matchList->getNodeIteratorAt($node->getName());
 
-      /* for team matches, we need to allow modifying the participant order */
-      if( $node instanceof TeamMatch )
-      {
-         $redSideSelection   = $node->getRedParticipant()->members->map(fn($p) => $p->getDisplayName());
-         $whiteSideSelection = $node->getWhiteParticipant()->members->map(fn($p) => $p->getDisplayName());
-      }
-      else
-      {
-         $redSideSelection = null;
-         $whiteSideSelection = null;
-      }
+      /* for team matches (getMembers() !== null), we need to allow modifying the participant order */
+      $redSideSelection   = $node->getRedParticipant()->getMembers()?->map(fn($p) => $p->getDisplayName());
+      $whiteSideSelection = $node->getWhiteParticipant()->getMembers()?->map(fn($p) => $p->getDisplayName());
 
       return $this->view->render($response, 'tournament/match/match.twig', [
          'type'     => $ctx->pool? 'pool' : 'ko',

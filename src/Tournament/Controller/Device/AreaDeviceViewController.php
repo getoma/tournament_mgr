@@ -220,16 +220,8 @@ class AreaDeviceViewController
       $current_it = $matchList->getNodeIteratorAt($ctx->match->getName());
 
       /* for team matches, we need to allow modifying the participant order */
-      if ($node instanceof TeamMatch)
-      {
-         $redSideSelection   = $node->getRedParticipant()->members->map(fn($p) => $p->getDisplayName());
-         $whiteSideSelection = $node->getWhiteParticipant()->members->map(fn($p) => $p->getDisplayName());
-      }
-      else
-      {
-         $redSideSelection = null;
-         $whiteSideSelection = null;
-      }
+      $redSideSelection   = $node->getRedParticipant()->getMembers()?->map(fn($p) => $p->getDisplayName());
+      $whiteSideSelection = $node->getWhiteParticipant()->getMembers()?->map(fn($p) => $p->getDisplayName());
 
       return $this->view->render($response, 'device/match.twig', [
          'type'    => $ctx->pool? 'pool' : 'ko',
