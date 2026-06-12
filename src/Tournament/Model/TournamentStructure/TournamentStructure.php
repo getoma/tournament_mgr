@@ -155,7 +155,8 @@ class TournamentStructure
       if( $result && $name !== $orig_name )
       {
          /* parent node found, now extract the actually requested sub node */
-         $result = $result->getSubMatches()?->findNode($orig_name);
+         /** @var TeamMatch $result */
+         $result = $result->getMatchList()->findNode($orig_name);
       }
 
       return $result;

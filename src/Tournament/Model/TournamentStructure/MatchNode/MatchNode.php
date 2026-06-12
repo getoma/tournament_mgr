@@ -12,12 +12,6 @@ use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
  */
 interface MatchNode
 {
-   /* whether this is composite match node (e.g. for team matches) */
-   public function isComposite(): bool;
-
-   /* return submatches for composite nodes */
-   public function getSubMatches(): ?MatchNodeCollection;
-
    /* set a match node name */
    public function setName(string $name): void;
 

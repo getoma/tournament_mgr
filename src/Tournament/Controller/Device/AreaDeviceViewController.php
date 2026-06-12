@@ -191,7 +191,7 @@ class AreaDeviceViewController
       else if ($node instanceof TeamMatch)
       {
          /* select an active match from this node */
-         $matches = $node->getSubMatches();
+         $matches = $node->getMatchList();
          $selected = $request->getQueryParams()['selected'] ?? null;
          if ($selected === null || !$matches->findNode($selected))
          {

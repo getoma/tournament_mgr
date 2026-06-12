@@ -5,7 +5,6 @@ namespace Tests\Tournament\Model\TestStubs;
 use Tournament\Model\Area\Area;
 use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
-use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
@@ -25,23 +24,12 @@ class TestMatchNode implements MatchNode
       private MatchSlot $red,
       private MatchSlot $white,
       private ?Area $area = null,
-      private bool $composite = false,
       private bool $tiesAllowed = true,
       private bool $tieBreak = false,
    )
    {
    }
 
-   /* whether this is composite match node (e.g. for team matches) */
-   public function isComposite(): bool
-   {
-      return $this->composite;
-   }
-
-   public function getSubMatches(): ?MatchNodeCollection
-   {
-      return null;
-   }
 
    /* set a match node name */
    public function setName(string $name): void

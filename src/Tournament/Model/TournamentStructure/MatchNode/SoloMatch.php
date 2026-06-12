@@ -15,17 +15,6 @@ class SoloMatch extends MatchNodeBase
 {
    protected ?SoloMatchRecord $matchRecord = null;
 
-   public function isComposite(): bool
-   {
-      return false;
-   }
-
-   /* return submatches for composite nodes */
-   public function getSubMatches(): ?MatchNodeCollection
-   {
-      return null;
-   }
-
    /**
     * set the match record associated with this match node
     * verify that the match record is consistent with this node

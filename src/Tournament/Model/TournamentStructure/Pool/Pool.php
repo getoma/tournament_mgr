@@ -10,13 +10,15 @@ use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\MatchRankHandler\MatchRank;
 use Tournament\Model\MatchRankHandler\MatchRankCollection;
-use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchNodeFactory;
+use Tournament\Model\TournamentStructure\CompositeNode;
+use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchParticipant\DummyMatchParticipant;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 
-class Pool
+
+class Pool implements CompositeNode
 {
    private MatchNodeCollection $matches;
    /** @var MatchParticipant[] */
@@ -174,6 +176,12 @@ class Pool
    public function getMatchList(): MatchNodeCollection
    {
       return $this->matches;
+   }
+
+   /* whether there are dedicated red/white side teams */
+   public function hasTeams(): bool
+   {
+      return false;
    }
 
    /**
