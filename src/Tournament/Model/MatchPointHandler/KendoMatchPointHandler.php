@@ -2,7 +2,7 @@
 
 namespace Tournament\Model\MatchPointHandler;
 
-use Tournament\Model\MatchRecord\MatchRecord;
+use Tournament\Model\MatchRecord\SoloMatchRecord;
 use Tournament\Model\MatchRecord\MatchPoint;
 use Tournament\Model\MatchRecord\MatchPointCollection;
 use Tournament\Model\Participant\Participant;
@@ -22,13 +22,13 @@ final class KendoMatchPointHandler implements MatchPointHandler
    ];
 
    /* different representations of above constants for more efficient evaluations */
-   static private $_ACCEPTED = null;
-   static private $_POINTS = null;
+   static private array $_ACCEPTED;
+   static private array $_POINTS;
 
    /**
     * Set up and configure a Kendo MatchPointHandler
-    * @param max_points - after how many points for one participant the match is decided (default 2)
-    * @param hansokus_for_ippon - how many hansoku will imply an ippon for the opponent? (0=disabled)
+    * @param int $max_points - after how many points for one participant the match is decided (default 2)
+    * @param int $hansokus_for_ippon - how many hansoku will imply an ippon for the opponent? (0=disabled)
     */
    public function __construct(private int $max_points = 2, private int $hansokus_for_ippon = 2 )
    {
@@ -45,11 +45,11 @@ final class KendoMatchPointHandler implements MatchPointHandler
     * Also add any follow up points that might result from it
     * (e.g. points for the opponent on any penalty)
     *
-    * @param MatchRecord $match - the match to add points to
+    * @param SoloMatchRecord $match - the match to add points to
     * @param MatchPoint $pt - the point to add
     * @return true if this point was applied, false if it is invalid and ignored
     */
-   public function addPoint(MatchRecord $match, MatchPoint $pt): bool
+   public function addPoint(SoloMatchRecord $match, MatchPoint $pt): bool
    {
       /* validity checks */
       if( $this->isDecided($match) ) return false;
@@ -83,7 +83,7 @@ final class KendoMatchPointHandler implements MatchPointHandler
    /**
     * Remove point, and do any needed other rollback action
     */
-   function removePoint(MatchRecord $match, MatchPoint|int $pt): bool
+   function removePoint(SoloMatchRecord $match, MatchPoint|int $pt): bool
    {
       /* we work on the object, in case this method is called with a
        * match point that doesn't have an ID (yet)
@@ -106,11 +106,11 @@ final class KendoMatchPointHandler implements MatchPointHandler
 
    /**
     * return the winner according current points, if any
-    * @param MatchRecord $match - the match to check
+    * @param SoloMatchRecord $match - the match to check
     * @return null if no winner can be decided
     * @return Participant winner according points if the match was over
     */
-   public function getWinner(MatchRecord $match): ?Participant
+   public function getWinner(SoloMatchRecord $match): ?Participant
    {
       /* reduce the match point list to actual points */
       $fullPts = $match->points->filter(fn(MatchPoint $pt) => isset(self::$_POINTS[$pt->point]));
@@ -129,10 +129,10 @@ final class KendoMatchPointHandler implements MatchPointHandler
    /**
     * return whether the match is finished according current point
     * distribution
-    * @param MatchRecord $match - the match to check
+    * @param SoloMatchRecord $match - the match to check
     * @return true if the match is decided according given points
     */
-   public function isDecided(MatchRecord $match): bool
+   public function isDecided(SoloMatchRecord $match): bool
    {
       return $this->getWinner($match) !== null;
    }
@@ -151,7 +151,7 @@ final class KendoMatchPointHandler implements MatchPointHandler
     * returns a list of active penalties that did not yet result
     * in any further consequences according the specific rules applied
     */
-   public function getActivePenalties(MatchRecord $match): MatchPointCollection
+   public function getActivePenalties(SoloMatchRecord $match): MatchPointCollection
    {
       $penalty_list = [];
 
@@ -188,7 +188,7 @@ final class KendoMatchPointHandler implements MatchPointHandler
    /**
     * extract real, actual points
     */
-   public function getPoints(MatchRecord $match): MatchPointCollection
+   public function getPoints(SoloMatchRecord $match): MatchPointCollection
    {
       return $match->points->filter(fn(MatchPoint $p) => isset(self::$_POINTS[$p->point]));
    }

@@ -9,7 +9,7 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Category\CategoryMode;
 use Tournament\Model\MatchPointHandler\MatchPointHandler;
-use Tournament\Model\MatchRecord\MatchRecord;
+use Tournament\Model\MatchRecord\SoloMatchRecord;
 use Tournament\Model\Participant\Participant;
 use Tournament\Model\TournamentStructure\MatchNode\MatchSide;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
@@ -163,7 +163,7 @@ class SoloMatchTest extends TestCase
       $this->redSet = true;
       $this->whiteSet = true;
 
-      $record = new MatchRecord(1, "test", $this->category, $this->area,
+      $record = new SoloMatchRecord(1, "test", $this->category, $this->area,
                                 $this->redParticipant, $this->whiteParticipant, null, false);
 
       $this->node->setMatchRecord($record);
@@ -195,7 +195,7 @@ class SoloMatchTest extends TestCase
       $this->redSet = true;
       $this->whiteSet = true;
 
-      $record = new MatchRecord(1, "test", $this->category, $this->area,
+      $record = new SoloMatchRecord(1, "test", $this->category, $this->area,
                                 $this->redParticipant, $this->whiteParticipant, MatchSide::RED, false,
                                 finalized_at: new \DateTime() );
 
@@ -228,7 +228,7 @@ class SoloMatchTest extends TestCase
       $this->redSet = false;
       $this->whiteSet = true;
 
-      $record = new MatchRecord(
+      $record = new SoloMatchRecord(
          1, "test", $this->category, $this->area,
          $this->redParticipant, $this->whiteParticipant,
          null, false, finalized_at: new \DateTime()
@@ -248,13 +248,13 @@ class SoloMatchTest extends TestCase
       $this->whiteSet = true;
       $this->redSet = true;
 
-      $record = new MatchRecord(
+      $record = new SoloMatchRecord(
          1, "test_wrong", $this->category, $this->area,
          $this->redParticipant, $this->whiteParticipant,
          null, false, finalized_at: new \DateTime()
       );
 
-      $this->expectException(\DomainException::class);
+      $this->expectException(\LogicException::class);
       $this->node->setMatchRecord($record);
    }
 
@@ -271,13 +271,13 @@ class SoloMatchTest extends TestCase
       /** @var Participant $newRedParticipant */
       $newRedParticipant = new Participant(100, 1, '', '');
 
-      $record = new MatchRecord(
+      $record = new SoloMatchRecord(
          1, "test", $this->category, $this->area,
          $newRedParticipant, $this->whiteParticipant,
          null, false, finalized_at: new \DateTime()
       );
 
-      $this->expectException(\DomainException::class);
+      $this->expectException(\LogicException::class);
       $this->node->setMatchRecord($record);
    }
 
@@ -291,7 +291,7 @@ class SoloMatchTest extends TestCase
       $this->redSet = true;
       $this->whiteSet = true;
 
-      $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
+      $record = new SoloMatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
                                 $this->redParticipant, $this->whiteParticipant, null, false,
                                 finalized_at: new \DateTime() );
 
@@ -329,7 +329,7 @@ class SoloMatchTest extends TestCase
       $this->assertFalse($this->node->isTieBreak());
 
       /* by assigning a tie_break via match record, ties shouldn't be allowed anymore */
-      $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
+      $record = new SoloMatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
                            $this->redParticipant, $this->whiteParticipant,
                            tie_break: true );
       $this->node->setMatchRecord($record);
@@ -342,7 +342,7 @@ class SoloMatchTest extends TestCase
       $this->assertFalse($tie_break_node->tiesAllowed());
       $this->assertTrue($this->node->isTieBreak());
       /* match record should not be able to cancel any logical tie break */
-      $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
+      $record = new SoloMatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
                      $this->redParticipant, $this->whiteParticipant,
                      tie_break: false );
       $tie_break_node->setMatchRecord($record);

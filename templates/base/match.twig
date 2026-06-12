@@ -93,9 +93,9 @@
 </ul>
 {% endmacro -%}
 
-{% macro printMatchPointForm(node, side, update_route, route_parameters) -%}
+{% macro printMatchPointForm(node, side, route_prefix, route_parameters) -%}
 {% from 'base/form.twig' import submit -%}
-<form method="post" action="{{ url_for(update_route, route_parameters) }}" class="match_control">
+<form method="post" action="{{ url_for(route_prefix ~ 'update', route_parameters) }}" class="match_control">
   {% set undo = node.getLastPoint(side) -%}
   {% set participant = node.getParticipant(side) -%}
   <input type="hidden" name="_METHOD" value="PATCH">
@@ -109,8 +109,8 @@
 </form>
 {% endmacro -%}
 
-{% macro printMatchTable(nodeList, activeNodeName, update_route, route_args) %}
-{% from 'base/form.twig' import submit -%}
+{% macro printMatchTable(nodeList, activeNodeName, route_prefix, route_args, redSelection = [], whiteSelection = []) %}
+{% from 'base/form.twig' import submit, select_plain -%}
 <table class="match_table">
   <thead>
     <tr>
@@ -133,11 +133,17 @@
         {% if nodeIsActive -%}
         <a>&gt;</a>
         {%- else -%}
-        <a href="?selected={{ node.getName() }}">&gt;</a>
+        <a href="{{ url_for(route_prefix ~ 'show', route_args) }}?selected={{ node.getName() }}">&gt;</a>
         {%- endif %}
       </td>
       {%- endif %}
-      <td class="participant side-red">{{_self.printSlot(node, 'red')}}</td>
+      <td class="participant side-red">
+        {%- if redSelection is empty -%}
+        {{ _self.printSlot(node, 'red') }}
+        {%- else -%}
+        {{ select_plain('redSide[]', redSelection, node.getRedParticipant().getId(), attributes: {'form': 'match_team_order'}) }}
+        {%- endif -%}
+      </td>
       <td class="penalty side-red">{{_self.printPoints(node.getRedPenalties(), nodeIsActive? node.getLastRedPoint() : null)}}</td>
       <td class="points side-red">{{_self.printPoints(node.getRedPoints, nodeIsActive? node.getLastRedPoint() : null)}}</td>
       <td class="winner side-red">
@@ -152,29 +158,67 @@
       </td>
       <td class="points side-white">{{_self.printPoints(node.getWhitePoints(), nodeIsActive? node.getLastWhitePoint() : null)}}</td>
       <td class="penalty side-white">{{_self.printPoints(node.getWhitePenalties(), nodeIsActive? node.getLastWhitePoint(): null)}}</td>
-      <td class="participant side-white">{{_self.printSlot(node, 'white')}}</td>
+      <td class="participant side-white">
+        {%- if redSelection is empty -%}
+        {{ _self.printSlot(node, 'white') }}
+        {%- else -%}
+        {{ select_plain('whiteSide[]', whiteSelection, node.getWhiteParticipant().getId(), attributes: {'form': 'match_team_order'}) }}
+        {%- endif -%}
+      </td>
     </tr>
     {% if nodeIsActive and node.isModifiable() and policy.isActionAllowed('RecordResults') -%}
     <tr class="controls">
-      {%- set args = {'matchName': node.getName()}|merge(route_args) -%}
+      {%- set args = route_args|merge({'matchName': node.getName()}) -%}
       {% if nodeList.count() > 1 %}<td></td>{% endif %}
       <td colspan="3" class="side-red">
-      {{ _self.printMatchPointForm(node, 'red', update_route, args) }}
+      {{ _self.printMatchPointForm(node, 'red', route_prefix, args) }}
       </td>
       <td colspan="2" class="side-none">
         {% if node.tiesAllowed() -%}
-        <form method="post" action="{{ url_for(update_route, args) }}" class="match_control">
+        <form method="post" action="{{ url_for(route_prefix ~ 'update', args) }}" class="match_control">
           <input type="hidden" name="_METHOD" value="PATCH">
           {{ submit('Unentschieden', 'action', 'tie', active=node.isModifiable() and not node.isTied()) }}
         </form>
         {%- endif %}
       </td>
       <td colspan="3" class="side-white">
-      {{ _self.printMatchPointForm(node, 'white', update_route, args) }}
+      {{ _self.printMatchPointForm(node, 'white', route_prefix, args) }}
       </td>
     </tr>
     {%- endif %}
     {%- endfor %}
+  </tbody>
+</table>
+{% if redSelection is not empty and whiteSelection is not empty -%}
+<form method="post" action="{{ url_for(route_prefix ~ 'teamOrder.update', route_args) }}" id="match_team_order">
+  {% if error.team_order %}<p class="error">{{ error.team_order }}</p>{% endif %}
+  <input type="hidden" name="_METHOD" value="PATCH">
+  {{ submit('Team-Reihenfolge speichern') }}
+</form>
+{%- endif %}
+{% endmacro %}
+
+{% macro printMatchRanking(rankList) %}
+<table>
+  <thead>
+    <tr>
+      <th>Platz</th>
+      <th>Name</th>
+      <th>Siege</th>
+      <th>Unentschieden</th>
+      <th>Punkte</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in rankList -%}
+    <tr>
+      <td>{{entry.rank}}</td>
+      <td>{{entry.participant.getDisplayName()}}</td>
+      <td>{{entry.wins}}</td>
+      <td>{{entry.ties}}</td>
+      <td>{{entry.points}}</td>
+    </tr>
+    {% endfor -%}
   </tbody>
 </table>
 {% endmacro %}

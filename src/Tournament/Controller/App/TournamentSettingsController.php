@@ -309,7 +309,8 @@ class TournamentSettingsController
          id: null,
          tournament_id: $ctx->tournament->id,
          name: $data['name'],
-         mode: $data['mode']
+         mode: $data['mode'],
+         team_mode: (bool)$data['team_mode'],
       );
       $this->repo->saveCategory($category);
 

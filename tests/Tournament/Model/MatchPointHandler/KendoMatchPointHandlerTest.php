@@ -8,7 +8,7 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\MatchPointHandler\KendoMatchPointHandler;
 use Tournament\Model\MatchRecord\MatchPoint;
-use Tournament\Model\MatchRecord\MatchRecord;
+use Tournament\Model\MatchRecord\SoloMatchRecord;
 use Tournament\Model\Participant\Participant;
 
 class KendoMatchPointHandlerTest extends TestCase
@@ -22,9 +22,9 @@ class KendoMatchPointHandlerTest extends TestCase
       $this->whiteP = new Participant(2, 1, '', '');
    }
 
-   private function createMatchRecord(int $id = 1): MatchRecord
+   private function createMatchRecord(int $id = 1): SoloMatchRecord
    {
-      return new MatchRecord(
+      return new SoloMatchRecord(
          id: $id,
          name: "test",
          category: $this->createStub(Category::class),

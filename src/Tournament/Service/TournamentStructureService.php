@@ -6,6 +6,7 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\ParticipantChangeLog;
 use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\Participant\TeamCollection;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
@@ -53,7 +54,8 @@ class TournamentStructureService
     */
    public function load(Category $category): TournamentStructure
    {
-      $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
+      $participants = $category->team_mode ? $this->participantRepo->getTeamsByCategoryId($category->id)
+                    :                        $this->participantRepo->getParticipantsByCategoryId($category->id);
       $matchRecords = $this->matchDataRepo->getMatchRecordsByCategoryId($category->id);
 
       $struc = $this->initialize($category);
@@ -68,7 +70,8 @@ class TournamentStructureService
    public function repopulate(Category $category): TournamentStructure
    {
       /* fetch list of participants from repo */
-      $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
+      $participants = $category->team_mode ? $this->participantRepo->getTeamsByCategoryId($category->id)
+                    :                        $this->participantRepo->getParticipantsByCategoryId($category->id);
       /* (re)initialize category structure without loading any participants */
       $this->initialize($category);
       /* add all active participants to the initialized structure */
@@ -121,6 +124,23 @@ class TournamentStructureService
       $struc->loadAreaMappings($area_mappings);
       $category->setTournamentStructure($struc);
       return $struc;
+   }
+
+   /**
+    * sync start slots assignments to repository
+    */
+   private function updateAllStartSlots(Category $category, MatchParticipantCollection $p): void
+   {
+      if( $category->team_mode )
+      {
+         $col = TeamCollection::new( $p->values() );
+         $this->participantRepo->updateAllTeamSlots($category->id, $col);
+      }
+      else
+      {
+         $col = ParticipantCollection::new( $p->values() );
+         $this->participantRepo->updateAllParticipantSlots($category->id, $col);
+      }
    }
 
    /**

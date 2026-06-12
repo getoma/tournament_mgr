@@ -6,7 +6,7 @@ use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 
-class SoloKoMatch extends SoloMatch implements KoNode
+class TeamKoMatch extends TeamMatch implements KoNode
 {
    // use constructor to forward parentNode links to child nodes
    public function __construct(
@@ -16,11 +16,10 @@ class SoloKoMatch extends SoloMatch implements KoNode
       MatchSlot $slotWhite,
       ?Area $area = null,
       bool $frozen = false,
-      bool $tieBreak = false,
    )
    {
       // for a KoNode, ties are never allowed - hard code this parameter of MatchNodeBase
       parent::__construct($name, $category, $slotRed, $slotWhite, $area,
-                          frozen: $frozen, tieBreak: $tieBreak, tiesAllowed: false);
+                          frozen: $frozen, tiesAllowed: false);
    }
 }

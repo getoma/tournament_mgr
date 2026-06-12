@@ -27,6 +27,7 @@ class TournamentStateHandlingService
    public const ACCEPT_UNASSIGNED_PARTICIPANTS = 'accept_unassigned_participants';
    public const ACCEPT_UNFITTING_TOURNAMENT_TREE = 'accept_unfitting_tournament_tree';
    public const ACCEPT_INCOMPLETE_TOURNAMENT_RESULTS = 'accept_incomplete_tournament_results';
+   public const ACCEPT_PARTICIPANTS_WITHOUT_TEAM = 'accept_participants_without_team';
 
    public const ISSUE_NO_PARTICIPANTS = 'issue_no_participants';
    public const ISSUE_NO_COMBAT_AREAS_CREATED = 'issue_no_combat_areas_created';
@@ -63,7 +64,11 @@ class TournamentStateHandlingService
                   if( $checkResult !== true ) return $checkResult;
 
                   /* if no unacceptable issues, check for needed consent requests */
-                  return $this->performStateChangeChecks($tournament, self::ACCEPT_UNASSIGNED_PARTICIPANTS, self::ACCEPT_UNFITTING_TOURNAMENT_TREE);
+                  return $this->performStateChangeChecks($tournament,
+                     self::ACCEPT_UNASSIGNED_PARTICIPANTS,
+                     self::ACCEPT_UNFITTING_TOURNAMENT_TREE,
+                     self::ACCEPT_PARTICIPANTS_WITHOUT_TEAM
+                  );
                }
 
                default:
@@ -74,10 +79,10 @@ class TournamentStateHandlingService
             switch ($newStatus)
             {
                case TournamentStatus::Running:
-                  /* planned -> running is always allowed without additional actions.
-                   * Consent for unexpected setups was already requested when transitioning from planning to planned
-                   */
-                  return true;
+                  return $this->performStateChangeChecks( $tournament,
+                     self::ACCEPT_UNASSIGNED_PARTICIPANTS,
+                     self::ACCEPT_PARTICIPANTS_WITHOUT_TEAM
+                  );
 
                case TournamentStatus::Planning:
                   /* when returning to planning, delete any acquired change logs */
@@ -198,6 +203,7 @@ class TournamentStateHandlingService
             self::ACCEPT_UNASSIGNED_PARTICIPANTS       => $this->getCategoriesWithUnassignedParticipants($tournament),
             self::ACCEPT_UNFITTING_TOURNAMENT_TREE     => $this->getCategoriesWithUnfittingStructureSize($tournament),
             self::ACCEPT_INCOMPLETE_TOURNAMENT_RESULTS => $this->getCategoriesWithUncompletedMatches($tournament),
+            self::ACCEPT_PARTICIPANTS_WITHOUT_TEAM     => $this->getCategoriesWithTeamlessParticipants($tournament),
 
             self::ISSUE_NO_PARTICIPANTS                => $this->getCategoriesWithNoParticipants($tournament),
             self::ISSUE_NO_COMBAT_AREAS_CREATED        => $this->tournamentRepo->getAreasByTournamentId($tournament->id)->empty(),
@@ -303,5 +309,24 @@ class TournamentStateHandlingService
          if( $structure->ko->getRanked(1)->empty() ) $result[] = $category->id;
       }
       return $result;
+   }
+
+   /**
+    * check if there are any participants without an assigned team in team mode
+    */
+   private function getCategoriesWithTeamlessParticipants(Tournament $tournament): array
+   {
+      $categories = $tournament->categories;
+      $catList = [];
+      foreach ($this->participantRepo->getParticipantsByTournamentId($tournament->id) as $p)
+      {
+         /** @var Participant $p */
+         foreach ($p->categories as $ca)
+         {
+            /** @var CategoryAssignment $ca */
+            if( $categories[$ca->categoryId]->team_mode && !$ca->team_id ) $catList[$ca->categoryId] = true;
+         }
+      }
+      return array_keys($catList);
    }
 }

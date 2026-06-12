@@ -16,7 +16,7 @@ use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeBase;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
 use Tournament\Model\TournamentStructure\MatchNode\MatchRoundCollection;
-use Tournament\Model\TournamentStructure\MatchNode\SoloKoMatch;
+use Tournament\Model\TournamentStructure\MatchNode\TeamMatch;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 use Tournament\Model\TournamentStructure\Pool\Pool;
 
@@ -36,7 +36,7 @@ class TournamentStructure
    /** @var KoTree the root of the tournament ko tree */
    public ?KoTree $ko = null;
 
-   /** @var KoChunk[] list of KO clusters*/
+   /** @var KoTree[] list of KO clusters*/
    private array $clusters = [];
 
    /** @var ?int number of finale rounds after the clusters*/
@@ -48,6 +48,9 @@ class TournamentStructure
    /** @var MatchParticipantHandler */
    private readonly MatchParticipantHandler $participantHandler;
 
+   /** node factory */
+   private readonly MatchNodeFactory $nodeFactory;
+
    public function __construct(
       public Category $category,
       public AreaCollection $areas
@@ -56,6 +59,7 @@ class TournamentStructure
       $this->pools = PoolCollection::new();
       $this->unmapped_participants = MatchParticipantCollection::new();
       $this->participantHandler = new MatchParticipantHandler($this);
+      $this->nodeFactory = new MatchNodeFactory($category);
    }
 
    /**
@@ -115,26 +119,43 @@ class TournamentStructure
    /**
     * find a node within this structure based on its name
     * @param $name - the node name to search for
-    * @param $pool_hint - null: node may be in pools or KO, don't know | false: node is in KO part | string: node should be in this pool
+    * @param null|false|string $pool_hint - null: node may be in pools or KO, don't know | false: node is in KO part | string: node should be in this pool
     */
    public function findNode(string $name, mixed $pool_hint = null): ?MatchNode
    {
       $result = null;
+      $orig_name = $name;
 
-      if (!$pool_hint) // try to find it in KO first
+      /* in case of team modes, consider that this might be a sub node name */
+      if( $this->category->team_mode )
       {
-         $result = $this->ko->findByName($name);
-         if ($result || ($pool_hint === false)) return $result; // Node is not supposed to be inside pools, return whatever we found, even if nothing
+         $orig_name = $name;
+         $name = TeamMatch::getTeamMatchName($name) ?? $orig_name;
       }
 
-      if( $this->pools->empty() ) return null;
-
-      $pools = $pool_hint? [$this->pools[$pool_hint] ?? throw new \OutOfBoundsException('Pool not found: ' . $pool_hint)] : $this->pools;
-      foreach( $pools as $pool )
+      /* try to find in KO, unless we have a specific pool hint */
+      if (!$pool_hint)
       {
-         /** @var Pool $pool */
-         $result = $pool->getMatchList()->findNode($name);
-         if( $result ) break;
+         $result = $this->ko->findByName($name);
+      }
+
+      /* try to find in pools if not found in KO part */
+      if( !$result )
+      {
+         if( $pool_hint === false ) return null; // Node is not supposed to be inside pools, abort here
+         $pools = $pool_hint? [$this->pools[$pool_hint] ?? throw new \OutOfBoundsException('Pool not found: ' . $pool_hint)] : $this->pools;
+         foreach( $pools as $pool )
+         {
+            /** @var Pool $pool */
+            $result = $pool->getMatchList()->findNode($name);
+            if( $result ) break;
+         }
+      }
+
+      if( $result && $name !== $orig_name )
+      {
+         /* parent node found, now extract the actually requested sub node */
+         $result = $result->getSubMatches()?->findNode($orig_name);
       }
 
       return $result;
@@ -221,7 +242,7 @@ class TournamentStructure
       {
          foreach( $this->clusters as $cluster )
          {
-            $result->mergeInPlace($cluster->root->getMatchList());
+            $result->mergeInPlace($cluster->getMatchList());
          }
       }
       /* add the rest of the KO structure */
@@ -235,7 +256,7 @@ class TournamentStructure
    private function createKoFirstRound(int $numRounds): MatchNodeCollection
    {
       return MatchNodeCollection::new( array_map(
-         fn($i) => new SoloKoMatch(strval($i), $this->category, new ParticipantSlot(), new ParticipantSlot()),
+         fn($i) => $this->nodeFactory->createKoNode(strval($i), new ParticipantSlot(), new ParticipantSlot()),
          range(1, pow(2, $numRounds - 1))
       ));
    }
@@ -251,7 +272,7 @@ class TournamentStructure
       $numSlots = pow(2, $numRounds);
       $numPools = pow(2, floor(log($numSlots / $winnersPerPool, 2))); // number of pools, must be a power of 2, rest filled up with BYEs
       if( $maxPools > 0 ) $numPools = min($maxPools, $numPools);
-      return PoolCollection::new( array_map(fn($i) => new Pool(strval($i+1), $this->category), range(0, $numPools - 1)) );
+      return PoolCollection::new( array_map(fn($i) => new Pool(strval($i+1), $this->category, nodeFactory: $this->nodeFactory), range(0, $numPools - 1)) );
    }
 
    /**
@@ -343,13 +364,13 @@ class TournamentStructure
 
          if (count($slots) === 2)
          {
-            $firstRound[] = new SoloKoMatch(strval($nextMatchId++), $this->category, slotRed: $slots[0], slotWhite: $slots[1] );
+            $firstRound[] = $this->nodeFactory->createKoNode(strval($nextMatchId++), slotRed: $slots[0], slotWhite: $slots[1] );
          }
          elseif(count($slots) === 3)
          {
             // one BYE needed, pair it with the best ranking participant in this chunk
-            $firstRound[] = new SoloKoMatch(strval($nextMatchId++), $this->category, slotRed: $slots[0], slotWhite: new ByeSlot());
-            $firstRound[] = new SoloKoMatch(strval($nextMatchId++), $this->category, slotRed: $slots[1], slotWhite: $slots[2]);
+            $firstRound[] = $this->nodeFactory->createKoNode(strval($nextMatchId++), slotRed: $slots[0], slotWhite: new ByeSlot());
+            $firstRound[] = $this->nodeFactory->createKoNode(strval($nextMatchId++), slotRed: $slots[1], slotWhite: $slots[2]);
          }
          else
          {
@@ -376,7 +397,7 @@ class TournamentStructure
          {
             $slotRed   = new MatchWinnerSlot($previousRound[$i]);
             $slotWhite = new MatchWinnerSlot($previousRound[$i + 1]);
-            $currentRound[] = new SoloKoMatch(strval($nextMatchId++), $this->category, slotRed: $slotRed, slotWhite: $slotWhite);
+            $currentRound[] = $this->nodeFactory->createKoNode(strval($nextMatchId++), slotRed: $slotRed, slotWhite: $slotWhite);
          }
       }
       $this->ko = new KoTree($currentRound->first());

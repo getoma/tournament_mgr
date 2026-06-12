@@ -51,6 +51,11 @@ class RouteArgsResolverService
          $result->participant = $this->participantRepo->getParticipantById((int)$args['participantId'])
                               ?? throw new EntityNotFoundException($request, 'Participant not found');
       }
+      if (isset($args['teamId']))
+      {
+         $result->team = $this->participantRepo->getTeamById((int)$args['teamId'])
+                       ?? throw new EntityNotFoundException($request, 'Team not found');
+      }
       if (isset($args['areaId']))
       {
          $result->area = $this->tournamentRepo->getAreaById((int)$args['areaId'])
