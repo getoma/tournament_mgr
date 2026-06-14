@@ -32,7 +32,7 @@
   {% endif %}
 </section>
 
-{% if node.isComposite() -%}
+{% if node.getMatchList() is not empty -%}
 <section>
   <h2>Aktuelle Platzierung</h2>
   {{ part.printMatchRanking(node.getRanking()) }}
