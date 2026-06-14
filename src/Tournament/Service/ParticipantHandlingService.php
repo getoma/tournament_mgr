@@ -267,6 +267,15 @@ class ParticipantHandlingService
          }
       }
       $team->members = $new_participants;
+
+      // if team was withdrawn, also delete any assigned matches that may already exist
+      // as well as any starting slot assignment, to free up this slot
+      if ($team->withdrawn)
+      {
+         $this->matchDataRepo->deleteMatchRecordsByTeamId($team->id);
+         $team->slot_name = null;
+      }
+
       /* report keys are all participant ids of 1) non-existing participants, 2) participants currently assigned to a different team
        * drop those members from their current team so we can assign them now here to this team
        * no need to filter out the non-existing ones for dropTeamMembers(), they will just be ignored anyway

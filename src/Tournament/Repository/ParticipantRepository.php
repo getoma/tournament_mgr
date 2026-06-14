@@ -448,13 +448,14 @@ class ParticipantRepository
       $this->pdo->beginTransaction();
       if ($team->id)
       {
-         $this->pdo->prepare("UPDATE teams SET name=:name, withdrawn=:withdrawn WHERE id = :id")
-                   ->execute($team->asArray('id', 'name', 'withdrawn'));
+         $this->pdo->prepare("UPDATE teams SET name=:name, withdrawn=:withdrawn, slot_name=:slot_name, pre_assign=:pre_assign WHERE id = :id")
+                   ->execute($team->asArray('id', 'name', 'withdrawn', 'slot_name', 'pre_assign'));
       }
       else
       {
-         $this->pdo->prepare("INSERT INTO teams (category_id, name, withdrawn) VALUES (:category_id, :name, :withdrawn)")
-                   ->execute($team->asArray('category_id', 'name', 'withdrawn'));
+         $this->pdo->prepare("INSERT INTO teams (category_id, name, withdrawn, slot_name, pre_assign) "
+                            ."VALUES (:category_id, :name, :withdrawn, :slot_name, :pre_assign)")
+                   ->execute($team->asArray('category_id', 'name', 'withdrawn', 'slot_name', 'pre_assign'));
          $team->id = (int)$this->pdo->lastInsertId();
          $this->teams[$team->id] = $team;
       }
