@@ -114,6 +114,9 @@ final class MatchParticipantHandler
       /* extract all previous slot assignements */
       $assigned = $this->getSlotPlacements($starting_slots);
 
+      /* make sure we do not assign any withdrawn participants */
+      $participants = $participants->filter(fn($p) => !$p->withdrawn);
+
       /* get the actual number of participants we have to allocate */
       $participantCount = $assigned->count() + $participants->count();
 

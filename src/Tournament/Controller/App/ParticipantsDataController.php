@@ -428,7 +428,7 @@ class ParticipantsDataController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
-      $category_participants = $this->repo->getParticipantsByCategoryId($ctx->category->id);
+      $category_participants = $this->repo->getActiveParticipantsByCategoryId($ctx->category->id);
       $all_teams = $this->repo->getTeamsByCategoryId($ctx->category->id);
 
       /* build the option list for team member selection */
