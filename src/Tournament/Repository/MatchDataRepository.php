@@ -293,6 +293,20 @@ class MatchDataRepository
    }
 
    /**
+    * delete all match records where a specific team is involved
+    */
+   public function deleteMatchRecordsByTeamId(int $id): void
+   {
+      $stmt = $this->pdo->prepare(<<<QUERY
+         DELETE tm, m
+         FROM team_matches tm RIGHT JOIN matches m on m.team_match_id=tm.id
+         WHERE tm.red_id = ? OR tm.white_id = ?
+      QUERY);
+      $stmt->execute([$id, $id]);
+   }
+
+
+   /**
     * check if there are any points stored for a specific participant
     */
    public function hasParticipantPoints(int $id): bool
