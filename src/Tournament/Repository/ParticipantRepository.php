@@ -154,6 +154,14 @@ class ParticipantRepository
    }
 
    /**
+    * Get all non-withdrawn participants for a tournament
+    */
+   public function getActiveParticipantsByTournamentId(int $tournamentId): ParticipantCollection
+   {
+      return $this->getParticipantsByTournamentId($tournamentId)->filter(fn($p) => !$p->withdrawn);
+   }
+
+   /**
     * Get all teams for a tournament
     */
    public function getTeamsByTournamentId(int $tournamentId): TeamCollection
@@ -181,6 +189,13 @@ class ParticipantRepository
       }
    }
 
+   /**
+    * Get all non-withdrawn teams for a tournament
+    */
+   public function getActiveTeamsByTournamentId(int $tournamentId): TeamCollection
+   {
+      return $this->getTeamsByTournamentId($tournamentId)->filter(fn($p) => !$p->withdrawn);
+   }
 
    /**
     * get all participants for a specific category
@@ -216,6 +231,14 @@ class ParticipantRepository
    }
 
    /**
+    * Get all non-withdrawn participants for a specific category
+    */
+   public function getActiveParticipantsByCategoryId(int $categoryId): ParticipantCollection
+   {
+      return $this->getParticipantsByCategoryId($categoryId)->filter(fn($p) => !$p->withdrawn);
+   }
+
+   /**
     * Get all teams for a specific category
     */
    public function getTeamsByCategoryId(int $categoryId): TeamCollection
@@ -242,6 +265,14 @@ class ParticipantRepository
          $this->teams_per_category[$categoryId] = $result;
          return $result->copy();
       }
+   }
+
+   /**
+    * Get all non-withdrawn teams for a specific category
+    */
+   public function getActiveTeamsByCategoryId(int $categoryId): TeamCollection
+   {
+      return $this->getTeamsByCategoryId($categoryId)->filter(fn($p) => !$p->withdrawn);
    }
 
    /**

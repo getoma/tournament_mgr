@@ -54,12 +54,12 @@ class TournamentStructureService
     */
    public function load(Category $category): TournamentStructure
    {
-      $participants = $category->team_mode ? $this->participantRepo->getTeamsByCategoryId($category->id)
-                    :                        $this->participantRepo->getParticipantsByCategoryId($category->id);
+      $participants = $category->team_mode ? $this->participantRepo->getActiveTeamsByCategoryId($category->id)
+                    :                        $this->participantRepo->getActiveParticipantsByCategoryId($category->id);
       $matchRecords = $this->matchDataRepo->getMatchRecordsByCategoryId($category->id);
 
       $struc = $this->initialize($category);
-      $struc->loadParticipants($participants->filter(fn($p) => !$p->withdrawn));
+      $struc->loadParticipants($participants);
       $struc->loadMatchRecords($matchRecords);
       return $struc;
    }
@@ -70,12 +70,12 @@ class TournamentStructureService
    public function repopulate(Category $category): TournamentStructure
    {
       /* fetch list of participants from repo */
-      $participants = $category->team_mode ? $this->participantRepo->getTeamsByCategoryId($category->id)
-                    :                        $this->participantRepo->getParticipantsByCategoryId($category->id);
+      $participants = $category->team_mode ? $this->participantRepo->getActiveTeamsByCategoryId($category->id)
+                    :                        $this->participantRepo->getActiveParticipantsByCategoryId($category->id);
       /* (re)initialize category structure without loading any participants */
       $this->initialize($category);
       /* add all active participants to the initialized structure */
-      return $this->addParticipants($category, $participants->filter(fn($p) => !$p->withdrawn));
+      return $this->addParticipants($category, $participants);
    }
 
    /**

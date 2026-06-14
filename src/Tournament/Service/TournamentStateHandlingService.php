@@ -318,7 +318,7 @@ class TournamentStateHandlingService
    {
       $categories = $tournament->categories;
       $catList = [];
-      foreach ($this->participantRepo->getParticipantsByTournamentId($tournament->id) as $p)
+      foreach ($this->participantRepo->getActiveParticipantsByTournamentId($tournament->id) as $p)
       {
          /** @var Participant $p */
          foreach ($p->categories as $ca)
