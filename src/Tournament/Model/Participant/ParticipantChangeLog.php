@@ -190,12 +190,4 @@ class ParticipantChangeLog extends ChangeLogCollection
       array_walk_recursive($combined, function ($e) use ($result) { if( $e instanceof ChangeLogEntry ) $result[] = $e; });
       return $result->sorted();
    }
-
-   /**
-    * filter for change log entries only relevant for the provided category id
-    */
-   public function filter_category(int $category_id): static
-   {
-      return $this->filter(fn($e) => !array_key_exists('category_id', $e->details) || (int)$e->details['category_id'] === $category_id);
-   }
 }
