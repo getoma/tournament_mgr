@@ -36,11 +36,13 @@ class ChangeLogCollection extends ObjectCollection
    }
 
    /**
-    * filter according change date
+    * sort according change date - ascending by default.
+    * @param bool $desc - (optional) if true, sort descending instead of ascending
     */
    public function sorted(bool $desc = false): static
    {
-      $sorter = $desc ? fn($a, $b) => $b->id <=> $a->id : fn($a, $b) => $a->id <=> $b->id;
+      $sorter = $desc ? fn($a, $b) => $b->changed_at <=> $a->changed_at
+              :         fn($a, $b) => $a->changed_at <=> $b->changed_at;
       return $this->usort($sorter);
    }
 }
