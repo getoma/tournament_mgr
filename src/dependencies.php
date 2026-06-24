@@ -1,5 +1,7 @@
 <?php
 
+use Base\Service\CookieService;
+use Base\Service\SessionService;
 use Slim\Views\Twig;
 
 return function (DI\Container $container)
@@ -62,6 +64,16 @@ return function (DI\Container $container)
    $container->set(SessionHandlerInterface::class, function () use ($container)
    {
       return new Base\Service\PdoSessionHandler($container->get(PDO::class));
+   });
+
+   // session service - needs to be explicitly configured to provide a session handler
+   // DI won't provided optional dependencies automatically
+   $container->set(SessionService::class, function () use ($container)
+   {
+      return new SessionService(
+         $container->get(CookieService::class),
+         $container->get(SessionHandlerInterface::class),
+      );
    });
 
    // configure CookieService
