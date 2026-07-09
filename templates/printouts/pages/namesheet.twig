@@ -1,0 +1,9 @@
+<ul class="namesheet_page">
+  {% for p in participants -%}
+  <li><span class="name" style="font-size:{{fontSize}}pt">{{ p.name }}</span>
+  {%- if p.pool is not empty %} <span class="mapping_label">(Pool {{p.pool}})</span>
+  {%- elseif p.match is not empty %} <span class="mapping_label">(Kampf {{p.match}})</span>
+  {%- endif -%}
+  </li>
+  {% endfor %}
+</ul>

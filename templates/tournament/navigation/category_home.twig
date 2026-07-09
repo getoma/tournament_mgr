@@ -1,5 +1,4 @@
 {% import 'base/form.twig' as form %}
-{% import 'base/match.twig' as part %}
 
 {%- include 'base/header.twig' with {
   'active_page': 'tournaments.categories.show'
@@ -19,6 +18,9 @@
 {% endif %}
   <li><a href="{{ url_for('tournaments.categories.edit', route_context.args) }}">
     <b>Konfiguration</b>
+  </a></li>
+  <li><a href="{{ url_for('tournaments.categories.printouts.index', route_context.args) }}">
+    <b>Ausdrucke</b>
   </a></li>
 </ul>
 </nav>
