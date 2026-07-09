@@ -4,6 +4,7 @@ namespace Tournament\Model\Participant;
 
 use Respect\Validation\Validator as v;
 use Tournament\Model\Category\Category;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 
 class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant
 {
@@ -19,6 +20,12 @@ class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\To
       public CategoryAssignmentCollection $categories = new CategoryAssignmentCollection() // Categories the participant is registered in
    )
    {
+   }
+
+   public function __clone(): void
+   {
+      $this->categories = CategoryAssignmentCollection::new($this->categories->map(fn($a) => clone $a));
+      $this->id = null;
    }
 
    /* get the validation rules for the participant */
@@ -37,9 +44,9 @@ class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\To
    {
       if (isset($data['lastname'])) $this->lastname = $data['lastname'];
       if (isset($data['firstname'])) $this->firstname = $data['firstname'];
-      if (array_key_exists('club', $data)) $this->club = $data['club']; // null is allowed here
-      if (isset($data['withdrawn'])) $this->withdrawn = (bool)$data['withdrawn'];
-      $this->updateCategories($data['categories']);
+      if (array_key_exists('club', $data)) $this->club = $data['club'] ?: null; // null is allowed here
+      if (isset($data['withdrawn']))  $this->withdrawn = (bool)$data['withdrawn'];
+      if (isset($data['categories'])) $this->updateCategories($data['categories']);
    }
 
    static public function createFromArray(int $tournament_id, array $data): static
@@ -83,6 +90,11 @@ class Participant implements \Tournament\Model\Base\DbItem, \Tournament\Model\To
    public function isComposite(): bool
    {
       return false;
+   }
+
+   public function getMembers(): ?MatchParticipantCollection
+   {
+      return null;
    }
 
    public function getClub(): ?string

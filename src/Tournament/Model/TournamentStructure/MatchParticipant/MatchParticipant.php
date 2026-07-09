@@ -10,6 +10,7 @@ interface MatchParticipant
    function getId(): ?int;
 
    function isComposite(): bool;
+   function getMembers(): ?MatchParticipantCollection;
 
    function isDummy(): bool;
 

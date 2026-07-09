@@ -58,4 +58,17 @@ class Tournament implements \Tournament\Model\Base\DbItem
          TournamentStatus::Completed => [],
       };
    }
+
+   /**
+    * check whether changes should be tracked
+    */
+   public function trackChanges(): bool
+   {
+      /* do not track during "planning" state, but afterwards all trackable changes should be logged */
+      return match ($this->status)
+      {
+         TournamentStatus::Planning => false,
+         default => true,
+      };
+   }
 }

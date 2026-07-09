@@ -4,6 +4,7 @@ namespace Tournament\Service;
 
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
+use Tournament\Model\Participant\ParticipantChangeLog;
 use Tournament\Model\Participant\ParticipantCollection;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
@@ -15,6 +16,8 @@ use Tournament\Repository\MatchDataRepository;
 use Tournament\Repository\ParticipantRepository;
 use Tournament\Repository\TournamentRepository;
 
+use Base\Repository\ChangeLogRepository;
+
 /**
  * Service to load a complete tournament structure from the repositories, with all data contained
  */
@@ -23,7 +26,8 @@ class TournamentStructureService
    public function __construct(
       private TournamentRepository $tournamentRepo,
       private ParticipantRepository $participantRepo,
-      private MatchDataRepository $matchDataRepo
+      private MatchDataRepository $matchDataRepo,
+      private ChangeLogRepository $chgLogRepo,
    ) {
    }
 
@@ -63,29 +67,45 @@ class TournamentStructureService
     */
    public function repopulate(Category $category): TournamentStructure
    {
-      $struc = $this->initialize($category);
+      /* fetch list of participants from repo */
       $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
-      $mp = $struc->populate($participants->filter(fn($p) => !$p->withdrawn));
-      $assigned = ParticipantCollection::new($mp->values());
-      $this->participantRepo->updateAllParticipantSlots($category->id, $assigned);
-      return $struc;
+      /* (re)initialize category structure without loading any participants */
+      $this->initialize($category);
+      /* add all active participants to the initialized structure */
+      return $this->addParticipants($category, $participants->filter(fn($p) => !$p->withdrawn));
    }
 
    /**
     * add a new list of participants to an already populated structure
-    * @param Category|TournamentStructure $struc - the tournament structure to add participants to (optionally identified by the category)
+    * @param Category $category - the category to add participants to
     * @param MatchParticipantCollection $participants - the participants to add, defaults to $struc->unmapped_participants
     */
-   public function addParticipants(Category|TournamentStructure $struc, ?MatchParticipantCollection $participants = null): TournamentStructure
+   public function addParticipants(Category $category, ?MatchParticipantCollection $participants = null): TournamentStructure
    {
-      if ($struc instanceof Category)
-      {
-         $struc = $this->load($struc);
-      }
-      $participants  ??= $struc->unmapped_participants->copy();
+      /* load up/initialize input data */
+      $struc = $category->getTournamentStructure();
+      $participants ??= $struc->unmapped_participants->copy();
+
+      /* check if we need to handle participant change logs */
+      $tournament    = $this->tournamentRepo->getTournamentById($struc->category->tournament_id);
+      $track_changes = $tournament->trackChanges();
+      $old_state = $track_changes? $participants->map(fn($p) => clone $p) : null;
+
+      /* perform slot assignments */
       $mp = $struc->populate($participants);
       $assigned = ParticipantCollection::new($mp->values());
       $this->participantRepo->updateAllParticipantSlots($struc->category->id, $assigned);
+
+      /* generate the change log */
+      if( $track_changes )
+      {
+         $log = ParticipantChangeLog::new();
+         foreach( $participants as $p )
+         {
+            $log->mergeInPlace(ParticipantChangeLog::create($old_state[$p->id], $p));
+         }
+         $this->chgLogRepo->storeChangeLog($log);
+      }
       return $struc;
    }
 
@@ -121,7 +141,7 @@ class TournamentStructureService
          $area = $this->tournamentRepo->getAreaById($area);
       }
 
-      if( !$area instanceof Area )
+      if( !($area instanceof Area) )
       {
          throw new \OutOfRangeException('invalid area assigned');
       }

@@ -50,6 +50,32 @@
   </table>
 </section>
 
+{% if change_log is not empty -%}
+<section class="change_log">
+  <h2>Änderungen</h2>
+  <table class="change_log">
+    <thead>
+      <tr>
+        <th>Änderung</th>
+        <th>Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in change_log -%}
+      <tr>
+        <td>{{ entry.change_type }}</td>
+        {% if entry.change_type == 'rename' %}
+        <td><del>{{entry.details['from']}}</del> <ins>{{ entry.details['to'] }}</ins></td>
+        {% else %}
+        <td>{{ entry.details['participant'].getDisplayName() }}</td>
+        {% endif -%}
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</section>
+{%- endif %}
+
 {% if policy.isActionAllowed('ModifyMatchArea') and area_selection is not empty -%}
 <section class="area_mapping">
   <h2>Kampffläche ändern</h2>

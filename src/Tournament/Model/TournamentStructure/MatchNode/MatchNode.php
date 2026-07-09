@@ -3,6 +3,7 @@
 namespace Tournament\Model\TournamentStructure\MatchNode;
 
 use Tournament\Model\Area\Area;
+use Tournament\Model\Category\Category;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 use Tournament\Model\TournamentStructure\MatchSlot\MatchSlot;
 
@@ -14,6 +15,8 @@ interface MatchNode
    public function setName(string $name): void;
 
    public function getName(): string;
+
+   public function getCategory(): Category;
 
    public function getArea(): ?Area;
 

@@ -10,6 +10,7 @@ use Slim\Views\Twig;
 use Tournament\Service\RouteArgsContext;
 use Tournament\Service\MatchHandlingService;
 use Tournament\Service\TournamentStructureService;
+use Tournament\Service\ChangeLogEvaluationService;
 
 use Base\Service\PrgService;
 use Base\Service\DataValidationService;
@@ -22,6 +23,7 @@ class TournamentTreeController
       private TournamentStructureService $structureLoadService,
       private MatchHandlingService $matchService,
       private PrgService $prgService,
+      private ChangeLogEvaluationService $chgLogService,
       private Twig $view,
    )
    {
@@ -49,12 +51,16 @@ class TournamentTreeController
    {
       /** @var RouteArgsContext $ctx */
       $ctx = $request->getAttribute('route_context');
+
+      // Load the tournament structure for this category
       $structure = $ctx->category->getTournamentStructure();
+      $chgLog = $structure->pools->empty()? $this->chgLogService->getChangesForKoTree($structure->ko) : null;
 
       return $this->view->render($response, 'tournament/navigation/category_KO.twig', [
          'no_pools'   => $structure->pools->empty(),
          'ko_rounds'  => $structure->getFinaleRounds(),
          'unmapped_participants' => $structure->unmapped_participants,
+         'change_log' => $chgLog,
       ]);
    }
 
@@ -86,6 +92,7 @@ class TournamentTreeController
          'pool' => $ctx->pool,
          'error' => $error,
          'area_selection' => $ctx->category->getTournamentStructure()->areas->column('name', 'id'),
+         'change_log' => $this->chgLogService->getChangesForPool($ctx->pool),
       ]);
    }
 
