@@ -10,13 +10,15 @@ use Tournament\Model\MatchRecord\MatchRecord;
 use Tournament\Model\MatchRecord\MatchRecordCollection;
 use Tournament\Model\MatchRankHandler\MatchRank;
 use Tournament\Model\MatchRankHandler\MatchRankCollection;
+use Tournament\Model\TournamentStructure\MatchNodeFactory;
+use Tournament\Model\TournamentStructure\CompositeNode;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNodeCollection;
-use Tournament\Model\TournamentStructure\MatchNode\SoloMatch;
 use Tournament\Model\TournamentStructure\MatchParticipant\DummyMatchParticipant;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 
-class Pool
+
+class Pool implements CompositeNode
 {
    private MatchNodeCollection $matches;
    /** @var MatchParticipant[] */
@@ -31,9 +33,11 @@ class Pool
       private string $name,
       public  Category $category,
       private ?Area $area = null,
+      private ?MatchNodeFactory $nodeFactory = null
    )
    {
       $this->matches = MatchNodeCollection::new();
+      $this->nodeFactory ??= new MatchNodeFactory($category);
    }
 
    /**
@@ -161,7 +165,7 @@ class Pool
       {
          while ($plist->count() < $slotId)
          {
-            $plist[] = new DummyMatchParticipant(false);
+            $plist[] = new DummyMatchParticipant($this->category->team_mode);
          }
          $plist[] = $p;
       }
@@ -172,6 +176,12 @@ class Pool
    public function getMatchList(): MatchNodeCollection
    {
       return $this->matches;
+   }
+
+   /* whether there are dedicated red/white side teams */
+   public function hasTeams(): bool
+   {
+      return false;
    }
 
    /**
@@ -313,7 +323,7 @@ class Pool
          {
             $red     = new ParticipantSlot($p_red);
             $white   = new ParticipantSlot($p_white);
-            $newNode = new SoloMatch($matchName, $this->category, $red, $white, $this->area);
+            $newNode = $this->nodeFactory->createNode($matchName, $red, $white, $this->area);
             $newNode->setMatchRecord($record);
             $this->matches[] = $newNode;
          }

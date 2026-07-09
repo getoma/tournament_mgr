@@ -5,7 +5,7 @@ namespace Tests\Tournament\Model\TournamentStructure\MatchNode;
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\TournamentStructure\MatchNode\SoloKoMatch;
-use Tournament\Model\MatchRecord\MatchRecord;
+use Tournament\Model\MatchRecord\SoloMatchRecord;
 
 /**
  * SoloKoMatchTest repeats all SoloMatch tests by deriving from their test class
@@ -33,7 +33,7 @@ class SoloKoMatchTest extends SoloMatchTest
       $this->assertFalse($this->node->isTieBreak());
 
       /* by assigning a tie_break via match record, ties shouldn't be allowed anymore */
-      $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
+      $record = new SoloMatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
                            $this->redParticipant, $this->whiteParticipant,
                            tie_break: true );
       $this->node->setMatchRecord($record);
@@ -45,7 +45,7 @@ class SoloKoMatchTest extends SoloMatchTest
       $tie_break_node = new $node_class("test", $this->category, $this->redSlot, $this->whiteSlot, tieBreak: true);
       $this->assertFalse($tie_break_node->tiesAllowed());
       /* match record should not be able to cancel any logical tie break */
-      $record = new MatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
+      $record = new SoloMatchRecord(1, "test", $this->createStub(Category::class), $this->createStub(Area::class),
                      $this->redParticipant, $this->whiteParticipant,
                      tie_break: false );
       $tie_break_node->setMatchRecord($record);

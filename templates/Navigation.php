@@ -71,6 +71,10 @@ class Navigation
                         ]
                      ],
 
+                     [ 'label' => 'Teams',
+                       'route' => 'tournaments.categories.teams.index',
+                     ],
+
                      [  'label' => 'Konfiguration',
                         'route' => 'tournaments.categories.edit'
                      ],

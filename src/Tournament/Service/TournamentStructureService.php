@@ -5,6 +5,7 @@ namespace Tournament\Service;
 use Tournament\Model\Area\Area;
 use Tournament\Model\Category\Category;
 use Tournament\Model\Participant\ParticipantCollection;
+use Tournament\Model\Participant\TeamCollection;
 use Tournament\Model\Tournament\Tournament;
 use Tournament\Model\TournamentStructure\MatchNode\MatchNode;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
@@ -49,11 +50,12 @@ class TournamentStructureService
     */
    public function load(Category $category): TournamentStructure
    {
-      $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
+      $participants = $category->team_mode ? $this->participantRepo->getActiveTeamsByCategoryId($category->id)
+                    :                        $this->participantRepo->getActiveParticipantsByCategoryId($category->id);
       $matchRecords = $this->matchDataRepo->getMatchRecordsByCategoryId($category->id);
 
       $struc = $this->initialize($category);
-      $struc->loadParticipants($participants->filter(fn($p) => !$p->withdrawn));
+      $struc->loadParticipants($participants);
       $struc->loadMatchRecords($matchRecords);
       return $struc;
    }
@@ -64,10 +66,10 @@ class TournamentStructureService
    public function repopulate(Category $category): TournamentStructure
    {
       $struc = $this->initialize($category);
-      $participants = $this->participantRepo->getParticipantsByCategoryId($category->id);
-      $mp = $struc->populate($participants->filter(fn($p) => !$p->withdrawn));
-      $assigned = ParticipantCollection::new($mp->values());
-      $this->participantRepo->updateAllParticipantSlots($category->id, $assigned);
+      $participants = $category->team_mode ? $this->participantRepo->getActiveTeamsByCategoryId($category->id)
+                    :                        $this->participantRepo->getActiveParticipantsByCategoryId($category->id);
+      $slot_assignment = $struc->populate($participants);
+      $this->updateAllStartSlots($struc->category, $slot_assignment);
       return $struc;
    }
 
@@ -83,9 +85,8 @@ class TournamentStructureService
          $struc = $this->load($struc);
       }
       $participants  ??= $struc->unmapped_participants->copy();
-      $mp = $struc->populate($participants);
-      $assigned = ParticipantCollection::new($mp->values());
-      $this->participantRepo->updateAllParticipantSlots($struc->category->id, $assigned);
+      $slot_assignment = $struc->populate($participants);
+      $this->updateAllStartSlots($struc->category, $slot_assignment);
       return $struc;
    }
 
@@ -101,6 +102,23 @@ class TournamentStructureService
       $struc->loadAreaMappings($area_mappings);
       $category->setTournamentStructure($struc);
       return $struc;
+   }
+
+   /**
+    * sync start slots assignments to repository
+    */
+   private function updateAllStartSlots(Category $category, MatchParticipantCollection $p): void
+   {
+      if( $category->team_mode )
+      {
+         $col = TeamCollection::new( $p->values() );
+         $this->participantRepo->updateAllTeamSlots($category->id, $col);
+      }
+      else
+      {
+         $col = ParticipantCollection::new( $p->values() );
+         $this->participantRepo->updateAllParticipantSlots($category->id, $col);
+      }
    }
 
    /**

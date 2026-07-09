@@ -4,6 +4,7 @@ namespace Tests\Tournament\Model\TestStubs;
 
 use Tournament\Model\Category\Category;
 use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipant;
+use Tournament\Model\TournamentStructure\MatchParticipant\MatchParticipantCollection;
 
 class TestMatchParticipant implements MatchParticipant
 {
@@ -37,6 +38,11 @@ class TestMatchParticipant implements MatchParticipant
    public function isComposite(): bool
    {
       return $this->composite;
+   }
+
+   public function getMembers(): ?MatchParticipantCollection
+   {
+      return $this->composite? MatchParticipantCollection::new() : null;
    }
 
    public function isDummy(): bool

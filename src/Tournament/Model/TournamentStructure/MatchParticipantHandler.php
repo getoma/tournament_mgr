@@ -51,7 +51,7 @@ final class MatchParticipantHandler
     */
    private function loadKoParticipants(MatchParticipantCollection $participants)
    {
-      $slots = $this->getSlots($this->struc->ko->getFirstRound());
+      $slots = $this->struc->ko->getStartSlots();
       foreach ($participants as $p)
       {
          /** @var MatchParticipant $p */
@@ -107,12 +107,15 @@ final class MatchParticipantHandler
       $calculator = $this->struc->category->getPlacementCostCalculator();
       $calculator->loadStructure($this->struc->ko);
 
-      /* get the list of starting slots, but only from matches that are not started, yet */
+      /* get the list of starting slots */
       $first_round = $this->struc->ko->getFirstRound();
-      $starting_slots = $this->getSlots($first_round);
+      $starting_slots = $first_round->getNamedSlots();
 
       /* extract all previous slot assignements */
       $assigned = $this->getSlotPlacements($starting_slots);
+
+      /* make sure we do not assign any withdrawn participants */
+      $participants = $participants->filter(fn($p) => !$p->withdrawn);
 
       /* get the actual number of participants we have to allocate */
       $participantCount = $assigned->count() + $participants->count();
@@ -271,7 +274,7 @@ final class MatchParticipantHandler
          // get list of all white slots (= every second starting slot)
          $slotNames = array_filter($starting_slots->keys(), fn($i) => $i % 2, ARRAY_FILTER_USE_KEY);
          // iteratively half the list of slots until we have a chunk for each BYE
-         $slotStack = [$slotNames];
+         $slotStack = [array_values($slotNames)];
          while (count($slotStack) < $numBYEs)
          {
             $next = array_shift($slotStack);
@@ -372,24 +375,6 @@ final class MatchParticipantHandler
       }
 
       /* done */
-      return $result;
-   }
-
-   /**
-    * extract the MatchNode slots from a node collection
-    */
-   private function getSlots(MatchNodeCollection $nodes): MatchSlotCollection
-   {
-      $result = MatchSlotCollection::new();
-      /** @var MatchNode $node */
-      foreach ($nodes as $node)
-      {
-         foreach( MatchSide::cases() as $side )
-         {
-            $slot = $node->getSlot($side);
-            if( $slot->getName() ) $result[$slot->getName()] = $slot;
-         }
-      }
       return $result;
    }
 
